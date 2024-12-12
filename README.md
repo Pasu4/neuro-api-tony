@@ -1,7 +1,7 @@
 # Neuro API Human Control
 
-Python implementation of the Neuro API.
-In contrast to [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), it allows the user to formulate the response Neuro would send themselves, as well as send non-forced actions whenever.
+Graphical implementation of the Neuro API in python.
+Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), it can answer `actions/force` commands automatically, but also allows the user to formulate the response Neuro would send themselves, as well as send non-forced actions whenever.
 
 > [!Note]
 > I cannot guarantee that this implementation perfectly emulates what Neuro could/would do, or that it is error-free.
@@ -13,7 +13,7 @@ This will install the package in a virtual environment to not conflict with any 
 Skip steps 2 and 3 if you don't want a virtual environment.
 
 1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-human-control.git` or download it from GitHub
-2. Run `python -m venv .venv`
+2. Run `python -m venv .venv` (in the downloaded folder)
 3. Run `.\.venv\Scripts\activate` (Windows)
     - `source ./.venv/bin/activate` on Linux / Mac (?)
 4. Run `pip install -r requirements.txt`
@@ -39,5 +39,5 @@ When the game sends an `actions/force` command, a window will open that only sho
 Like Randy, this application opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`).
 
 > [!Note]
-> For some reason, the Unity SDK takes a bit to receive the messages sometimes, but so far, every message has arrived eventually.
-> I don't know if it's my fault, but it doesn't happen with Randy.
+> For some reason, the Unity SDK sometimes takes a bit to receive the `action` command after an `actions/force` command, but so far, every command has arrived eventually.
+> This doesn't seem to be my fault, as it only happens if the `action` is not sent immediately.

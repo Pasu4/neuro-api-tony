@@ -71,6 +71,11 @@ class HumanView:
 
         return self.frame.panel.control_panel.ignore_actions_force_checkbox.GetValue()
     
+    def is_auto_send_checked(self) -> bool:
+        '''Return whether to automatically answer forced actions.'''
+
+        return self.frame.panel.control_panel.auto_send_checkbox.GetValue()
+    
     def show_context_dialog(self, message: str) -> None:
         '''Show a dialog for a context message.'''
 
@@ -245,16 +250,19 @@ class ControlPanel(wx.Panel):
         self.context_dialog_checkbox = wx.CheckBox(self, label='Show a dialog for context messages')
         self.validate_schema_checkbox = wx.CheckBox(self, label='Validate JSON schema')
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label='Ignore forced actions')
+        self.auto_send_checkbox = wx.CheckBox(self, label='Automatically answer forced actions')
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.context_dialog_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
         self.context_dialog_checkbox.SetValue(True)
         self.validate_schema_checkbox.SetValue(True)
         self.ignore_actions_force_checkbox.SetValue(False)
+        self.auto_send_checkbox.SetValue(False)
             
 class ActionPanel(wx.Panel):
     '''The panel for an action.'''

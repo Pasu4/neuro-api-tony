@@ -1,8 +1,10 @@
+import random
 import jsonschema._utils
 import jsonschema.benchmarks
 import jsonschema.exceptions
 import jsonschema.tests
 import wx
+from jsf import JSF
 
 from .model import HumanModel, NeuroAction
 from .view import HumanView
@@ -92,8 +94,20 @@ class HumanController:
 
         self.view.log('actions/force command received.')
 
-        # self.view.force_actions(cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names)
-        wx.CallAfter(self.view.force_actions, cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names)
+        if self.view.is_auto_send_checked():
+            self.view.log('Automatically sending random action.')
+            actions = [action for action in self.model.actions if action.name in cmd.action_names]
+            action = random.choice(actions)
+
+            if action.schema is None:
+                self.send_action(next(self.id_generator), action.name, None)
+            else:
+                faker = JSF(action.schema)
+                sample = faker.generate()
+                self.send_action(next(self.id_generator), action.name, json.dumps(sample))
+                
+        else:
+            wx.CallAfter(self.view.force_actions, cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names)
 
     def on_action_result(self, cmd: ActionResultCommand):
         '''Handle the action/result command.'''
