@@ -44,7 +44,12 @@ class HumanView:
         self.action_dialog: Optional[ActionDialog] = None
         self.actions_force_dialog: Optional[ActionsForceDialog] = None
 
+        # Dependency injection
         self.on_execute: Callable[[NeuroAction], None] = lambda action: None
+        self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
+        self.on_send_shutdown_graceful: Callable[[], None] = lambda: None
+        self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
+        self.on_send_shutdown_immediate: Callable[[], None] = lambda: None
 
     def show(self):
         '''Show the main frame.'''
@@ -56,10 +61,10 @@ class HumanView:
 
         self.frame.panel.log_panel.log(message)
 
-    def is_context_dialog_checked(self) -> bool:
-        '''Return whether to show a dialog for context messages.'''
+    # def is_focus_on_receive_checked(self) -> bool:
+    #     '''Return whether to focus when a command is received.'''
 
-        return self.frame.panel.control_panel.context_dialog_checkbox.GetValue()
+    #     return self.frame.panel.control_panel.focus_on_receive_checkbox.GetValue()
     
     def is_validate_schema_checked(self) -> bool:
         '''Return whether to validate JSON schema.'''
@@ -75,11 +80,6 @@ class HumanView:
         '''Return whether to automatically answer forced actions.'''
 
         return self.frame.panel.control_panel.auto_send_checkbox.GetValue()
-    
-    def show_context_dialog(self, message: str) -> None:
-        '''Show a dialog for a context message.'''
-
-        wx.MessageBox(message, 'Context', wx.OK | wx.ICON_INFORMATION)
 
     def show_action_dialog(self, action: NeuroAction) -> Optional[str]:
         '''Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None.'''
@@ -138,6 +138,11 @@ class HumanView:
         actions = [action for action in self.model.actions if action.name in action_names]
         self.actions_force_dialog = ActionsForceDialog(self.frame, self, state, query, ephemeral_context, actions)
         self.actions_force_dialog.ShowModal()
+
+    # def focus(self):
+    #     '''Focus the main frame.'''
+
+    #     self.frame.Raise()
 
     def on_action_result(self, success: bool, message: str | None):
         '''
@@ -247,22 +252,59 @@ class ControlPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
-        self.context_dialog_checkbox = wx.CheckBox(self, label='Show a dialog for context messages')
+        # self.focus_on_receive_checkbox = wx.CheckBox(self, label='Focus when a command is received')
         self.validate_schema_checkbox = wx.CheckBox(self, label='Validate JSON schema')
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label='Ignore forced actions')
         self.auto_send_checkbox = wx.CheckBox(self, label='Automatically answer forced actions')
+        self.send_actions_reregister_all_button = wx.Button(self, label='Request re-registration of all actions')
+        self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown')
+        self.send_shutdown_graceful_cancel_button = wx.Button(self, label='Cancel graceful shutdown')
+        self.send_shutdown_immidiate_button = wx.Button(self, label='Request immediate shutdown')
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.context_dialog_checkbox, 0, wx.EXPAND | wx.ALL, 2)
+        # self.sizer.Add(self.focus_on_receive_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.send_shutdown_immidiate_button, 0, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
-        self.context_dialog_checkbox.SetValue(True)
+        self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
+        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
+        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
+        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_immediate, self.send_shutdown_immidiate_button)
+
+        # self.focus_on_receive_checkbox.SetValue(True)
         self.validate_schema_checkbox.SetValue(True)
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
+
+    def on_send_actions_reregister_all(self, event: wx.CommandEvent):
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_send_actions_reregister_all()
+
+    def on_send_shutdown_graceful(self, event: wx.CommandEvent):
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_send_shutdown_graceful()
+
+    def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent):
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_send_shutdown_graceful_cancel()
+
+    def on_send_shutdown_immediate(self, event: wx.CommandEvent):
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_send_shutdown_immediate()
             
 class ActionPanel(wx.Panel):
     '''The panel for an action.'''

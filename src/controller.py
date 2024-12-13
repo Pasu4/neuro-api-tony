@@ -50,6 +50,16 @@ class HumanController:
         self.api.log = self.view.log
 
         self.view.on_execute = self.on_view_execute
+        self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
+        self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
+        self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
+        self.view.on_send_shutdown_immediate = self.on_view_send_shutdown_immediate
+
+    def on_any_command(self, cmd: Any):
+        '''Callback for any command received from the API.'''
+
+        # if self.view.is_focus_on_receive_checked():
+        #     self.view.focus()
 
     def on_startup(self, cmd: StartupCommand):
         '''Handle the startup command.'''
@@ -59,11 +69,7 @@ class HumanController:
     def on_context(self, cmd: ContextCommand):
         '''Handle the context command.'''
 
-        if self.view.is_context_dialog_checked():
-            self.view.log('context command received: ' + cmd.message)
-            self.view.show_context_dialog(cmd.message)
-        else:
-            self.view.log('context command received: ' + cmd.message)
+        self.view.log('context command received: ' + cmd.message)
 
     def on_actions_register(self, cmd: ActionsRegisterCommand):
         '''Handle the actions/register command.'''
@@ -153,3 +159,26 @@ class HumanController:
             return # User cancelled the dialog
         
         self.send_action(next(self.id_generator), action.name, result)
+
+    def on_view_send_actions_reregister_all(self):
+        '''Handle a request to send an actions/reregister_all command from the view.'''
+
+        self.send_actions_reregister_all()
+
+    def on_view_send_shutdown_graceful(self):
+        '''Handle a request to send a shutdown/graceful command with wants_shutdown=true from the view.'''
+
+        self.view.log('Sending shutdown/graceful command.')
+        self.api.send_shutdown_graceful(True)
+
+    def on_view_send_shutdown_graceful_cancel(self):
+        '''Handle a request to send a shutdown/graceful with wants_shutdown=false command from the view.'''
+
+        self.view.log('Sending shutdown/graceful command.')
+        self.api.send_shutdown_graceful(False)
+
+    def on_view_send_shutdown_immediate(self):
+        '''Handle a request to send a shutdown/immediate command from the view.'''
+
+        self.view.log('Sending shutdown/immediate command.')
+        self.api.send_shutdown_immediate()

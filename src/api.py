@@ -11,6 +11,11 @@ from websockets.asyncio.server import serve
 class NeuroAPI:
 
     def __init__(self):
+        self.thread = None
+
+        self.message_queue = asyncio.Queue()
+
+        # Dependency injection
         self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
         self.on_context: Callable[[ContextCommand], None] = lambda cmd: None
         self.on_actions_register: Callable[[ActionsRegisterCommand], None] = lambda cmd: None
@@ -20,10 +25,6 @@ class NeuroAPI:
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
         self.log: Callable[[str], None] = lambda message: None
-
-        self.thread = None
-
-        self.message_queue = asyncio.Queue()
 
     def start(self):
         '''Start the websocket thread.'''
