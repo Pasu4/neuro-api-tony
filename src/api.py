@@ -25,6 +25,7 @@ class NeuroAPI:
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
         self.log: Callable[[str], None] = lambda message: None
+        self.log_network: Callable[[str, bool], None] = lambda message: None
 
     def start(self):
         '''Start the websocket thread.'''
@@ -60,6 +61,8 @@ class NeuroAPI:
             try:
                 json_cmd = json.loads(message)
                 data = json_cmd.get('data', {})
+
+                self.log_network(json.dumps(json_cmd, indent=2), True)
 
                 match json_cmd['command']:
                     case 'startup' | 'game/startup':
@@ -97,6 +100,11 @@ class NeuroAPI:
 
             message = await self.message_queue.get()
             await websocket.send(message)
+
+            try:
+                self.log_network(json.dumps(json.loads(message), indent=2), False)
+            except:
+                self.log_network(message, False)
 
     def send_action(self, id: str, name: str, data: str | None):
         '''Send an action command.'''

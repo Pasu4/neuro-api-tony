@@ -20,6 +20,11 @@ class HumanModel:
         
         self.actions = [action for action in self.actions if action.name != name]
 
+    def clear_actions(self):
+        '''Clear all actions from the list.'''
+        
+        self.actions.clear()
+
 class NeuroAction:
     
     def __init__(self, name: str, description: str, schema: Optional[dict[str, Any]]):

@@ -32,6 +32,10 @@ class ActionResultEvent(wx.PyCommandEvent):
 
 #endregion
 
+LOG_COLOR_DEFAULT = wx.Colour(0, 0, 0)
+LOG_COLOR_CONTEXT_SILENT = wx.Colour(128, 128, 128)
+LOG_COLOR_TIMESTAMP = wx.Colour(0, 128, 0)
+
 class HumanView:
     '''The view class for the Human Control application.'''
 
@@ -59,7 +63,23 @@ class HumanView:
     def log(self, message: str):
         '''Log a message.'''
 
-        self.frame.panel.log_panel.log(message)
+        self.frame.panel.log_notebook.log_panel.log(message)
+
+    def log_error(self, message: str):
+        '''Log an error message.'''
+
+        self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 0, 0))
+
+    def log_context(self, message: str, silent: bool = False):
+        '''Log a context message.'''
+
+        self.frame.panel.log_notebook.context_log_panel.log(message, LOG_COLOR_CONTEXT_SILENT if silent else LOG_COLOR_DEFAULT)
+
+    def log_network(self, message: str, incoming: bool):
+        '''Log a network message.'''
+
+        prefix = 'Game --> Neuro' if incoming else 'Game <-- Neuro'
+        self.frame.panel.log_notebook.network_log_panel.log(f'{prefix}\n{message}')
 
     # def is_focus_on_receive_checked(self) -> bool:
     #     '''Return whether to focus when a command is received.'''
@@ -137,7 +157,16 @@ class HumanView:
 
         actions = [action for action in self.model.actions if action.name in action_names]
         self.actions_force_dialog = ActionsForceDialog(self.frame, self, state, query, ephemeral_context, actions)
-        self.actions_force_dialog.ShowModal()
+        result = self.actions_force_dialog.ShowModal()
+        self.actions_force_dialog = None
+
+        if result != wx.ID_OK:
+            self.log('Manually ignored forced action.')
+
+    def clear_actions(self):
+        '''Clear the list of actions.'''
+
+        self.frame.panel.action_list_panel.clear()
 
     # def focus(self):
     #     '''Focus the main frame.'''
@@ -154,7 +183,6 @@ class HumanView:
         if success and self.actions_force_dialog is not None:
             # Must be retried if unsuccessful
             self.actions_force_dialog.EndModal(wx.ID_OK)
-            self.actions_force_dialog = None
 
         self.enable_actions()
 
@@ -177,11 +205,11 @@ class MainPanel(wx.Panel):
 
         self.action_list_panel = ActionListPanel(self)
         right_panel = wx.Panel(self)
-        self.log_panel = LogPanel(right_panel)
+        self.log_notebook = LogNotebook(right_panel)
         self.control_panel = ControlPanel(right_panel)
 
         right_panel_sizer = wx.BoxSizer(wx.VERTICAL)
-        right_panel_sizer.Add(self.log_panel, 1, wx.EXPAND | wx.ALL, 5)
+        right_panel_sizer.Add(self.log_notebook, 1, wx.EXPAND | wx.ALL, 5)
         right_panel_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.ALL, 5)
         right_panel.SetSizer(right_panel_sizer)
 
@@ -230,20 +258,46 @@ class ActionListPanel(wx.Panel):
                 return ap
         
         return None
-            
+    
+    def clear(self):
+        '''Clear the list of actions.'''
+
+        aps = self.action_panels[:] # Copy to avoid modifying the list while iterating
+
+        for ap in aps:
+            self.remove_action_panel(ap)
+    
+class LogNotebook(wx.Notebook):
+    '''The notebook for logging messages.'''
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.log_panel = LogPanel(self)
+        self.context_log_panel = LogPanel(self)
+        self.network_log_panel = LogPanel(self)
+
+        self.AddPage(self.log_panel, 'Log')
+        self.AddPage(self.context_log_panel, 'Context')
+        self.AddPage(self.network_log_panel, 'Network')
+
 class LogPanel(wx.Panel):
     '''The panel for logging messages.'''
 
     def __init__(self, parent):
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
-        self.text = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        self.text = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.text, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
 
-    def log(self, message: str):
-        self.text.AppendText(f'[{dt.now().strftime("%X")}] {message}\n')
+    def log(self, message: str, color = LOG_COLOR_DEFAULT):
+        self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
+        self.text.AppendText(f'[{dt.now().strftime("%X")}] ')
+        
+        self.text.SetDefaultStyle(wx.TextAttr(color))
+        self.text.AppendText(f'{message}\n')
 
 class ControlPanel(wx.Panel):
     '''The panel for controlling the application.'''
@@ -255,10 +309,10 @@ class ControlPanel(wx.Panel):
         self.validate_schema_checkbox = wx.CheckBox(self, label='Validate JSON schema')
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label='Ignore forced actions')
         self.auto_send_checkbox = wx.CheckBox(self, label='Automatically answer forced actions')
-        self.send_actions_reregister_all_button = wx.Button(self, label='Request re-registration of all actions')
-        self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown')
-        self.send_shutdown_graceful_cancel_button = wx.Button(self, label='Cancel graceful shutdown')
-        self.send_shutdown_immidiate_button = wx.Button(self, label='Request immediate shutdown')
+        self.send_actions_reregister_all_button = wx.Button(self, label='Clear all actions and request reregistration (proposed)')
+        self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown (proposed)')
+        self.send_shutdown_graceful_cancel_button = wx.Button(self, label='Cancel graceful shutdown (proposed)')
+        self.send_shutdown_immidiate_button = wx.Button(self, label='Request immediate shutdown (proposed)')
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         # self.sizer.Add(self.focus_on_receive_checkbox, 0, wx.EXPAND | wx.ALL, 2)
@@ -398,7 +452,7 @@ class ActionDialog(wx.Dialog):
 class ActionsForceDialog(wx.Dialog):
 
     def __init__(self, parent, view: HumanView, state: str, query: str, ephemeral_context: bool, actions: list[NeuroAction]):
-        super().__init__(parent, title='Forced Action', style=wx.DEFAULT_DIALOG_STYLE & ~wx.CLOSE_BOX | wx.RESIZE_BORDER)
+        super().__init__(parent, title='Forced Action', style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         self.view = view
         self.state = state

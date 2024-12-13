@@ -48,6 +48,7 @@ class HumanController:
         self.api.on_shutdown_ready = self.on_shutdown_ready
         self.api.on_unknown_command = self.on_unknown_command
         self.api.log = self.view.log
+        self.api.log_network = self.view.log_network
 
         self.view.on_execute = self.on_view_execute
         self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
@@ -65,11 +66,14 @@ class HumanController:
         '''Handle the startup command.'''
 
         self.view.log('startup command received.')
+        self.model.clear_actions()
+        self.view.clear_actions()
     
     def on_context(self, cmd: ContextCommand):
         '''Handle the context command.'''
 
-        self.view.log('context command received: ' + cmd.message)
+        self.view.log('context command received.')
+        self.view.log_context(cmd.message, cmd.silent)
 
     def on_actions_register(self, cmd: ActionsRegisterCommand):
         '''Handle the actions/register command.'''
@@ -93,6 +97,9 @@ class HumanController:
 
     def on_actions_force(self, cmd: ActionsForceCommand):
         '''Handle the actions/force command.'''
+
+        self.view.log_context('state: ' + cmd.state, cmd.ephemeral_context)
+        self.view.log_context('query: ' + cmd.query, cmd.ephemeral_context)
 
         if self.view.is_ignore_actions_force_checked():
             self.view.log('actions/force command received, but ignored.')
@@ -119,7 +126,9 @@ class HumanController:
         '''Handle the action/result command.'''
 
         self.view.log('action/result command received: ' + ('success' if cmd.success else 'failure'))
-        self.view.log('Message: ' + (cmd.message if cmd.message is not None else 'None'))
+        
+        if cmd.success:
+            self.view.log_context(cmd.message)
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 
@@ -131,7 +140,7 @@ class HumanController:
     def on_unknown_command(self, json_cmd: Any):
         '''Handle an unknown command.'''
 
-        self.view.log(f'Unknown command received: {json_cmd['command']}')
+        self.view.log_error(f'Unknown command received: {json_cmd['command']}')
 
     def send_action(self, id: str, name: str, data: str | None):
         '''Send an action command to the API.'''
@@ -164,6 +173,8 @@ class HumanController:
     def on_view_send_actions_reregister_all(self):
         '''Handle a request to send an actions/reregister_all command from the view.'''
 
+        self.model.clear_actions()
+        wx.CallAfter(self.view.clear_actions)
         self.send_actions_reregister_all()
 
     def on_view_send_shutdown_graceful(self):
