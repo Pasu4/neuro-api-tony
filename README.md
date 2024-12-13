@@ -34,6 +34,10 @@ The right panel shows an event log, below that is a smaller panel with some cont
 After sending an `action` command to the game, the next action can only be sent after the `action/result` command has been received.
 When the game sends an `actions/force` command, a window will open that only shows the applicable actions, and will only close once the `action/result` command indicates success.
 
+Like Randy, this application opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`).
+
+## Screenshots
+
 ![Image of the application](image.png)
 
-Like Randy, this application opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`).
+![Another image of the application](image-1.png)
