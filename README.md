@@ -37,7 +37,3 @@ When the game sends an `actions/force` command, a window will open that only sho
 ![Image of the application](image.png)
 
 Like Randy, this application opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`).
-
-> [!Note]
-> For some reason, the Unity SDK sometimes takes a bit to receive the `action` command after an `actions/force` command, but so far, every command has arrived eventually.
-> This doesn't seem to be my fault, as it only happens if the `action` is not sent immediately.

@@ -91,6 +91,10 @@ class NeuroAPI:
 
     async def __handle_producer(self, websocket):
         while True:
+            if self.message_queue.empty():
+                await asyncio.sleep(0.1)
+                continue
+
             message = await self.message_queue.get()
             await websocket.send(message)
 
