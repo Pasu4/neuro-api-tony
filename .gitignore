@@ -1,2 +1,5 @@
-/.venv
 /test-log.txt
+
+# Python
+/.venv
+__pycache__
