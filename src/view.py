@@ -151,11 +151,10 @@ class HumanView:
         Enables all action buttons.
         '''
 
-        if self.actions_force_dialog is not None:
-            self.actions_force_dialog.show_result(success, message)
-            if success: # Must be retried if unsuccessful
-                self.actions_force_dialog.EndModal(wx.ID_OK)
-                self.actions_force_dialog = None
+        if success and self.actions_force_dialog is not None:
+            # Must be retried if unsuccessful
+            self.actions_force_dialog.EndModal(wx.ID_OK)
+            self.actions_force_dialog = None
 
         self.enable_actions()
 

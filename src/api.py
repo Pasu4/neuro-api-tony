@@ -59,7 +59,7 @@ class NeuroAPI:
         async for message in websocket:
             try:
                 json_cmd = json.loads(message)
-                data = json_cmd['data']
+                data = json_cmd.get('data', {})
 
                 match json_cmd['command']:
                     case 'startup' | 'game/startup':

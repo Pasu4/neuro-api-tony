@@ -118,7 +118,8 @@ class HumanController:
     def on_action_result(self, cmd: ActionResultCommand):
         '''Handle the action/result command.'''
 
-        self.view.log('action/result command received.')
+        self.view.log('action/result command received: ' + ('success' if cmd.success else 'failure'))
+        self.view.log('Message: ' + (cmd.message if cmd.message is not None else 'None'))
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 
