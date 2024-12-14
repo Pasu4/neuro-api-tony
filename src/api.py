@@ -184,6 +184,8 @@ class NeuroAPI:
             'command': 'actions/reregister_all'
         })
 
+        self.message_queue.put_nowait(message)
+
     def send_shutdown_graceful(self, wants_shutdown: bool):
         '''Send a shutdown/graceful command.'''
 
