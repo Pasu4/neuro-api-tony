@@ -18,6 +18,7 @@ class NeuroAPI:
 
         self.message_queue = asyncio.Queue()
         self.current_game = ''
+        self.waiting_for_action_result = False
 
         # Dependency injection
         self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
@@ -84,6 +85,10 @@ class NeuroAPI:
                 elif self.current_game == '':
                     self.log_warning('Warning: No startup command received.')
 
+                # Check action result when waiting for it
+                if self.waiting_for_action_result and json_cmd['command'] != 'action/result':
+                    self.log_warning(f'Warning: Expected action/result, but received "{json_cmd["command"]}".')
+
                 # Handle the command
                 match json_cmd['command']:
                     case 'startup' | 'game/startup':
@@ -124,6 +129,10 @@ class NeuroAPI:
                         self.on_actions_force(ActionsForceCommand(data['state'], data['query'], data.get('ephemeral_context', False), data['action_names']))
                     
                     case 'action/result':
+                        if not self.waiting_for_action_result:
+                            self.log_warning('Warning: Unexpected action/result.')
+                            
+                        self.waiting_for_action_result = False
                         self.on_action_result(ActionResultCommand(data['success'], data.get('message', None)))
 
                     case 'shutdown/ready':
@@ -166,6 +175,7 @@ class NeuroAPI:
         message = json.dumps(obj)
 
         self.message_queue.put_nowait(message)
+        self.waiting_for_action_result = True
 
     def send_actions_reregister_all(self):
         '''Send an actions/reregister_all command.'''
