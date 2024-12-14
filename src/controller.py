@@ -87,9 +87,8 @@ class HumanController:
 
             # Check if an action with the same name already exists
             if self.model.has_action(action.name):
-                self.view.log_warning(f'Warning: Action "{action.name}" already exists. Overwriting.')
-                self.model.remove_action_by_name(action.name)
-                self.view.remove_action_by_name(action.name)
+                self.view.log_warning(f'Error: Action "{action.name}" already exists. Ignoring.')
+                continue
             
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
