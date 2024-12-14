@@ -65,6 +65,15 @@ class HumanView:
 
         self.frame.panel.log_notebook.log_panel.log(message)
 
+    def log_info(self, message: str):
+        '''Log an informational message.'''
+
+        self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(128, 192, 255))
+
+    def log_warning(self, message: str):
+
+        self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 192, 0))
+
     def log_error(self, message: str):
         '''Log an error message.'''
 
@@ -275,7 +284,7 @@ class LogNotebook(wx.Notebook):
 
         self.log_panel = LogPanel(self)
         self.context_log_panel = LogPanel(self)
-        self.network_log_panel = LogPanel(self)
+        self.network_log_panel = LogPanel(self, text_ctrl_style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.HSCROLL)
 
         self.AddPage(self.log_panel, 'Log')
         self.AddPage(self.context_log_panel, 'Context')
@@ -284,10 +293,10 @@ class LogNotebook(wx.Notebook):
 class LogPanel(wx.Panel):
     '''The panel for logging messages.'''
 
-    def __init__(self, parent):
+    def __init__(self, parent, text_ctrl_style = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH):
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
-        self.text = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
+        self.text = wx.TextCtrl(self, style=text_ctrl_style)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.text, 1, wx.EXPAND)
         self.SetSizer(self.sizer)

@@ -3,10 +3,13 @@ from threading import Thread
 from typing import Any, Callable
 
 import jsonschema
+import jsonschema.exceptions
 from .model import NeuroAction
 import json
 
 from websockets.asyncio.server import serve
+
+ACTION_NAME_ALLOWED_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789_-'
 
 class NeuroAPI:
 
@@ -14,6 +17,7 @@ class NeuroAPI:
         self.thread = None
 
         self.message_queue = asyncio.Queue()
+        self.current_game = ''
 
         # Dependency injection
         self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
@@ -25,6 +29,9 @@ class NeuroAPI:
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
         self.log: Callable[[str], None] = lambda message: None
+        self.log_info: Callable[[str], None] = lambda message: None
+        self.log_warning: Callable[[str], None] = lambda message: None
+        self.log_error: Callable[[str], None] = lambda message: None
         self.log_network: Callable[[str, bool], None] = lambda message: None
 
     def start(self):
@@ -60,18 +67,54 @@ class NeuroAPI:
         async for message in websocket:
             try:
                 json_cmd = json.loads(message)
-                data = json_cmd.get('data', {})
-
                 self.log_network(json.dumps(json_cmd, indent=2), True)
 
+                game = json_cmd.get('game', {})
+                data = json_cmd.get('data', {})
+
+                if game == '' or not isinstance(game, str):
+                    self.log_error('Error: Game name is not set.')
+                    continue
+
+                # Check game name
+                if json_cmd['command'] == 'startup' or json_cmd['command'] == 'game/startup':
+                    self.current_game = game
+                elif self.current_game != game:
+                    self.log_warning('Warning: Game name does not match the current game.')
+                elif self.current_game == '':
+                    self.log_warning('Warning: No startup command received.')
+
+                # Handle the command
                 match json_cmd['command']:
                     case 'startup' | 'game/startup':
                         self.on_startup(StartupCommand())
+
+                        if json_cmd['command'] == 'game/startup':
+                            self.log_warning('Warning: "game/startup" command is deprecated. Use "startup" instead.')
 
                     case 'context':
                         self.on_context(ContextCommand(data['message'], data['silent']))
 
                     case 'actions/register':
+
+                        # Check the actions
+                        for action in data['actions']:
+                            # Check the schema
+                            if 'schema' in action:
+                                try:
+                                    jsonschema.Draft7Validator.check_schema(action['schema'])
+                                except jsonschema.exceptions.SchemaError as e:
+                                    self.log_error(f'Error: Invalid schema for action "{action["name"]}": {e}')
+                                    continue
+
+                            # Check the name
+                            if not isinstance(action['name'], str):
+                                self.log_error(f'Error: Action name is not a string: {action["name"]}')
+                                continue
+
+                            if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action['name']):
+                                self.log_warning(f'Warning: Action name is not a lowercase string.')
+                            
                         self.on_actions_register(ActionsRegisterCommand(data['actions']))
                     
                     case 'actions/unregister':
@@ -90,7 +133,7 @@ class NeuroAPI:
                         self.on_unknown_command(json_cmd)
 
             except Exception as e:
-                self.log(f'Error: {e}\nWhile handling message:\n{message}')
+                self.log(f'Error while handling message: {e}')
 
     async def __handle_producer(self, websocket):
         while True:

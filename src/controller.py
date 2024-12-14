@@ -48,6 +48,9 @@ class HumanController:
         self.api.on_shutdown_ready = self.on_shutdown_ready
         self.api.on_unknown_command = self.on_unknown_command
         self.api.log = self.view.log
+        self.api.log_info = self.view.log_info
+        self.api.log_warning = self.view.log_warning
+        self.api.log_error = self.view.log_error
         self.api.log_network = self.view.log_network
 
         self.view.on_execute = self.on_view_execute
@@ -81,6 +84,13 @@ class HumanController:
         self.view.log('actions/register command received.')
 
         for action in cmd.actions:
+
+            # Check if an action with the same name already exists
+            if self.model.has_action(action.name):
+                self.view.log_warning(f'Warning: Action "{action.name}" already exists. Overwriting.')
+                self.model.remove_action_by_name(action.name)
+                self.view.remove_action_by_name(action.name)
+            
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
             self.view.log(f'Action registered: {action.name}')
@@ -91,6 +101,9 @@ class HumanController:
         self.view.log('actions/unregister command received.')
 
         for name in cmd.action_names:
+            if not self.model.has_action(name):
+                self.view.log_info(f'Info: Action "{name}" does not exist.')
+
             self.model.remove_action_by_name(name)
             self.view.remove_action_by_name(name)
             self.view.log(f'Action unregistered: {name}')
@@ -127,8 +140,9 @@ class HumanController:
 
         self.view.log('action/result command received: ' + ('success' if cmd.success else 'failure'))
         
-        if cmd.success:
-            self.view.log_context(cmd.message)
+        if cmd.message is not None:
+            s = 'success' if cmd.success else 'failure'
+            self.view.log_context(f'Action {s}: {cmd.message}')
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 
@@ -136,11 +150,12 @@ class HumanController:
         '''Handle the shutdown/ready command.'''
 
         self.view.log('shutdown/ready command received.')
+        self.view.log_warning('Warning: This command is not in the official API specification.')
 
     def on_unknown_command(self, json_cmd: Any):
         '''Handle an unknown command.'''
 
-        self.view.log_error(f'Unknown command received: {json_cmd['command']}')
+        self.view.log_warning(f'Warning: Unknown command received: {json_cmd['command']}')
 
     def send_action(self, id: str, name: str, data: str | None):
         '''Send an action command to the API.'''
@@ -154,6 +169,7 @@ class HumanController:
         '''Send an actions/reregister_all command to the API.'''
 
         self.view.log('Sending actions/reregister_all command.')
+        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_actions_reregister_all()
 
     def on_view_execute(self, action: NeuroAction):
@@ -181,16 +197,19 @@ class HumanController:
         '''Handle a request to send a shutdown/graceful command with wants_shutdown=true from the view.'''
 
         self.view.log('Sending shutdown/graceful command.')
+        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_shutdown_graceful(True)
 
     def on_view_send_shutdown_graceful_cancel(self):
         '''Handle a request to send a shutdown/graceful with wants_shutdown=false command from the view.'''
 
         self.view.log('Sending shutdown/graceful command.')
+        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_shutdown_graceful(False)
 
     def on_view_send_shutdown_immediate(self):
         '''Handle a request to send a shutdown/immediate command from the view.'''
 
         self.view.log('Sending shutdown/immediate command.')
+        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_shutdown_immediate()

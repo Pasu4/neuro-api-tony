@@ -25,6 +25,11 @@ class HumanModel:
         
         self.actions.clear()
 
+    def has_action(self, name: str) -> bool:
+        '''Check if an action exists in the list.'''
+        
+        return any(action.name == name for action in self.actions)
+
 class NeuroAction:
     
     def __init__(self, name: str, description: str, schema: Optional[dict[str, Any]]):
