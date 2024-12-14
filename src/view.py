@@ -79,10 +79,15 @@ class HumanView:
 
         self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 0, 0))
 
-    def log_context(self, message: str, silent: bool = False):
+    def log_context(self, message: str, silent: bool = False, ephemeral: bool = False):
         '''Log a context message.'''
 
-        self.frame.panel.log_notebook.context_log_panel.log(message, LOG_COLOR_CONTEXT_SILENT if silent else LOG_COLOR_DEFAULT)
+        color = wx.Colour(
+            128 if (silent or ephemeral) else 0,
+            128 if silent else 192 if ephemeral else 0,
+            128 if silent else 255 if ephemeral else 0,
+        )
+        self.frame.panel.log_notebook.context_log_panel.log(message, color)
 
     def log_network(self, message: str, incoming: bool):
         '''Log a network message.'''

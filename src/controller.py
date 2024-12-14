@@ -76,7 +76,7 @@ class HumanController:
         '''Handle the context command.'''
 
         self.view.log('context command received.')
-        self.view.log_context(cmd.message, cmd.silent)
+        self.view.log_context(cmd.message, silent=cmd.silent)
 
     def on_actions_register(self, cmd: ActionsRegisterCommand):
         '''Handle the actions/register command.'''
@@ -111,8 +111,9 @@ class HumanController:
     def on_actions_force(self, cmd: ActionsForceCommand):
         '''Handle the actions/force command.'''
 
-        self.view.log_context('state: ' + cmd.state, cmd.ephemeral_context)
-        self.view.log_context('query: ' + cmd.query, cmd.ephemeral_context)
+        if cmd.state is not None and cmd.state != '':
+            self.view.log_context(cmd.state, ephemeral=cmd.ephemeral_context)
+        self.view.log_context(cmd.query, ephemeral=cmd.ephemeral_context)
 
         if self.view.is_ignore_actions_force_checked():
             self.view.log('actions/force command received, but ignored.')
@@ -141,8 +142,7 @@ class HumanController:
         self.view.log('action/result command received: ' + ('success' if cmd.success else 'failure'))
         
         if cmd.message is not None:
-            s = 'success' if cmd.success else 'failure'
-            self.view.log_context(f'Action {s}: {cmd.message}')
+            self.view.log_context(cmd.message)
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 

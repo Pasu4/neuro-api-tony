@@ -66,8 +66,8 @@ You can also close the window manually, this will ignore the forced action and a
 
 The log panel on the top right has three different tabs:
 
-- The **log tab** logs all commands that are received and sent, without showing their content. It also shows error messages and warnings in red.
-- The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent and ephemeral contexts are diplayed in gray.
+- The **log tab** logs all commands that are received and sent, without showing their content. It also shows color-coded error, warning and info messages.
+- The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are diplayed in gray and ephemeral contexts in light blue.
 - The **network tab** shows the full data sent over the websocket, as well as who sent that data. If it is valid JSON, it will be formatted for easier viewing.
 
 ### Control panel
