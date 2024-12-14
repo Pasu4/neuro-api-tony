@@ -60,7 +60,7 @@ By default, your input will be parsed and validated against the schema before se
 If an `actions/force` command is received, a "Forced action" window will open, showing all applicable actions and the query and state of the command.
 Executing actions from here works the same as from the main actions panel.
 Once the game has acknowledged the sent action with an action result, the window will close automatically.
-You can also close the window manually, but note that this will ignore the forced action and not unregister its actions, even after sending an `action` command.
+You can also close the window manually, this will ignore the forced action and allow you to execute any registered action.
 
 ### Logs
 
@@ -77,7 +77,7 @@ The log panel on the top right has three different tabs:
 The control panel has some checkboxes and buttons that change the behavior of the application.
 
 - **Validate JSON schema:** If checked, will not allow you to send a message that does not validate against the schema.
-- **Ignore forced actions:** If checked, will not open the "Forced action" dialog when an `actions/force` command is received. You have to execute the action yourself from the left panel. Since the forced action is ignored, you can execute any registered action, and the actions will not be unregistered automatically.
+- **Ignore forced actions:** If checked, will not open the "Forced action" dialog when an `actions/force` command is received. You have to execute the action yourself from the left panel. Since the forced action is ignored, you can execute any registered action.
 - **Automatically answer forced actions**: If checked, will immediately send the pre-generated JSON of a random valid action instead of opening the "Forced action" window when an `actions/force` command arrives. This behavior is similar to what Randy does.
 
 #### Experimental controls
