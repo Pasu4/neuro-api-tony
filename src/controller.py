@@ -113,10 +113,18 @@ class HumanController:
 
         if cmd.state is not None and cmd.state != '':
             self.view.log_context(cmd.state, ephemeral=cmd.ephemeral_context)
+        else:
+            self.view.log_info('Info: actions/force command contains no state.')
+
         self.view.log_context(cmd.query, ephemeral=cmd.ephemeral_context)
 
         if self.view.is_ignore_actions_force_checked():
             self.view.log('actions/force command received, but ignored.')
+            return
+        
+        # Check if all actions exist
+        if not all(self.model.has_action(name) for name in cmd.action_names):
+            self.view.log_warning('Warning: Not all actions exist. Discarding.')
             return
 
         self.view.log('actions/force command received.')
@@ -143,6 +151,10 @@ class HumanController:
         
         if cmd.message is not None:
             self.view.log_context(cmd.message)
+        elif cmd.success:
+            self.view.log_info('Info: Successful action result contains no message.')
+        else:
+            self.view.log_warning('Warning: Failed action result contains no message.')
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 

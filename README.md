@@ -66,8 +66,11 @@ You can also close the window manually, this will ignore the forced action and a
 
 The log panel on the top right has three different tabs:
 
-- The **log tab** logs all commands that are received and sent, without showing their content. It also shows color-coded error, warning and info messages.
-- The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are diplayed in gray and ephemeral contexts in light blue.
+- The **log tab** logs all commands that are received and sent, without showing their content. It also shows color-coded error, warning and info messages. It has multiple log levels for these:
+    - **Info (blue):** Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).
+    - **Warning (yellow):** Things that do not comply with the API specification, but which this application can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.
+    - **Error (red):** Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.
+- The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the description of actions, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are diplayed in gray and ephemeral contexts in light blue.
 - The **network tab** shows the full data sent over the websocket, as well as who sent that data. If it is valid JSON, it will be formatted for easier viewing.
 
 ### Control panel

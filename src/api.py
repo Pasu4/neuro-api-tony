@@ -144,7 +144,7 @@ class NeuroAPI:
                         self.on_unknown_command(json_cmd)
 
             except Exception as e:
-                self.log(f'Error while handling message: {e}')
+                self.log_error(f'Error while handling message: {e}')
 
     async def __handle_producer(self, websocket):
         while True:
