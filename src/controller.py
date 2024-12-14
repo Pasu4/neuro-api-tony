@@ -93,6 +93,7 @@ class HumanController:
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
             self.view.log(f'Action registered: {action.name}')
+            self.view.log_context(f'{action.name}: {action.description}')
 
     def on_actions_unregister(self, cmd: ActionsUnregisterCommand):
         '''Handle the actions/unregister command.'''
