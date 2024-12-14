@@ -86,12 +86,14 @@ class NeuroAPI:
                     self.log_warning('Warning: No startup command received.')
 
                 # Check action result when waiting for it
-                if self.waiting_for_action_result and json_cmd['command'] != 'action/result':
-                    self.log_warning(f'Warning: Expected action/result, but received "{json_cmd["command"]}".')
+                if self.waiting_for_action_result and json_cmd['command'] == 'actions/force':
+                    self.log_warning(f'Warning: Received actions/forced while waiting for action/result.')
 
                 # Handle the command
                 match json_cmd['command']:
                     case 'startup' | 'game/startup':
+                        self.waiting_for_action_result = False
+
                         self.on_startup(StartupCommand())
 
                         if json_cmd['command'] == 'game/startup':
@@ -131,7 +133,7 @@ class NeuroAPI:
                     case 'action/result':
                         if not self.waiting_for_action_result:
                             self.log_warning('Warning: Unexpected action/result.')
-                            
+
                         self.waiting_for_action_result = False
                         self.on_action_result(ActionResultCommand(data['success'], data.get('message', None)))
 
