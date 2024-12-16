@@ -14,21 +14,32 @@ class HumanModel:
         '''Remove an action from the list.'''
         
         self.actions.remove(action)
+        pass
 
     def remove_action_by_name(self, name: str):
         '''Remove an action from the list by name.'''
         
         self.actions = [action for action in self.actions if action.name != name]
+        pass
 
     def clear_actions(self):
         '''Clear all actions from the list.'''
         
         self.actions.clear()
+        pass
 
     def has_action(self, name: str) -> bool:
         '''Check if an action exists in the list.'''
         
         return any(action.name == name for action in self.actions)
+    
+    def get_action_by_name(self, name: str) -> Optional['NeuroAction']:
+        '''Get an action by name.'''
+        
+        for action in self.actions:
+            if action.name == name:
+                return action
+        return None
 
 class NeuroAction:
     

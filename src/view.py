@@ -50,6 +50,7 @@ class HumanView:
 
         # Dependency injection
         self.on_execute: Callable[[NeuroAction], None] = lambda action: None
+        self.on_delete_action: Callable[[str], None] = lambda name: None
         self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
@@ -71,6 +72,7 @@ class HumanView:
         self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(128, 192, 255))
 
     def log_warning(self, message: str):
+        '''Log a warning message.'''
 
         self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 192, 0))
 
@@ -118,11 +120,14 @@ class HumanView:
     def show_action_dialog(self, action: NeuroAction) -> Optional[str]:
         '''Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None.'''
 
-        dialog = ActionDialog(self.frame, action, self.is_validate_schema_checked())
-        self.action_dialog = dialog
+        self.action_dialog = ActionDialog(self.frame, action, self.is_validate_schema_checked())
+        result = self.action_dialog.ShowModal()
+        text = self.action_dialog.text.GetValue()
+        self.action_dialog.Destroy()
+        self.action_dialog = None
 
-        if dialog.ShowModal() == wx.ID_OK:
-            return dialog.text.GetValue()
+        if result == wx.ID_OK:
+            return text
         else:
             return None
 
@@ -140,23 +145,20 @@ class HumanView:
     def add_action(self, action: NeuroAction):
         '''Add an action to the list.'''
 
-        action_panel = ActionPanel(self.frame.panel.action_list_panel, action)
-        self.frame.panel.action_list_panel.add_action_panel(action_panel)
+        self.frame.panel.action_list.add_action(action)
 
     def remove_action_by_name(self, name: str):
         '''Remove an action from the list by name.'''
 
-        action_panel = self.frame.panel.action_list_panel.find_action_panel_by_name(name)
-        if action_panel is not None:
-            self.frame.panel.action_list_panel.remove_action_panel(action_panel)
+        self.frame.panel.action_list.remove_action_by_name(name)
 
     def enable_actions(self):
         '''Enable all action buttons.'''
 
         if self.actions_force_dialog is not None:
-            self.actions_force_dialog.enable_actions()
+            wx.CallAfter(self.actions_force_dialog.enable_actions)
         
-        self.frame.panel.action_list_panel.Enable()
+        wx.CallAfter(self.frame.panel.action_list.execute_button.Enable)
 
     def disable_actions(self):
         '''Disable all action buttons.'''
@@ -164,7 +166,7 @@ class HumanView:
         if self.actions_force_dialog is not None:
             self.actions_force_dialog.disable_actions()
         
-        self.frame.panel.action_list_panel.Disable()
+        self.frame.panel.action_list.execute_button.Disable()
 
     def force_actions(self, state: str, query: str, ephemeral_context: bool, action_names: list[str]):
         '''Show a dialog for forcing actions.'''
@@ -172,6 +174,7 @@ class HumanView:
         actions = [action for action in self.model.actions if action.name in action_names]
         self.actions_force_dialog = ActionsForceDialog(self.frame, self, state, query, ephemeral_context, actions)
         result = self.actions_force_dialog.ShowModal()
+        self.actions_force_dialog.Destroy()
         self.actions_force_dialog = None
 
         if result != wx.ID_OK:
@@ -180,7 +183,7 @@ class HumanView:
     def clear_actions(self):
         '''Clear the list of actions.'''
 
-        self.frame.panel.action_list_panel.clear()
+        self.frame.panel.action_list.clear()
 
     # def focus(self):
     #     '''Focus the main frame.'''
@@ -209,7 +212,8 @@ class MainFrame(wx.Frame):
         self.view = view
         self.panel = MainPanel(self)
         
-        self.SetInitialSize((800, 600))
+        best_size: wx.Size = self.panel.GetBestSize()
+        self.SetSize((850, 600))
 
 class MainPanel(wx.Panel):
     '''The main panel for the Human Control application.'''
@@ -217,7 +221,7 @@ class MainPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.action_list_panel = ActionListPanel(self)
+        self.action_list = ActionList(self, True)
         right_panel = wx.Panel(self)
         self.log_notebook = LogNotebook(right_panel)
         self.control_panel = ControlPanel(right_panel)
@@ -228,58 +232,90 @@ class MainPanel(wx.Panel):
         right_panel.SetSizer(right_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.action_list_panel, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Add(right_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
             
-class ActionListPanel(wx.Panel):
-    '''The panel for the list of actions.'''
+class ActionList(wx.Panel):
+    '''The list of actions.'''
     
-    def __init__(self, parent):
+    def __init__(self, parent, can_delete: bool):
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
-        self.action_panels: list[ActionPanel] = []
+        self.actions: list[NeuroAction] = []
+
+        self.list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+        button_panel = wx.Panel(self)
+        self.execute_button = wx.Button(button_panel, label='Execute')
+        self.delete_button = wx.Button(button_panel, label='Delete')
+
+        button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_panel_sizer.Add(self.execute_button, 0, wx.EXPAND | wx.ALL, 5)
+        button_panel_sizer.Add(self.delete_button, 0, wx.EXPAND | wx.ALL, 5)
+        button_panel.SetSizer(button_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.list, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(button_panel, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
-    def add_action_panel(self, action_panel: 'ActionPanel'):
+        self.Bind(wx.EVT_BUTTON, self.on_execute, self.execute_button)
+        self.Bind(wx.EVT_BUTTON, self.on_delete, self.delete_button)
+
+        self.list.InsertColumn(0, 'Name', width=150)
+        self.list.InsertColumn(1, 'Description', width=300)
+
+        if not can_delete:
+            self.delete_button.Disable()
+
+    def add_action(self, action: NeuroAction):
         '''Add an action panel to the list.'''
 
-        self.action_panels.append(action_panel)
+        self.actions.append(action)
+        self.list.Append([action.name, action.description])
 
-        self.sizer.Add(action_panel, 0, wx.EXPAND)
-        self.sizer.Layout()
-        # self.Fit()
-
-    def remove_action_panel(self, action_panel: wx.Panel):
+    def remove_action_by_name(self, name: str):
         '''Remove an action panel from the list.'''
 
-        self.action_panels.remove(action_panel)
-        self.sizer.Detach(action_panel)
+        self.actions = [action for action in self.actions if action.name != name]
         
-        action_panel.Hide() # For some reason, the panel is not hidden when removed
-        action_panel.Destroy()
-        self.sizer.Layout()
-
-        # self.Fit()
-
-    def find_action_panel_by_name(self, name: str) -> Optional['ActionPanel']:
-        '''Find an action panel by name.'''
-        
-        for ap in self.action_panels:
-            if ap.action.name == name:
-                return ap
-        
-        return None
+        index = self.list.FindItem(-1, name)
+        if(index != -1):
+            self.list.DeleteItem(index)
+        else:
+            self.GetTopLevelParent().view.log_error(f'Error: Action "{name}" not found in list.')
     
     def clear(self):
         '''Clear the list of actions.'''
 
-        aps = self.action_panels[:] # Copy to avoid modifying the list while iterating
+        self.actions.clear()
+        self.list.DeleteAllItems()
 
-        for ap in aps:
-            self.remove_action_panel(ap)
+    def on_execute(self, event: wx.CommandEvent):
+        event.Skip()
+
+        index = self.list.GetFirstSelected()
+
+        if index == -1:
+            return
+        
+        action = self.actions[index]
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_execute(action)
+
+    def on_delete(self, event: wx.CommandEvent):
+        event.Skip()
+
+        index = self.list.GetFirstSelected()
+
+        if index == -1:
+            return
+        
+        action: NeuroAction = self.actions[index]
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_delete_action(action.name)
     
 class LogNotebook(wx.Notebook):
     '''The notebook for logging messages.'''
@@ -477,18 +513,19 @@ class ActionsForceDialog(wx.Dialog):
         self.state_label = wx.StaticText(self, label=f'State: {state}')
         self.query_label = wx.StaticText(self, label=f'Query: {query}')
         self.ephemeral_context_label = wx.StaticText(self, label=f'Ephemeral Context: {ephemeral_context}')
-        self.action_list_panel = ActionListPanel(self)
+        self.action_list = ActionList(self, False)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.state_label, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.query_label, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ephemeral_context_label, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.action_list_panel, 1, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
         for action in actions:
-            action_panel = ActionPanel(self.action_list_panel, action)
-            self.action_list_panel.add_action_panel(action_panel)
+            self.action_list.add_action(action)
+
+        self.action_list.list.Select(0)
 
     def show_result(self, success: bool, message: str | None):
         '''Show the result of the forced action.'''
@@ -502,10 +539,10 @@ class ActionsForceDialog(wx.Dialog):
     def enable_actions(self):
         '''Enable all action buttons.'''
 
-        self.action_list_panel.Enable()
+        self.action_list.execute_button.Enable()
 
     def disable_actions(self):
         '''Disable all action buttons.'''
 
-        self.action_list_panel.Disable()
+        self.action_list.execute_button.Disable()
     

@@ -54,6 +54,7 @@ class HumanController:
         self.api.log_network = self.view.log_network
 
         self.view.on_execute = self.on_view_execute
+        self.view.on_delete_action = self.on_view_delete_action
         self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
         self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
         self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
@@ -124,7 +125,7 @@ class HumanController:
         
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
-            self.view.log_warning('Warning: Not all actions exist. Discarding.')
+            self.view.log_warning('Warning: actions/force with invalid actions received. Discarding.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
             return
 
         self.view.log('actions/force command received.')
@@ -197,6 +198,14 @@ class HumanController:
             return # User cancelled the dialog
         
         self.send_action(next(self.id_generator), action.name, result)
+
+    def on_view_delete_action(self, name: str):
+        '''Handle a request to delete an action from the view.'''
+
+        self.model.remove_action_by_name(name)
+        self.view.remove_action_by_name(name)
+
+        self.view.log(f'Action deleted: {name}')
 
     def on_view_send_actions_reregister_all(self):
         '''Handle a request to send an actions/reregister_all command from the view.'''
