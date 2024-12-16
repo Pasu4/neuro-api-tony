@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro Game Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/neuro-game-sdk/dist/browser/neuro-game-sdk.min.js"></script>
+    <script src="index.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Neuro Game Test</h1>
+    <form id="user-form">
+        <p>
+            <label for="username">Username</label>
+            <br>
+            <input type="text" id="username" name="username" value="Test User">
+        </p>
+        <p>
+            <label for="user-color">Color</label>
+            <br>
+            <input type="color" id="user-color" name="user-color" value="#000000">
+        </p>
+        <p><input type="submit" value="Connect"></p>
+    </form>
+    <div class="game" id="game" style="display: none;"> <!-- Hide the game div until the game is ready -->
+        <div class="chat">
+            <h2>Chat</h2>
+            <div class="chat-messages-container" id="chat-messages-container">
+                <!-- Chat messages will be placed here via JavaScript -->
+            </div>
+            <form id="chat-form">
+                <input type="text" id="chat-input" name="chat-input" placeholder="Type a message...">
+                <input type="submit" value="Send">
+            </form>
+        </div>
+        <div class="action">
+            <h2>Register action</h2>
+            <form id="action-form">
+                <p>
+                    <label for="action-name">Name</label>
+                    <br>
+                    <input type="text" name="action-name" id="action-name" placeholder="Type a name...">
+                </p>
+                <p>
+                    <label for="action-description">Description</label>
+                    <br>
+                    <input type="text" name="action-description" id="action-description" placeholder="Type a description...">
+                </p>
+                <p>
+                    <label for="action-schema">Schema</label>
+                    <br>
+                    <textarea name="action-schema" id="action-schema" placeholder="Type a schema..."></textarea>
+                </p>
+                <p>
+                    <input type="submit" value="Register">
+                </p>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
