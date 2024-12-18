@@ -7,7 +7,7 @@ import jsonschema.exceptions
 from .model import NeuroAction
 import json
 
-from websockets.asyncio.server import serve
+from websockets.asyncio.server import serve, ServerConnection
 
 ACTION_NAME_ALLOWED_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789_-'
 
@@ -37,6 +37,7 @@ class NeuroAPI:
         self.log_warning: Callable[[str], None] = lambda message: None
         self.log_error: Callable[[str], None] = lambda message: None
         self.log_network: Callable[[str, bool], None] = lambda message: None
+        self.get_delay: Callable[[], float] = lambda: -1
 
     def start(self):
         '''Start the websocket thread.'''
@@ -58,7 +59,7 @@ class NeuroAPI:
             await server.serve_forever()
         
     # http://web.archive.org/web/20190623114747/https://websockets.readthedocs.io/en/stable/intro.html#both
-    async def __handle_message(self, websocket):
+    async def __handle_message(self, websocket: ServerConnection):
         consumer_task = asyncio.ensure_future(self.__handle_consumer(websocket))
         producer_task = asyncio.ensure_future(self.__handle_producer(websocket))
 
@@ -67,7 +68,7 @@ class NeuroAPI:
         for task in pending:
             task.cancel()
 
-    async def __handle_consumer(self, websocket):
+    async def __handle_consumer(self, websocket: ServerConnection):
         async for message in websocket:
             try:
                 json_cmd = json.loads(message)
@@ -157,13 +158,16 @@ class NeuroAPI:
             except Exception as e:
                 self.log_error(f'Error while handling message: {e}')
 
-    async def __handle_producer(self, websocket):
+    async def __handle_producer(self, websocket: ServerConnection):
         while True:
             if self.message_queue.empty():
                 await asyncio.sleep(0.1)
                 continue
 
             message = await self.message_queue.get()
+
+            await asyncio.sleep(self.get_delay())
+
             await websocket.send(message)
 
             try:

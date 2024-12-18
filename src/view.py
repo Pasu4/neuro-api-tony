@@ -42,6 +42,8 @@ class HumanView:
     def __init__(self, app: wx.App, model: HumanModel):
         self.model = model
 
+        self.controls = Controls()
+
         self.frame = MainFrame(self)
         app.SetTopWindow(self.frame)
 
@@ -97,30 +99,10 @@ class HumanView:
         prefix = 'Game --> Neuro' if incoming else 'Game <-- Neuro'
         self.frame.panel.log_notebook.network_log_panel.log(f'{prefix}\n{message}')
 
-    # def is_focus_on_receive_checked(self) -> bool:
-    #     '''Return whether to focus when a command is received.'''
-
-    #     return self.frame.panel.control_panel.focus_on_receive_checkbox.GetValue()
-    
-    def is_validate_schema_checked(self) -> bool:
-        '''Return whether to validate JSON schema.'''
-
-        return self.frame.panel.control_panel.validate_schema_checkbox.GetValue()
-    
-    def is_ignore_actions_force_checked(self) -> bool:
-        '''Return whether to ignore forced actions.'''
-
-        return self.frame.panel.control_panel.ignore_actions_force_checkbox.GetValue()
-    
-    def is_auto_send_checked(self) -> bool:
-        '''Return whether to automatically answer forced actions.'''
-
-        return self.frame.panel.control_panel.auto_send_checkbox.GetValue()
-
     def show_action_dialog(self, action: NeuroAction) -> Optional[str]:
         '''Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None.'''
 
-        self.action_dialog = ActionDialog(self.frame, action, self.is_validate_schema_checked())
+        self.action_dialog = ActionDialog(self.frame, action, self.controls.validate_schema)
         result = self.action_dialog.ShowModal()
         text = self.action_dialog.text.GetValue()
         self.action_dialog.Destroy()
@@ -355,59 +337,118 @@ class ControlPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
-        # self.focus_on_receive_checkbox = wx.CheckBox(self, label='Focus when a command is received')
+        self.view: HumanView = self.GetTopLevelParent().view
+
+        # Create controls
+
         self.validate_schema_checkbox = wx.CheckBox(self, label='Validate JSON schema')
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label='Ignore forced actions')
         self.auto_send_checkbox = wx.CheckBox(self, label='Automatically answer forced actions')
+
+        latency_panel = wx.Panel(self)
+        latency_text1 = wx.StaticText(latency_panel, label='L*tency:')
+        self.latency_input = wx.TextCtrl(latency_panel, value='0', size=(50, -1))
+        latency_text2 = wx.StaticText(latency_panel, label='ms')
+
         self.send_actions_reregister_all_button = wx.Button(self, label='Clear all actions and request reregistration (experimental)')
         self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown (experimental)')
         self.send_shutdown_graceful_cancel_button = wx.Button(self, label='Cancel graceful shutdown (experimental)')
         self.send_shutdown_immidiate_button = wx.Button(self, label='Request immediate shutdown (experimental)')
 
+        # Create sizers
+
+        latency_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        latency_panel_sizer.Add(latency_text1, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        latency_panel_sizer.Add(self.latency_input, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        latency_panel_sizer.Add(latency_text2, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        latency_panel.SetSizer(latency_panel_sizer)
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        # self.sizer.Add(self.focus_on_receive_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_immidiate_button, 0, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
+        # Bind events
+
+        self.Bind(wx.EVT_CHECKBOX, self.on_validate_schema, self.validate_schema_checkbox)
+        self.Bind(wx.EVT_CHECKBOX, self.on_ignore_actions_force, self.ignore_actions_force_checkbox)
+        self.Bind(wx.EVT_CHECKBOX, self.on_auto_send, self.auto_send_checkbox)
+
+        self.Bind(wx.EVT_TEXT, self.on_latency, self.latency_input)
+
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_immediate, self.send_shutdown_immidiate_button)
 
-        # self.focus_on_receive_checkbox.SetValue(True)
+        # Set default values
+
         self.validate_schema_checkbox.SetValue(True)
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
 
+        # Modify
+
+        latency_input_size = self.latency_input.GetSize()
+        # self.latency_input.SetSize(20, latency_input_size[1])
+
+    def on_validate_schema(self, event: wx.CommandEvent):
+        event.Skip()
+
+        self.view.controls.validate_schema = event.IsChecked()
+
+    def on_ignore_actions_force(self, event: wx.CommandEvent):
+        event.Skip()
+
+        self.view.controls.ignore_actions_force = event.IsChecked()
+
+    def on_auto_send(self, event: wx.CommandEvent):
+        event.Skip()
+
+        self.view.controls.auto_send = event.IsChecked()
+
+    def on_latency(self, event: wx.CommandEvent):
+        event.Skip()
+
+        try:
+            latency = int(self.latency_input.GetValue())
+            if latency < 0:
+                raise ValueError('Latency must be non-negative.')
+            elif latency > 10000:
+                raise ValueError('Latency must not exceed 10000 ms.')
+            self.view.controls.latency = latency
+            self.latency_input.UnsetToolTip()
+            self.latency_input.SetBackgroundColour(wx.NullColour) # Default color
+        except ValueError as e:
+            self.latency_input.SetToolTip(str(e))
+            self.latency_input.SetBackgroundColour(wx.Colour(255, 192, 192))
+        self.latency_input.Refresh()
+
     def on_send_actions_reregister_all(self, event: wx.CommandEvent):
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
-        top.view.on_send_actions_reregister_all()
+        self.view.on_send_actions_reregister_all()
 
     def on_send_shutdown_graceful(self, event: wx.CommandEvent):
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
-        top.view.on_send_shutdown_graceful()
+        self.view.on_send_shutdown_graceful()
 
     def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent):
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
-        top.view.on_send_shutdown_graceful_cancel()
+        self.view.on_send_shutdown_graceful_cancel()
 
     def on_send_shutdown_immediate(self, event: wx.CommandEvent):
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
-        top.view.on_send_shutdown_immediate()
+        self.view.on_send_shutdown_immediate()
             
 class ActionPanel(wx.Panel):
     '''The panel for an action.'''
@@ -545,4 +586,13 @@ class ActionsForceDialog(wx.Dialog):
         '''Disable all action buttons.'''
 
         self.action_list.execute_button.Disable()
+
+class Controls:
+    '''The content of the control panel.'''
+
+    def __init__(self):
+        self.validate_schema: bool = True
+        self.ignore_actions_force: bool = False
+        self.auto_send: bool = False
+        self.latency: int = 0
     

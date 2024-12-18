@@ -52,6 +52,7 @@ class HumanController:
         self.api.log_warning = self.view.log_warning
         self.api.log_error = self.view.log_error
         self.api.log_network = self.view.log_network
+        self.api.get_delay = lambda: float(self.view.controls.latency / 1000)
 
         self.view.on_execute = self.on_view_execute
         self.view.on_delete_action = self.on_view_delete_action
@@ -62,9 +63,6 @@ class HumanController:
 
     def on_any_command(self, cmd: Any):
         '''Callback for any command received from the API.'''
-
-        # if self.view.is_focus_on_receive_checked():
-        #     self.view.focus()
 
     def on_startup(self, cmd: StartupCommand):
         '''Handle the startup command.'''
@@ -113,7 +111,7 @@ class HumanController:
 
         self.view.log_context(cmd.query, ephemeral=cmd.ephemeral_context)
 
-        if self.view.is_ignore_actions_force_checked():
+        if self.view.controls.ignore_actions_force:
             self.view.log('Forced action ignored.')
             return
         
@@ -122,7 +120,7 @@ class HumanController:
             self.view.log_warning('Warning: actions/force with invalid actions received. Discarding.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
             return
 
-        if self.view.is_auto_send_checked():
+        if self.view.controls.auto_send:
             self.view.log('Automatically sending random action.')
             actions = [action for action in self.model.actions if action.name in cmd.action_names]
             action = random.choice(actions)

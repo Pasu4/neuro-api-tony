@@ -39,7 +39,7 @@ Skip step 1 if you haven't, or if your virtual environment is already activated.
 
 The application window should now open.
 The left panel will display the actions once they have been registered.
-They can be executed by clicking the "execute" button next to the action's name.
+They can be executed by clicking the "execute" below the list.
 The right panel shows an event log, below that is a smaller panel with some controls.
 After sending an `action` command to the game, the next action can only be sent after the `action/result` command has been received.
 When the game sends an `actions/force` command, a window will open that only shows the applicable actions, and will only close once the `action/result` command indicates success.
@@ -52,8 +52,8 @@ Like Randy, this application opens a websocket server on port `8000` (websocket 
 ### Executing actions
 
 To execute an action, the game first needs to send an `actions/register` command.
-After that, an entry should appear in the left panel showing the name of the action and an "Execute" button.
-Clicking on the button opens a window where you can enter the content of the reply and send it via the "Send" button.
+After that, an entry should appear in the left panel showing the name of the action and its description.
+Selection the action and clicking on the "execute" button at the bottom opens a window where you can enter the content of the reply and send it via the "Send" button.
 The window will already contain some sample JSON that validates against the schema.
 By default, your input will be parsed and validated against the schema before sending, you can turn this off in the control panel.
 
@@ -82,6 +82,7 @@ The control panel has some checkboxes and buttons that change the behavior of th
 - **Validate JSON schema:** If checked, will not allow you to send a message that does not validate against the schema.
 - **Ignore forced actions:** If checked, will not open the "Forced action" dialog when an `actions/force` command is received. You have to execute the action yourself from the left panel. Since the forced action is ignored, you can execute any registered action.
 - **Automatically answer forced actions**: If checked, will immediately send the pre-generated JSON of a random valid action instead of opening the "Forced action" window when an `actions/force` command arrives. This behavior is similar to what Randy does.
+- **L\*tency:** Will delay sending commands by the specified time. Must be non-negative and not greater than 10000ms.
 
 #### Experimental controls
 
