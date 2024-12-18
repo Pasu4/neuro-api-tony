@@ -1,7 +1,5 @@
 # TODO
 
-- Make actions panel scrollable
-- Manually unregister actions
 - Manually unlock actions
 - Retry `actions/force` when auto-response is on
 - Add l*tency slider

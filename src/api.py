@@ -11,6 +11,9 @@ from websockets.asyncio.server import serve
 
 ACTION_NAME_ALLOWED_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789_-'
 
+# See https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action
+INVALID_SCHEMA_KEYS = ["$anchor", "$comment", "$defs", "$dynamicAnchor", "$dynamicRef", "$id", "$ref", "$schema", "$vocabulary", "additionalProperties", "allOf", "anyOf", "contentEncoding", "contentMediaType", "contentSchema", "dependentRequired", "dependentSchemas", "deprecated", "description", "else", "if", "maxProperties", "minProperties", "not", "oneOf", "patternProperties", "readOnly", "then", "title", "unevaluatedItems", "unevaluatedProperties", "writeOnly"]
+
 class NeuroAPI:
 
     def __init__(self):
@@ -114,6 +117,11 @@ class NeuroAPI:
                                     self.log_error(f'Error: Invalid schema for action "{action["name"]}": {e}')
                                     continue
 
+                                invalid_keys = self.check_invalid_keys_recursive(action['schema'])
+
+                                if len(invalid_keys) > 0:
+                                    self.log_warning(f'Warning: Disallowed keys in schema: {", ".join(invalid_keys)}')
+
                             # Check the name
                             if not isinstance(action['name'], str):
                                 self.log_error(f'Error: Action name is not a string: {action["name"]}')
@@ -208,6 +216,26 @@ class NeuroAPI:
         })
 
         self.message_queue.put_nowait(message)
+        
+    def check_invalid_keys_recursive(self, sub_schema: dict[str, Any]) -> list[str]:
+        '''
+        Recursively checks for invalid keys in the schema.
+        Returns a list of invalid keys that were found.
+        '''
+
+        invalid_keys = []
+
+        for key, value in sub_schema.items():
+            if key in INVALID_SCHEMA_KEYS:
+                invalid_keys.append(key)
+            elif isinstance(value, dict):
+                invalid_keys.extend(self.check_invalid_keys_recursive(value))
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        invalid_keys.extend(self.check_invalid_keys_recursive(item))
+        
+        return invalid_keys
 
 class StartupCommand:
 
