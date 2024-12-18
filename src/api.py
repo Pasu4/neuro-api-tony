@@ -92,6 +92,8 @@ class NeuroAPI:
                 if self.waiting_for_action_result and json_cmd['command'] == 'actions/force':
                     self.log_warning(f'Warning: Received actions/forced while waiting for action/result.')
 
+                self.log(f'Command received: {json_cmd["command"]}')
+
                 # Handle the command
                 match json_cmd['command']:
                     case 'startup' | 'game/startup':
@@ -106,7 +108,6 @@ class NeuroAPI:
                         self.on_context(ContextCommand(data['message'], data['silent']))
 
                     case 'actions/register':
-
                         # Check the actions
                         for action in data['actions']:
                             # Check the schema
@@ -146,9 +147,11 @@ class NeuroAPI:
                         self.on_action_result(ActionResultCommand(data['success'], data.get('message', None)))
 
                     case 'shutdown/ready':
+                        self.log_warning('Warning: This command is not in the official API specification.')
                         self.on_shutdown_ready(ShutdownReadyCommand())
 
                     case _:
+                        self.log_warning('Warning: Unknown command.')
                         self.on_unknown_command(json_cmd)
 
             except Exception as e:
@@ -186,6 +189,7 @@ class NeuroAPI:
 
         self.message_queue.put_nowait(message)
         self.waiting_for_action_result = True
+        self.log('Command sent: action')
 
     def send_actions_reregister_all(self):
         '''Send an actions/reregister_all command.'''
@@ -195,6 +199,8 @@ class NeuroAPI:
         })
 
         self.message_queue.put_nowait(message)
+        self.log('Command sent: actions/reregister_all')
+        self.log_warning('Warning: This command is not in the official API specification.')
 
     def send_shutdown_graceful(self, wants_shutdown: bool):
         '''Send a shutdown/graceful command.'''
@@ -207,6 +213,8 @@ class NeuroAPI:
         })
 
         self.message_queue.put_nowait(message)
+        self.log('Command sent: shutdown/graceful')
+        self.log_warning('Warning: This command is not in the official API specification.')
 
     def send_shutdown_immediate(self):
         '''Send a shutdown/immediate command.'''
@@ -216,6 +224,8 @@ class NeuroAPI:
         })
 
         self.message_queue.put_nowait(message)
+        self.log('Command sent: shutdown/immediate')
+        self.log_warning('Warning: This command is not in the official API specification.')
         
     def check_invalid_keys_recursive(self, sub_schema: dict[str, Any]) -> list[str]:
         '''

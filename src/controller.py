@@ -69,20 +69,16 @@ class HumanController:
     def on_startup(self, cmd: StartupCommand):
         '''Handle the startup command.'''
 
-        self.view.log('startup command received.')
         self.model.clear_actions()
         self.view.clear_actions()
     
     def on_context(self, cmd: ContextCommand):
         '''Handle the context command.'''
 
-        self.view.log('context command received.')
         self.view.log_context(cmd.message, silent=cmd.silent)
 
     def on_actions_register(self, cmd: ActionsRegisterCommand):
         '''Handle the actions/register command.'''
-
-        self.view.log('actions/register command received.')
 
         for action in cmd.actions:
 
@@ -98,8 +94,6 @@ class HumanController:
 
     def on_actions_unregister(self, cmd: ActionsUnregisterCommand):
         '''Handle the actions/unregister command.'''
-
-        self.view.log('actions/unregister command received.')
 
         for name in cmd.action_names:
             if not self.model.has_action(name):
@@ -120,15 +114,13 @@ class HumanController:
         self.view.log_context(cmd.query, ephemeral=cmd.ephemeral_context)
 
         if self.view.is_ignore_actions_force_checked():
-            self.view.log('actions/force command received, but ignored.')
+            self.view.log('Forced action ignored.')
             return
         
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning('Warning: actions/force with invalid actions received. Discarding.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
             return
-
-        self.view.log('actions/force command received.')
 
         if self.view.is_auto_send_checked():
             self.view.log('Automatically sending random action.')
@@ -148,7 +140,7 @@ class HumanController:
     def on_action_result(self, cmd: ActionResultCommand):
         '''Handle the action/result command.'''
 
-        self.view.log('action/result command received: ' + ('success' if cmd.success else 'failure'))
+        self.view.log('Action result indicates ' + ('success' if cmd.success else 'failure'))
         
         if cmd.message is not None:
             self.view.log_context(cmd.message)
@@ -162,13 +154,12 @@ class HumanController:
     def on_shutdown_ready(self, cmd: ShutdownReadyCommand):
         '''Handle the shutdown/ready command.'''
 
-        self.view.log('shutdown/ready command received.')
         self.view.log_warning('Warning: This command is not in the official API specification.')
 
     def on_unknown_command(self, json_cmd: Any):
         '''Handle an unknown command.'''
 
-        self.view.log_warning(f'Warning: Unknown command received: {json_cmd['command']}')
+        # self.view.log_warning(f'Warning: Unknown command received: {json_cmd['command']}')
 
     def send_action(self, id: str, name: str, data: str | None):
         '''Send an action command to the API.'''
@@ -181,8 +172,6 @@ class HumanController:
     def send_actions_reregister_all(self):
         '''Send an actions/reregister_all command to the API.'''
 
-        self.view.log('Sending actions/reregister_all command.')
-        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_actions_reregister_all()
 
     def on_view_execute(self, action: NeuroAction):
