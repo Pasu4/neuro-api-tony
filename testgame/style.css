@@ -14,13 +14,14 @@ body {
     margin: 0 auto;
 }
 
-.chat {
+.panel {
     border: 2px solid #000;
     border-radius: 5px;
     background-color: #f0f0f0;
+    margin-bottom: 10px;
 }
 
-.chat > h2, .action > h2 {
+.panel > h2 {
     margin: 5px;
 }
 
@@ -41,11 +42,21 @@ body {
     font-weight: bold;
 }
 
-.action {
-    border: 2px solid #000;
+.actions-force-test input {
+    margin: 5px;
+}
+
+.fancy-button {
+    background-color: royalblue;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
     border-radius: 5px;
-    background-color: #f0f0f0;
-    margin-top: 10px;
 }
 
 #user-form {
@@ -69,19 +80,6 @@ body {
 #chat-form input[type="text"] {
     flex-grow: 1;
     margin-right: 5px;
-}
-
-#chat-form input[type="submit"] {
-    background-color: royalblue;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 5px;
 }
 
 #action-form > p {

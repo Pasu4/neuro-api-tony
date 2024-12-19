@@ -138,7 +138,7 @@ class NeuroAPI:
                         self.on_actions_unregister(ActionsUnregisterCommand(data['action_names']))
 
                     case 'actions/force':
-                        self.on_actions_force(ActionsForceCommand(data['state'], data['query'], data.get('ephemeral_context', False), data['action_names']))
+                        self.on_actions_force(ActionsForceCommand(data.get('state'), data['query'], data.get('ephemeral_context', False), data['action_names']))
                     
                     case 'action/result':
                         if not self.waiting_for_action_result:
@@ -275,7 +275,7 @@ class ActionsUnregisterCommand:
 
 class ActionsForceCommand:
     
-    def __init__(self, state: str, query: str, ephemeral_context: bool, action_names: list[str]):
+    def __init__(self, state: str | None, query: str, ephemeral_context: bool, action_names: list[str]):
         self.state = state
         self.query = query
         self.ephemeral_context = ephemeral_context

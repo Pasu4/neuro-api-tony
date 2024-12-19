@@ -36,7 +36,7 @@ LOG_COLOR_DEFAULT = wx.Colour(0, 0, 0)
 LOG_COLOR_CONTEXT_SILENT = wx.Colour(128, 128, 128)
 LOG_COLOR_TIMESTAMP = wx.Colour(0, 128, 0)
 LOG_LEVELS = {
-    # 'Debug': 10,
+    'Debug': 10,
     'Info': 20,
     'Warning': 30,
     'Error': 40,
@@ -56,7 +56,6 @@ class HumanView:
         app.SetTopWindow(self.frame)
 
         self.action_dialog: Optional[ActionDialog] = None
-        self.actions_force_dialog: Optional[ActionsForceDialog] = None
 
         # Dependency injection
         self.on_execute: Callable[[NeuroAction], None] = lambda action: None
@@ -76,6 +75,12 @@ class HumanView:
 
         if self.controls.log_level <= LOG_LEVELS['Commands']:
             self.frame.panel.log_notebook.log_panel.log(message)
+
+    def log_debug(self, message: str):
+        '''Log a debug message.'''
+
+        if self.controls.log_level <= LOG_LEVELS['Debug']:
+            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(128, 128, 128))
 
     def log_info(self, message: str):
         '''Log an informational message.'''
@@ -148,29 +153,23 @@ class HumanView:
 
     def enable_actions(self):
         '''Enable all action buttons.'''
-
-        if self.actions_force_dialog is not None:
-            wx.CallAfter(self.actions_force_dialog.enable_actions)
         
         wx.CallAfter(self.frame.panel.action_list.execute_button.Enable)
 
     def disable_actions(self):
         '''Disable all action buttons.'''
-
-        if self.actions_force_dialog is not None:
-            self.actions_force_dialog.disable_actions()
         
         self.frame.panel.action_list.execute_button.Disable()
 
-    def force_actions(self, state: str, query: str, ephemeral_context: bool, action_names: list[str]):
+    def force_actions(self, state: str, query: str, ephemeral_context: bool, action_names: list[str], retry: bool = False):
         '''Show a dialog for forcing actions.'''
 
         actions = [action for action in self.model.actions if action.name in action_names]
-        self.actions_force_dialog = ActionsForceDialog(self.frame, self, state, query, ephemeral_context, actions)
-        result = self.actions_force_dialog.ShowModal()
-        self.actions_force_dialog.Destroy()
-        self.actions_force_dialog = None
+        actions_force_dialog = ActionsForceDialog(self.frame, self, state, query, ephemeral_context, actions, retry)
+        result = actions_force_dialog.ShowModal()
+        actions_force_dialog.Destroy()
 
+        # Executing the action has already been handled by the dialog
         if result != wx.ID_OK:
             self.log_command('Manually ignored forced action.')
 
@@ -417,7 +416,7 @@ class ControlPanel(wx.Panel):
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
         # self.latency_input.SetValue('0')
-        self.log_level_choice.SetSelection(0)
+        self.log_level_choice.SetSelection(1) # Info
 
         # Modify
 
@@ -572,8 +571,9 @@ class ActionDialog(wx.Dialog):
 
 class ActionsForceDialog(wx.Dialog):
 
-    def __init__(self, parent, view: HumanView, state: str, query: str, ephemeral_context: bool, actions: list[NeuroAction]):
-        super().__init__(parent, title='Forced Action', style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+    def __init__(self, parent, view: HumanView, state: str, query: str, ephemeral_context: bool, actions: list[NeuroAction], retry: bool = False):
+        title = 'Forced Action' if not retry else 'Retry Forced Action'
+        super().__init__(parent, title=title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         self.view = view
         self.state = state
@@ -598,24 +598,17 @@ class ActionsForceDialog(wx.Dialog):
 
         self.action_list.list.Select(0)
 
-    def show_result(self, success: bool, message: str | None):
-        '''Show the result of the forced action.'''
+        self.Bind(wx.EVT_BUTTON, self.on_execute, self.action_list.execute_button)
 
-        wx.MessageBox(
-            message or 'No message provided.',
-            'Action success' if success else 'Action failure',
-            wx.OK | wx.ICON_INFORMATION if success else wx.ICON_ERROR
-        )
+    def on_execute(self, event: wx.CommandEvent):
+        event.Skip()
 
-    def enable_actions(self):
-        '''Enable all action buttons.'''
+        index = self.action_list.list.GetFirstSelected()
 
-        self.action_list.execute_button.Enable()
+        if index == -1: # No action selected, nothing will be executed so don't close the dialog
+            return
 
-    def disable_actions(self):
-        '''Disable all action buttons.'''
-
-        self.action_list.execute_button.Disable()
+        self.EndModal(wx.ID_OK)
 
 class Controls:
     '''The content of the control panel.'''

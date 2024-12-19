@@ -106,3 +106,26 @@ function addChatMessage(author, color, message) {
 
     chat.appendChild(messageElement);
 }
+
+var randomAction = 'send_chat_message';
+
+function registerRandomAction() {
+    const actionName = 'action_' + Math.floor(Math.random() * 1000000).toString();
+    randomAction = actionName;
+    neuroClient.registerActions([{
+        name: actionName,
+        description: 'Random action'
+    }]);
+}
+
+function forceRandomAction() {
+    neuroClient.forceActions('Execute an action', [randomAction]);
+}
+
+function sendSuccess() {
+    neuroClient.sendActionResult('random_id', true);
+}
+
+function sendFailure() {
+    neuroClient.sendActionResult('random_id', false);
+}

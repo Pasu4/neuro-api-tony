@@ -26,6 +26,8 @@ class HumanController:
         self.view = HumanView(app, self.model)
         self.api = NeuroAPI()
 
+        self.active_actions_force: ActionsForceCommand | None = None
+
         self.id_generator = action_id_generator()
 
         self.inject()
@@ -113,32 +115,28 @@ class HumanController:
 
         if self.view.controls.ignore_actions_force:
             self.view.log_command('Forced action ignored.')
+            self.active_actions_force = None
             return
         
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning('Warning: actions/force with invalid actions received. Discarding.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
+            self.active_actions_force = None
             return
 
-        if self.view.controls.auto_send:
-            self.view.log_command('Automatically sending random action.')
-            actions = [action for action in self.model.actions if action.name in cmd.action_names]
-            action = random.choice(actions)
-
-            if action.schema is None:
-                self.send_action(next(self.id_generator), action.name, None)
-            else:
-                faker = JSF(action.schema)
-                sample = faker.generate()
-                self.send_action(next(self.id_generator), action.name, json.dumps(sample))
-                
-        else:
-            wx.CallAfter(self.view.force_actions, cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names)
+        self.execute_actions_force(cmd)
 
     def on_action_result(self, cmd: ActionResultCommand):
         '''Handle the action/result command.'''
 
         self.view.log_command('Action result indicates ' + ('success' if cmd.success else 'failure'))
+
+        self.view.log_debug(f'cmd.success: {cmd.success}, active_actions_force: {self.active_actions_force}')
+
+        if not cmd.success and self.active_actions_force is not None:
+            self.retry_actions_force(self.active_actions_force)
+        else:
+            self.active_actions_force = None
         
         if cmd.message is not None:
             self.view.log_context(cmd.message)
@@ -221,3 +219,39 @@ class HumanController:
         self.view.log_command('Sending shutdown/immediate command.')
         self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_shutdown_immediate()
+
+    def execute_actions_force(self, cmd: ActionsForceCommand, retry: bool = False):
+        self.active_actions_force = cmd
+
+        if self.view.controls.auto_send:
+            self.view.log_command('Automatically sending random action.')
+            actions = [action for action in self.model.actions if action.name in cmd.action_names]
+            action = random.choice(actions)
+
+            if action.schema is None:
+                self.send_action(next(self.id_generator), action.name, None)
+            else:
+                faker = JSF(action.schema)
+                sample = faker.generate()
+                self.send_action(next(self.id_generator), action.name, json.dumps(sample))
+                
+        else:
+            wx.CallAfter(self.view.force_actions, cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names, retry)
+
+    def retry_actions_force(self, cmd: ActionsForceCommand):
+        '''Retry the actions/force command.'''
+
+        if self.view.controls.ignore_actions_force:
+            self.view.log_command('Forced action ignored.')
+            self.active_actions_force = None
+            return
+        
+        # Check if all actions exist
+        if not all(self.model.has_action(name) for name in cmd.action_names):
+            self.view.log_warning('Warning: Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
+            self.active_actions_force = None
+            return
+        
+        self.view.log_command('Retrying forced action.')
+
+        self.execute_actions_force(cmd, retry=True)
