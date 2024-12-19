@@ -298,7 +298,8 @@ class ActionList(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.on_delete, self.delete_button)
 
         self.list.InsertColumn(0, 'Name', width=150)
-        self.list.InsertColumn(1, 'Description', width=300)
+        self.list.InsertColumn(1, 'Description', width=240)
+        self.list.InsertColumn(2, 'Schema', width=60)
 
         if not can_delete:
             self.delete_button.Disable()
@@ -307,7 +308,8 @@ class ActionList(wx.Panel):
         '''Add an action panel to the list.'''
 
         self.actions.append(action)
-        self.list.Append([action.name, action.description])
+
+        self.list.Append([action.name, action.description, 'Yes' if action.schema is not None else 'No'])
 
     def remove_action_by_name(self, name: str):
         '''Remove an action panel from the list.'''
