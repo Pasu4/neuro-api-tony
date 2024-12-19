@@ -90,7 +90,7 @@ class HumanController:
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
             self.view.log_command(f'Action registered: {action.name}')
-            self.view.log_context(f'{action.name}: {action.description}')
+            self.view.log_description(f'{action.name}: {action.description}')
 
     def on_actions_unregister(self, cmd: ActionsUnregisterCommand):
         '''Handle the actions/unregister command.'''
@@ -107,11 +107,11 @@ class HumanController:
         '''Handle the actions/force command.'''
 
         if cmd.state is not None and cmd.state != '':
-            self.view.log_context(cmd.state, ephemeral=cmd.ephemeral_context)
+            self.view.log_state(cmd.state, cmd.ephemeral_context)
         else:
             self.view.log_info('Info: actions/force command contains no state.')
 
-        self.view.log_context(cmd.query, ephemeral=cmd.ephemeral_context)
+        self.view.log_query(cmd.query, cmd.ephemeral_context)
 
         if self.view.controls.ignore_actions_force:
             self.view.log_command('Forced action ignored.')
@@ -139,7 +139,7 @@ class HumanController:
             self.active_actions_force = None
         
         if cmd.message is not None:
-            self.view.log_context(cmd.message)
+            self.view.log_action_result(cmd.success, cmd.message)
         elif cmd.success:
             self.view.log_info('Info: Successful action result contains no message.')
         else:

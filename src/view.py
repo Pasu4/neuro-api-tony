@@ -33,8 +33,14 @@ class ActionResultEvent(wx.PyCommandEvent):
 #endregion
 
 LOG_COLOR_DEFAULT = wx.Colour(0, 0, 0)
-LOG_COLOR_CONTEXT_SILENT = wx.Colour(128, 128, 128)
 LOG_COLOR_TIMESTAMP = wx.Colour(0, 128, 0)
+LOG_COLOR_CONTEXT = LOG_COLOR_DEFAULT
+LOG_COLOR_CONTEXT_QUERY = wx.Colour(255, 128, 255)
+LOG_COLOR_CONTEXT_STATE = wx.Colour(128, 255, 128)
+LOG_COLOR_CONTEXT_SILENT = wx.Colour(128, 128, 128)
+LOG_COLOR_CONTEXT_EPHEMERAL = wx.Colour(128, 192, 255)
+LOG_COLOR_NETWORK_INCOMING = wx.Colour(0, 0, 255)
+LOG_COLOR_NETWORK_OUTGOING = wx.Colour(255, 128, 192)
 LOG_LEVELS = {
     'Debug': 10,
     'Info': 20,
@@ -80,41 +86,82 @@ class HumanView:
         '''Log a debug message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Debug']:
-            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(128, 128, 128))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Debug', wx.Colour(128, 128, 128))
 
     def log_info(self, message: str):
         '''Log an informational message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Info']:
-            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(128, 192, 255))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Info', wx.Colour(128, 192, 255))
 
     def log_warning(self, message: str):
         '''Log a warning message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Warning']:
-            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 192, 0))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Warning', wx.Colour(255, 192, 0))
 
     def log_error(self, message: str):
         '''Log an error message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Error']:
-            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 0, 0))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Error', wx.Colour(255, 0, 0))
 
-    def log_context(self, message: str, silent: bool = False, ephemeral: bool = False):
+    def log_context(self, message: str, silent: bool = False):
         '''Log a context message.'''
 
-        color = wx.Colour(
-            128 if (silent or ephemeral) else 0,
-            128 if silent else 192 if ephemeral else 0,
-            128 if silent else 255 if ephemeral else 0,
-        )
-        self.frame.panel.log_notebook.context_log_panel.log(message, color)
+        tags = ['Context']
+        colors = [LOG_COLOR_CONTEXT]
+
+        if silent:
+            tags.append('silent')
+            colors.append(LOG_COLOR_CONTEXT_SILENT)
+
+        self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
+
+    def log_description(self, message: str):
+        '''Log an action description.'''
+
+        self.frame.panel.log_notebook.context_log_panel.log(message, 'Action', LOG_COLOR_CONTEXT)
+
+    def log_query(self, message: str, ephemeral: bool = False):
+        '''Log an actions/force query.'''
+
+        tags = ['Query']
+        colors = [LOG_COLOR_CONTEXT_QUERY]
+
+        if ephemeral:
+            tags.append('ephemeral')
+            colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
+
+        self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
+
+    def log_state(self, message: str, ephemeral: bool = False):
+        '''Log an actions/force state.'''
+
+        tags = ['State']
+        colors = [LOG_COLOR_CONTEXT_STATE]
+
+        if ephemeral:
+            tags.append('Ephemeral')
+            colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
+
+        self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
+
+    def log_action_result(self, success: bool, message: str | None):
+        '''Log an action result message.'''
+
+        if success:
+            self.frame.panel.log_notebook.context_log_panel.log(message, 'Action', wx.Colour(0, 128, 0))
+        else:
+            self.frame.panel.log_notebook.context_log_panel.log(message, 'Action', wx.Colour(255, 0, 0))
 
     def log_network(self, message: str, incoming: bool):
         '''Log a network message.'''
 
-        prefix = 'Game --> Neuro' if incoming else 'Game <-- Neuro'
-        self.frame.panel.log_notebook.network_log_panel.log(f'{prefix}\n{message}')
+        tag = 'Game --> Neuro' if incoming else 'Game <-- Neuro'
+        color = LOG_COLOR_NETWORK_INCOMING if incoming else LOG_COLOR_NETWORK_OUTGOING
+
+        self.frame.panel.log_notebook.network_log_panel.log(message, tag, color)
 
     def show_action_dialog(self, action: NeuroAction) -> Optional[str]:
         '''Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None.'''
@@ -186,13 +233,8 @@ class HumanView:
     def on_action_result(self, success: bool, message: str | None):
         '''
         Handle an action/result message.
-        If the action was successful, the dialog is closed with wx.ID_OK if it is open.
-        Enables all action buttons.
+        Enables the execute button.
         '''
-
-        if success and self.actions_force_dialog is not None:
-            # Must be retried if unsuccessful
-            self.actions_force_dialog.EndModal(wx.ID_OK)
 
         self.enable_actions()
 
@@ -335,11 +377,33 @@ class LogPanel(wx.Panel):
         self.sizer.Add(self.text, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
 
-    def log(self, message: str, color = LOG_COLOR_DEFAULT):
+    def log(self, message: str, tags: str | list[str] | None = [], tag_colors: wx.Colour | list[wx.Colour] | None = []):
+        '''Log a message with optional tags and colors.'''
+
+        # Convert single tags and colors to lists
+        if isinstance(tags, str):
+            tags = [tags]
+        if isinstance(tag_colors, wx.Colour):
+            tag_colors = [tag_colors]
+
+        # Convert None to empty lists
+        tags = tags or []
+        tag_colors = tag_colors or []
+
+        # Add default color for tags without color
+        tag_colors += [LOG_COLOR_DEFAULT] * (len(tags) - len(tag_colors))
+
+        # Log timestamp
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
         self.text.AppendText(f'[{dt.now().strftime("%X")}] ')
         
-        self.text.SetDefaultStyle(wx.TextAttr(color))
+        # Log tags
+        for tag, tag_color in zip(tags, tag_colors):
+            self.text.SetDefaultStyle(wx.TextAttr(tag_color))
+            self.text.AppendText(f'[{tag}] ')
+        
+        # Log message
+        self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
         self.text.AppendText(f'{message}\n')
 
 class ControlPanel(wx.Panel):
@@ -419,7 +483,6 @@ class ControlPanel(wx.Panel):
         self.log_level_choice.SetSelection(1) # Info
 
         # Modify
-
 
     def on_validate_schema(self, event: wx.CommandEvent):
         event.Skip()
@@ -618,5 +681,5 @@ class Controls:
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
         self.latency: int = 0
-        self.log_level: int = 0
+        self.log_level: int = LOG_LEVELS['Info']
     
