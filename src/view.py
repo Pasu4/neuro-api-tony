@@ -35,6 +35,14 @@ class ActionResultEvent(wx.PyCommandEvent):
 LOG_COLOR_DEFAULT = wx.Colour(0, 0, 0)
 LOG_COLOR_CONTEXT_SILENT = wx.Colour(128, 128, 128)
 LOG_COLOR_TIMESTAMP = wx.Colour(0, 128, 0)
+LOG_LEVELS = {
+    # 'Debug': 10,
+    'Info': 20,
+    'Warning': 30,
+    'Error': 40,
+    # 'Critical': 50,
+    'Commands': 60,
+}
 
 class HumanView:
     '''The view class for the Human Control application.'''
@@ -63,25 +71,29 @@ class HumanView:
 
         self.frame.Show()
 
-    def log(self, message: str):
-        '''Log a message.'''
+    def log_command(self, message: str):
+        '''Log a command.'''
 
-        self.frame.panel.log_notebook.log_panel.log(message)
+        if self.controls.log_level <= LOG_LEVELS['Commands']:
+            self.frame.panel.log_notebook.log_panel.log(message)
 
     def log_info(self, message: str):
         '''Log an informational message.'''
 
-        self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(128, 192, 255))
+        if self.controls.log_level <= LOG_LEVELS['Info']:
+            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(128, 192, 255))
 
     def log_warning(self, message: str):
         '''Log a warning message.'''
 
-        self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 192, 0))
+        if self.controls.log_level <= LOG_LEVELS['Warning']:
+            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 192, 0))
 
     def log_error(self, message: str):
         '''Log an error message.'''
 
-        self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 0, 0))
+        if self.controls.log_level <= LOG_LEVELS['Error']:
+            self.frame.panel.log_notebook.log_panel.log(message, wx.Colour(255, 0, 0))
 
     def log_context(self, message: str, silent: bool = False, ephemeral: bool = False):
         '''Log a context message.'''
@@ -160,7 +172,7 @@ class HumanView:
         self.actions_force_dialog = None
 
         if result != wx.ID_OK:
-            self.log('Manually ignored forced action.')
+            self.log_command('Manually ignored forced action.')
 
     def clear_actions(self):
         '''Clear the list of actions.'''
@@ -350,6 +362,10 @@ class ControlPanel(wx.Panel):
         self.latency_input = wx.TextCtrl(latency_panel, value='0', size=(50, -1))
         latency_text2 = wx.StaticText(latency_panel, label='ms')
 
+        log_level_panel = wx.Panel(self)
+        log_level_text = wx.StaticText(log_level_panel, label='Log level:')
+        self.log_level_choice = wx.Choice(log_level_panel, choices=list(LOG_LEVELS.keys()))
+
         self.send_actions_reregister_all_button = wx.Button(self, label='Clear all actions and request reregistration (experimental)')
         self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown (experimental)')
         self.send_shutdown_graceful_cancel_button = wx.Button(self, label='Cancel graceful shutdown (experimental)')
@@ -363,11 +379,17 @@ class ControlPanel(wx.Panel):
         latency_panel_sizer.Add(latency_text2, 0, wx.ALL | wx.ALIGN_CENTER, 2)
         latency_panel.SetSizer(latency_panel_sizer)
 
+        log_lever_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        log_lever_panel_sizer.Add(log_level_text, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        log_lever_panel_sizer.Add(self.log_level_choice, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        log_level_panel.SetSizer(log_lever_panel_sizer)
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
+        self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
@@ -382,6 +404,8 @@ class ControlPanel(wx.Panel):
 
         self.Bind(wx.EVT_TEXT, self.on_latency, self.latency_input)
 
+        self.Bind(wx.EVT_CHOICE, self.on_log_level, self.log_level_choice)
+
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
@@ -392,11 +416,11 @@ class ControlPanel(wx.Panel):
         self.validate_schema_checkbox.SetValue(True)
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
+        # self.latency_input.SetValue('0')
+        self.log_level_choice.SetSelection(0)
 
         # Modify
 
-        latency_input_size = self.latency_input.GetSize()
-        # self.latency_input.SetSize(20, latency_input_size[1])
 
     def on_validate_schema(self, event: wx.CommandEvent):
         event.Skip()
@@ -429,6 +453,12 @@ class ControlPanel(wx.Panel):
             self.latency_input.SetToolTip(str(e))
             self.latency_input.SetBackgroundColour(wx.Colour(255, 192, 192))
         self.latency_input.Refresh()
+
+    def on_log_level(self, event: wx.CommandEvent):
+        event.Skip()
+
+        sel = self.log_level_choice.GetSelection()
+        self.view.controls.log_level = LOG_LEVELS[self.log_level_choice.GetString(sel)]
 
     def on_send_actions_reregister_all(self, event: wx.CommandEvent):
         event.Skip()
@@ -595,4 +625,5 @@ class Controls:
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
         self.latency: int = 0
+        self.log_level: int = 0
     

@@ -32,7 +32,7 @@ class NeuroAPI:
         self.on_action_result: Callable[[ActionResultCommand], None] = lambda cmd: None
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
-        self.log: Callable[[str], None] = lambda message: None
+        self.log_command: Callable[[str], None] = lambda message: None
         self.log_info: Callable[[str], None] = lambda message: None
         self.log_warning: Callable[[str], None] = lambda message: None
         self.log_error: Callable[[str], None] = lambda message: None
@@ -55,7 +55,7 @@ class NeuroAPI:
 
     async def __run(self):
         async with serve(self.__handle_message, 'localhost', 8000) as server:
-            self.log('Websocket started.')
+            self.log_command('Websocket started.')
             await server.serve_forever()
         
     # http://web.archive.org/web/20190623114747/https://websockets.readthedocs.io/en/stable/intro.html#both
@@ -93,7 +93,7 @@ class NeuroAPI:
                 if self.waiting_for_action_result and json_cmd['command'] == 'actions/force':
                     self.log_warning(f'Warning: Received actions/forced while waiting for action/result.')
 
-                self.log(f'Command received: {json_cmd["command"]}')
+                self.log_command(f'Command received: {json_cmd["command"]}')
 
                 # Handle the command
                 match json_cmd['command']:
@@ -193,7 +193,7 @@ class NeuroAPI:
 
         self.message_queue.put_nowait(message)
         self.waiting_for_action_result = True
-        self.log('Command sent: action')
+        self.log_command('Command sent: action')
 
     def send_actions_reregister_all(self):
         '''Send an actions/reregister_all command.'''
@@ -203,7 +203,7 @@ class NeuroAPI:
         })
 
         self.message_queue.put_nowait(message)
-        self.log('Command sent: actions/reregister_all')
+        self.log_command('Command sent: actions/reregister_all')
         self.log_warning('Warning: This command is not in the official API specification.')
 
     def send_shutdown_graceful(self, wants_shutdown: bool):
@@ -217,7 +217,7 @@ class NeuroAPI:
         })
 
         self.message_queue.put_nowait(message)
-        self.log('Command sent: shutdown/graceful')
+        self.log_command('Command sent: shutdown/graceful')
         self.log_warning('Warning: This command is not in the official API specification.')
 
     def send_shutdown_immediate(self):
@@ -228,7 +228,7 @@ class NeuroAPI:
         })
 
         self.message_queue.put_nowait(message)
-        self.log('Command sent: shutdown/immediate')
+        self.log_command('Command sent: shutdown/immediate')
         self.log_warning('Warning: This command is not in the official API specification.')
         
     def check_invalid_keys_recursive(self, sub_schema: dict[str, Any]) -> list[str]:
