@@ -78,20 +78,20 @@ class NeuroAPI:
                 data = json_cmd.get('data', {})
 
                 if game == '' or not isinstance(game, str):
-                    self.log_error('Error: Game name is not set.')
+                    self.log_error('Game name is not set.')
                     continue
 
                 # Check game name
                 if json_cmd['command'] == 'startup' or json_cmd['command'] == 'game/startup':
                     self.current_game = game
                 elif self.current_game != game:
-                    self.log_warning('Warning: Game name does not match the current game.')
+                    self.log_warning('Game name does not match the current game.')
                 elif self.current_game == '':
-                    self.log_warning('Warning: No startup command received.')
+                    self.log_warning('No startup command received.')
 
                 # Check action result when waiting for it
                 if self.waiting_for_action_result and json_cmd['command'] == 'actions/force':
-                    self.log_warning(f'Warning: Received actions/forced while waiting for action/result.')
+                    self.log_warning(f'Received actions/force while waiting for action/result.')
 
                 self.log_command(f'Command received: {json_cmd["command"]}')
 
@@ -103,7 +103,7 @@ class NeuroAPI:
                         self.on_startup(StartupCommand())
 
                         if json_cmd['command'] == 'game/startup':
-                            self.log_warning('Warning: "game/startup" command is deprecated. Use "startup" instead.')
+                            self.log_warning('"game/startup" command is deprecated. Use "startup" instead.')
 
                     case 'context':
                         self.on_context(ContextCommand(data['message'], data['silent']))
@@ -116,21 +116,21 @@ class NeuroAPI:
                                 try:
                                     jsonschema.Draft7Validator.check_schema(action['schema'])
                                 except jsonschema.exceptions.SchemaError as e:
-                                    self.log_error(f'Error: Invalid schema for action "{action["name"]}": {e}')
+                                    self.log_error(f'Invalid schema for action "{action["name"]}": {e}')
                                     continue
 
                                 invalid_keys = self.check_invalid_keys_recursive(action['schema'])
 
                                 if len(invalid_keys) > 0:
-                                    self.log_warning(f'Warning: Disallowed keys in schema: {", ".join(invalid_keys)}')
+                                    self.log_warning(f'Disallowed keys in schema: {", ".join(invalid_keys)}')
 
                             # Check the name
                             if not isinstance(action['name'], str):
-                                self.log_error(f'Error: Action name is not a string: {action["name"]}')
+                                self.log_error(f'Action name is not a string: {action["name"]}')
                                 continue
 
                             if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action['name']):
-                                self.log_warning(f'Warning: Action name is not a lowercase string.')
+                                self.log_warning(f'Action name is not a lowercase string.')
                             
                         self.on_actions_register(ActionsRegisterCommand(data['actions']))
                     
@@ -142,17 +142,17 @@ class NeuroAPI:
                     
                     case 'action/result':
                         if not self.waiting_for_action_result:
-                            self.log_warning('Warning: Unexpected action/result.')
+                            self.log_warning('Unexpected action/result.')
 
                         self.waiting_for_action_result = False
                         self.on_action_result(ActionResultCommand(data['success'], data.get('message', None)))
 
                     case 'shutdown/ready':
-                        self.log_warning('Warning: This command is not in the official API specification.')
+                        self.log_warning('This command is not officially supported.')
                         self.on_shutdown_ready(ShutdownReadyCommand())
 
                     case _:
-                        self.log_warning('Warning: Unknown command.')
+                        self.log_warning('Unknown command.')
                         self.on_unknown_command(json_cmd)
 
             except Exception as e:
@@ -204,7 +204,7 @@ class NeuroAPI:
 
         self.message_queue.put_nowait(message)
         self.log_command('Command sent: actions/reregister_all')
-        self.log_warning('Warning: This command is not in the official API specification.')
+        self.log_warning('This command is not officially supported.')
 
     def send_shutdown_graceful(self, wants_shutdown: bool):
         '''Send a shutdown/graceful command.'''
@@ -218,7 +218,7 @@ class NeuroAPI:
 
         self.message_queue.put_nowait(message)
         self.log_command('Command sent: shutdown/graceful')
-        self.log_warning('Warning: This command is not in the official API specification.')
+        self.log_warning('This command is not officially supported.')
 
     def send_shutdown_immediate(self):
         '''Send a shutdown/immediate command.'''
@@ -229,7 +229,7 @@ class NeuroAPI:
 
         self.message_queue.put_nowait(message)
         self.log_command('Command sent: shutdown/immediate')
-        self.log_warning('Warning: This command is not in the official API specification.')
+        self.log_warning('This command is not officially supported.')
         
     def check_invalid_keys_recursive(self, sub_schema: dict[str, Any]) -> list[str]:
         '''

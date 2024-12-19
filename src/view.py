@@ -318,7 +318,7 @@ class ActionList(wx.Panel):
         if(index != -1):
             self.list.DeleteItem(index)
         else:
-            self.GetTopLevelParent().view.log_error(f'Error: Action "{name}" not found in list.')
+            self.GetTopLevelParent().view.log_error(f'Action "{name}" not found in list.')
     
     def clear(self):
         '''Clear the list of actions.'''

@@ -84,7 +84,7 @@ class HumanController:
 
             # Check if an action with the same name already exists
             if self.model.has_action(action.name):
-                self.view.log_warning(f'Error: Action "{action.name}" already exists. Ignoring.')
+                self.view.log_warning(f'Action "{action.name}" already exists. Ignoring.')
                 continue
             
             self.model.add_action(action)
@@ -97,7 +97,7 @@ class HumanController:
 
         for name in cmd.action_names:
             if not self.model.has_action(name):
-                self.view.log_info(f'Info: Action "{name}" does not exist.')
+                self.view.log_info(f'Action "{name}" does not exist.')
 
             self.model.remove_action_by_name(name)
             self.view.remove_action_by_name(name)
@@ -109,7 +109,7 @@ class HumanController:
         if cmd.state is not None and cmd.state != '':
             self.view.log_state(cmd.state, cmd.ephemeral_context)
         else:
-            self.view.log_info('Info: actions/force command contains no state.')
+            self.view.log_info('actions/force command contains no state.')
 
         self.view.log_query(cmd.query, cmd.ephemeral_context)
 
@@ -120,7 +120,7 @@ class HumanController:
         
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
-            self.view.log_warning('Warning: actions/force with invalid actions received. Discarding.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
+            self.view.log_warning('actions/force with invalid actions received. Discarding.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
             self.active_actions_force = None
             return
 
@@ -141,21 +141,21 @@ class HumanController:
         if cmd.message is not None:
             self.view.log_action_result(cmd.success, cmd.message)
         elif cmd.success:
-            self.view.log_info('Info: Successful action result contains no message.')
+            self.view.log_info('Successful action result contains no message.')
         else:
-            self.view.log_warning('Warning: Failed action result contains no message.')
+            self.view.log_warning('Failed action result contains no message.')
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 
     def on_shutdown_ready(self, cmd: ShutdownReadyCommand):
         '''Handle the shutdown/ready command.'''
 
-        self.view.log_warning('Warning: This command is not in the official API specification.')
+        self.view.log_warning('This command is not officially supported.')
 
     def on_unknown_command(self, json_cmd: Any):
         '''Handle an unknown command.'''
 
-        # self.view.log_warning(f'Warning: Unknown command received: {json_cmd['command']}')
+        # self.view.log_warning(f'Unknown command received: {json_cmd['command']}')
 
     def send_action(self, id: str, name: str, data: str | None):
         '''Send an action command to the API.'''
@@ -202,22 +202,16 @@ class HumanController:
     def on_view_send_shutdown_graceful(self):
         '''Handle a request to send a shutdown/graceful command with wants_shutdown=true from the view.'''
 
-        self.view.log_command('Sending shutdown/graceful command.')
-        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_shutdown_graceful(True)
 
     def on_view_send_shutdown_graceful_cancel(self):
         '''Handle a request to send a shutdown/graceful with wants_shutdown=false command from the view.'''
 
-        self.view.log_command('Sending shutdown/graceful command.')
-        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_shutdown_graceful(False)
 
     def on_view_send_shutdown_immediate(self):
         '''Handle a request to send a shutdown/immediate command from the view.'''
 
-        self.view.log_command('Sending shutdown/immediate command.')
-        self.view.log_warning('Warning: This command is not in the official API specification.')
         self.api.send_shutdown_immediate()
 
     def execute_actions_force(self, cmd: ActionsForceCommand, retry: bool = False):
@@ -248,7 +242,7 @@ class HumanController:
         
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
-            self.view.log_warning('Warning: Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
+            self.view.log_warning('Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
             self.active_actions_force = None
             return
         
