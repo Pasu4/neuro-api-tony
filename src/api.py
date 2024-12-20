@@ -1,5 +1,5 @@
 import asyncio
-from threading import Thread
+from threading import Thread, Lock
 from typing import Any, Callable
 
 import jsonschema
@@ -20,6 +20,7 @@ class NeuroAPI:
         self.thread = None
 
         self.message_queue = asyncio.Queue()
+        self.queue_lock = Lock() # threading, not asyncio
         self.current_game = ''
         self.current_action_id: str | None = None
 
@@ -167,11 +168,14 @@ class NeuroAPI:
 
     async def __handle_producer(self, websocket: ServerConnection):
         while True:
-            if self.message_queue.empty():
-                await asyncio.sleep(0.1)
-                continue
+            await asyncio.sleep(0.1)
 
-            message = await self.message_queue.get()
+            message: str
+            with self.queue_lock:
+                if self.message_queue.empty():
+                    continue
+
+                message = await self.message_queue.get()
 
             await asyncio.sleep(self.get_delay())
 
@@ -198,7 +202,8 @@ class NeuroAPI:
 
         message = json.dumps(obj)
 
-        self.message_queue.put_nowait(message)
+        with self.queue_lock:
+            self.message_queue.put_nowait(message)
         self.current_action_id = id
         self.log_system('Command sent: action')
         self.log_debug(f'Action ID: {id}')
@@ -210,7 +215,8 @@ class NeuroAPI:
             'command': 'actions/reregister_all'
         })
 
-        self.message_queue.put_nowait(message)
+        with self.queue_lock:
+            self.message_queue.put_nowait(message)
         self.log_system('Command sent: actions/reregister_all')
         self.log_warning('This command is not officially supported.')
 
@@ -224,7 +230,8 @@ class NeuroAPI:
             }
         })
 
-        self.message_queue.put_nowait(message)
+        with self.queue_lock:
+            self.message_queue.put_nowait(message)
         self.log_system('Command sent: shutdown/graceful')
         self.log_warning('This command is not officially supported.')
 
@@ -235,7 +242,8 @@ class NeuroAPI:
             'command': 'shutdown/immediate'
         })
 
-        self.message_queue.put_nowait(message)
+        with self.queue_lock:
+            self.message_queue.put_nowait(message)
         self.log_system('Command sent: shutdown/immediate')
         self.log_warning('This command is not officially supported.')
         
