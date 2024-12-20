@@ -1,4 +1,5 @@
 # TODO
 
-- Manually unlock actions
-- Check action result ID
+## At some point
+
+- Translation

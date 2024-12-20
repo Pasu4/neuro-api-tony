@@ -59,6 +59,7 @@ class HumanController:
 
         self.view.on_execute = self.on_view_execute
         self.view.on_delete_action = self.on_view_delete_action
+        self.view.on_unlock = self.on_view_unlock
         self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
         self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
         self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
@@ -192,6 +193,12 @@ class HumanController:
         self.view.remove_action_by_name(name)
 
         self.view.log_command(f'Action deleted: {name}')
+
+    def on_view_unlock(self):
+        '''Handle a request to unlock the view.'''
+
+        self.view.log_command('Unlocking actions.')
+        self.view.enable_actions()
 
     def on_view_send_actions_reregister_all(self):
         '''Handle a request to send an actions/reregister_all command from the view.'''

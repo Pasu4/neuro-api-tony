@@ -66,6 +66,7 @@ class HumanView:
         # Dependency injection
         self.on_execute: Callable[[NeuroAction], None] = lambda action: None
         self.on_delete_action: Callable[[str], None] = lambda name: None
+        self.on_unlock: Callable[[], None] = lambda: None
         self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
@@ -225,11 +226,6 @@ class HumanView:
 
         self.frame.panel.action_list.clear()
 
-    # def focus(self):
-    #     '''Focus the main frame.'''
-
-    #     self.frame.Raise()
-
     def on_action_result(self, success: bool, message: str | None):
         '''
         Handle an action/result message.
@@ -283,10 +279,12 @@ class ActionList(wx.Panel):
         button_panel = wx.Panel(self)
         self.execute_button = wx.Button(button_panel, label='Execute')
         self.delete_button = wx.Button(button_panel, label='Delete')
+        self.unlock_button = wx.Button(button_panel, label='Unlock')
 
         button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_panel_sizer.Add(self.execute_button, 0, wx.EXPAND | wx.ALL, 5)
         button_panel_sizer.Add(self.delete_button, 0, wx.EXPAND | wx.ALL, 5)
+        button_panel_sizer.Add(self.unlock_button, 0, wx.EXPAND | wx.ALL, 5)
         button_panel.SetSizer(button_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -296,6 +294,7 @@ class ActionList(wx.Panel):
 
         self.Bind(wx.EVT_BUTTON, self.on_execute, self.execute_button)
         self.Bind(wx.EVT_BUTTON, self.on_delete, self.delete_button)
+        self.Bind(wx.EVT_BUTTON, self.on_unlock, self.unlock_button)
 
         self.list.InsertColumn(0, 'Name', width=150)
         self.list.InsertColumn(1, 'Description', width=240)
@@ -353,6 +352,12 @@ class ActionList(wx.Panel):
 
         top: MainFrame = self.GetTopLevelParent()
         top.view.on_delete_action(action.name)
+
+    def on_unlock(self, event: wx.CommandEvent):
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_unlock()
     
 class LogNotebook(wx.Notebook):
     '''The notebook for logging messages.'''
@@ -543,30 +548,6 @@ class ControlPanel(wx.Panel):
         event.Skip()
 
         self.view.on_send_shutdown_immediate()
-            
-class ActionPanel(wx.Panel):
-    '''The panel for an action.'''
-
-    def __init__(self, parent, action: NeuroAction):
-        super().__init__(parent, style=wx.BORDER_SIMPLE, name=action.name)
-
-        self.action = action
-
-        self.name_label = wx.StaticText(self, label=action.name)
-        self.execute_button = wx.Button(self, label='Execute')
-
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.name_label, 1, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.execute_button, 0, wx.ALL | wx.ALIGN_CENTER, 2)
-        self.SetSizer(self.sizer)
-
-        self.Bind(wx.EVT_BUTTON, self.on_execute, self.execute_button)
-
-    def on_execute(self, event: wx.CommandEvent):
-        event.Skip()
-
-        top: MainFrame = self.GetTopLevelParent()
-        top.view.on_execute(self.action)
 
 class ActionDialog(wx.Dialog):
 
