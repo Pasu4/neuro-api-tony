@@ -49,7 +49,7 @@ class HumanController:
         self.api.on_action_result = self.on_action_result
         self.api.on_shutdown_ready = self.on_shutdown_ready
         self.api.on_unknown_command = self.on_unknown_command
-        self.api.log_command = self.view.log_command
+        self.api.log_system = self.view.log_system
         self.api.log_debug = self.view.log_debug
         self.api.log_info = self.view.log_info
         self.api.log_warning = self.view.log_warning
@@ -91,7 +91,7 @@ class HumanController:
             
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
-            self.view.log_command(f'Action registered: {action.name}')
+            self.view.log_system(f'Action registered: {action.name}')
             self.view.log_description(f'{action.name}: {action.description}')
 
     def on_actions_unregister(self, cmd: ActionsUnregisterCommand):
@@ -103,7 +103,7 @@ class HumanController:
 
             self.model.remove_action_by_name(name)
             self.view.remove_action_by_name(name)
-            self.view.log_command(f'Action unregistered: {name}')
+            self.view.log_system(f'Action unregistered: {name}')
 
     def on_actions_force(self, cmd: ActionsForceCommand):
         '''Handle the actions/force command.'''
@@ -116,7 +116,7 @@ class HumanController:
         self.view.log_query(cmd.query, cmd.ephemeral_context)
 
         if self.view.controls.ignore_actions_force:
-            self.view.log_command('Forced action ignored.')
+            self.view.log_system('Forced action ignored.')
             self.active_actions_force = None
             return
         
@@ -131,7 +131,7 @@ class HumanController:
     def on_action_result(self, cmd: ActionResultCommand):
         '''Handle the action/result command.'''
 
-        self.view.log_command('Action result indicates ' + ('success' if cmd.success else 'failure'))
+        self.view.log_system('Action result indicates ' + ('success' if cmd.success else 'failure'))
 
         self.view.log_debug(f'cmd.success: {cmd.success}, active_actions_force: {self.active_actions_force}')
 
@@ -162,7 +162,7 @@ class HumanController:
     def send_action(self, id: str, name: str, data: str | None):
         '''Send an action command to the API.'''
 
-        self.view.log_command(f'Sending action: {name}')
+        self.view.log_system(f'Sending action: {name}')
         self.api.send_action(id, name, data)
 
         self.view.disable_actions() # Disable the actions until the result is received
@@ -192,12 +192,12 @@ class HumanController:
         self.model.remove_action_by_name(name)
         self.view.remove_action_by_name(name)
 
-        self.view.log_command(f'Action deleted: {name}')
+        self.view.log_system(f'Action deleted: {name}')
 
     def on_view_unlock(self):
         '''Handle a request to unlock the view.'''
 
-        self.view.log_command('Unlocking actions.')
+        self.view.log_system('Unlocking actions.')
         self.view.enable_actions()
 
     def on_view_send_actions_reregister_all(self):
@@ -226,7 +226,7 @@ class HumanController:
         self.active_actions_force = cmd
 
         if self.view.controls.auto_send:
-            self.view.log_command('Automatically sending random action.')
+            self.view.log_system('Automatically sending random action.')
             actions = [action for action in self.model.actions if action.name in cmd.action_names]
             action = random.choice(actions)
 
@@ -244,7 +244,7 @@ class HumanController:
         '''Retry the actions/force command.'''
 
         if self.view.controls.ignore_actions_force:
-            self.view.log_command('Forced action ignored.')
+            self.view.log_system('Forced action ignored.')
             self.active_actions_force = None
             return
         
@@ -254,6 +254,6 @@ class HumanController:
             self.active_actions_force = None
             return
         
-        self.view.log_command('Retrying forced action.')
+        self.view.log_system('Retrying forced action.')
 
         self.execute_actions_force(cmd, retry=True)

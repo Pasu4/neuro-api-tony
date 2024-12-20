@@ -49,28 +49,41 @@ Like Randy, this application opens a websocket server on port `8000` (websocket 
 > [!Note]
 > When working with the Unity SDK, you need to focus the Unity editor after sending an action for the game to receive the action.
 
-### Executing actions
+### Actions panel
 
 To execute an action, the game first needs to send an `actions/register` command.
 After that, an entry should appear in the left panel showing the name of the action and its description.
-Selection the action and clicking on the "execute" button at the bottom opens a window where you can enter the content of the reply and send it via the "Send" button.
-The window will already contain some sample JSON that validates against the schema.
-By default, your input will be parsed and validated against the schema before sending, you can turn this off in the control panel.
+
+There are some buttons at the bottom of the panel:
+
+- **Execute:** Opens a window where you can enter the content of the reply and send it via the "Send" button. The window will already contain some sample JSON that validates against the schema. By default, your input will be parsed and validated against the schema before sending, you can turn this off in the control panel.
+- **Delete:** Manually unregisters the selected action. This is not something Neuro would normally do.
+- **Unlock:** Unlocks the execute button while waiting for an `action/result` command. This is probably not something Neuro would normally do.
+
+### Forced actions
 
 If an `actions/force` command is received, a "Forced action" window will open, showing all applicable actions and the query and state of the command.
 Executing actions from here works the same as from the main actions panel.
-Once the game has acknowledged the sent action with an action result, the window will close automatically.
+Once the action has been sent, the window will close automatically.
 You can also close the window manually, this will ignore the forced action and allow you to execute any registered action.
 
 ### Logs
 
 The log panel on the top right has three different tabs:
 
-- The **log tab** logs all commands that are received and sent, without showing their content. It also shows color-coded error, warning and info messages. It has multiple log levels for these:
+- The **log tab** logs all commands that are received and sent, without showing their content. It also shows messages with color-coded tags:
+    - **Debug (gray):** Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.
     - **Info (blue):** Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).
     - **Warning (yellow):** Things that do not comply with the API specification, but which this application can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.
     - **Error (red):** Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.
-- The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the description of actions, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are diplayed in gray and ephemeral contexts in light blue.
+- The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the description of actions, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are diplayed in gray and ephemeral contexts in light blue. It has the following tags:
+    - **Context:** Message is from a `context` command.
+    - **Silent:** Message is from a silent `context` command.
+    - **State:** Message is the state of an `actions/force` command.
+    - **Query:** Message is the query of an `actions/force` command.
+    - **Ethereal:** Message is the query or state of an `actions/force` command with ethereal context.
+    - **Action:** Message is the description of an action, logged at registration.
+    - **Result:** Message is from an `action/result` command. The color denotes whether the result indicates success (green) or failure (red).
 - The **network tab** shows the full data sent over the websocket, as well as who sent that data. If it is valid JSON, it will be formatted for easier viewing.
 
 ### Control panel
@@ -83,6 +96,7 @@ The control panel has some checkboxes and buttons that change the behavior of th
 - **Ignore forced actions:** If checked, will not open the "Forced action" dialog when an `actions/force` command is received. You have to execute the action yourself from the left panel. Since the forced action is ignored, you can execute any registered action.
 - **Automatically answer forced actions**: If checked, will immediately send the pre-generated JSON of a random valid action instead of opening the "Forced action" window when an `actions/force` command arrives. This behavior is similar to what Randy does.
 - **L\*tency:** Will delay sending commands by the specified time. Must be non-negative and not greater than 10000ms.
+- **Log level:** Will show only messages with an equal of higher log level than the selection. For example, selecting "Warning" will not show Debug or Info messages, but still show Warning, Error and System messages.
 
 #### Experimental controls
 

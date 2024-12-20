@@ -32,23 +32,38 @@ class ActionResultEvent(wx.PyCommandEvent):
 
 #endregion
 
-LOG_COLOR_DEFAULT = wx.Colour(0, 0, 0)
-LOG_COLOR_TIMESTAMP = wx.Colour(0, 128, 0)
-LOG_COLOR_CONTEXT = LOG_COLOR_DEFAULT
-LOG_COLOR_CONTEXT_QUERY = wx.Colour(255, 128, 255)
-LOG_COLOR_CONTEXT_STATE = wx.Colour(128, 255, 128)
-LOG_COLOR_CONTEXT_SILENT = wx.Colour(128, 128, 128)
-LOG_COLOR_CONTEXT_EPHEMERAL = wx.Colour(128, 192, 255)
-LOG_COLOR_NETWORK_INCOMING = wx.Colour(0, 0, 255)
-LOG_COLOR_NETWORK_OUTGOING = wx.Colour(255, 128, 192)
+#region Constants
+
+# Colors
+LOG_COLOR_DEFAULT                       = wx.Colour(  0,   0,   0)
+LOG_COLOR_TIMESTAMP                     = wx.Colour(  0, 128,   0)
+LOG_COLOR_DEBUG                         = wx.Colour(128, 128, 128)
+LOG_COLOR_INFO                          = wx.Colour(128, 192, 255)
+LOG_COLOR_WARNING                       = wx.Colour(255, 192,   0)
+LOG_COLOR_ERROR                         = wx.Colour(255,   0,   0)
+LOG_COLOR_CONTEXT                       = LOG_COLOR_DEFAULT
+LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255, 128, 255)
+LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
+LOG_COLOR_CONTEXT_SILENT                = wx.Colour(128, 128, 128)
+LOG_COLOR_CONTEXT_EPHEMERAL             = wx.Colour(128, 192, 255)
+LOG_COLOR_CONTEXT_ACTION                = LOG_COLOR_DEFAULT
+LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
+LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
+LOG_COLOR_NETWORK_INCOMING              = wx.Colour(  0,   0, 255)
+LOG_COLOR_NETWORK_OUTGOING              = wx.Colour(255, 128, 192)
+
+UI_COLOR_ERROR = wx.Colour(255, 192, 192)
+
 LOG_LEVELS = {
     'Debug': 10,
     'Info': 20,
     'Warning': 30,
     'Error': 40,
     # 'Critical': 50,
-    'Commands': 60,
+    'System': 60,
 }
+
+#endregion
 
 class HumanView:
     '''The view class for the Human Control application.'''
@@ -77,35 +92,35 @@ class HumanView:
 
         self.frame.Show()
 
-    def log_command(self, message: str):
+    def log_system(self, message: str):
         '''Log a command.'''
 
-        if self.controls.log_level <= LOG_LEVELS['Commands']:
+        if self.controls.log_level <= LOG_LEVELS['System']:
             self.frame.panel.log_notebook.log_panel.log(message)
 
     def log_debug(self, message: str):
         '''Log a debug message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Debug']:
-            self.frame.panel.log_notebook.log_panel.log(message, 'Debug', wx.Colour(128, 128, 128))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Debug', LOG_COLOR_DEBUG)
 
     def log_info(self, message: str):
         '''Log an informational message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Info']:
-            self.frame.panel.log_notebook.log_panel.log(message, 'Info', wx.Colour(128, 192, 255))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Info', LOG_COLOR_INFO)
 
     def log_warning(self, message: str):
         '''Log a warning message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Warning']:
-            self.frame.panel.log_notebook.log_panel.log(message, 'Warning', wx.Colour(255, 192, 0))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Warning', LOG_COLOR_WARNING)
 
     def log_error(self, message: str):
         '''Log an error message.'''
 
         if self.controls.log_level <= LOG_LEVELS['Error']:
-            self.frame.panel.log_notebook.log_panel.log(message, 'Error', wx.Colour(255, 0, 0))
+            self.frame.panel.log_notebook.log_panel.log(message, 'Error', LOG_COLOR_ERROR)
 
     def log_context(self, message: str, silent: bool = False):
         '''Log a context message.'''
@@ -151,10 +166,8 @@ class HumanView:
     def log_action_result(self, success: bool, message: str | None):
         '''Log an action result message.'''
 
-        if success:
-            self.frame.panel.log_notebook.context_log_panel.log(message, 'Action', wx.Colour(0, 128, 0))
-        else:
-            self.frame.panel.log_notebook.context_log_panel.log(message, 'Action', wx.Colour(255, 0, 0))
+        
+        self.frame.panel.log_notebook.context_log_panel.log(message, 'Result', LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS if success else LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE)
 
     def log_network(self, message: str, incoming: bool):
         '''Log a network message.'''
@@ -219,7 +232,7 @@ class HumanView:
 
         # Executing the action has already been handled by the dialog
         if result != wx.ID_OK:
-            self.log_command('Manually ignored forced action.')
+            self.log_system('Manually ignored forced action.')
 
     def clear_actions(self):
         '''Clear the list of actions.'''
@@ -520,7 +533,7 @@ class ControlPanel(wx.Panel):
             self.latency_input.SetBackgroundColour(wx.NullColour) # Default color
         except ValueError as e:
             self.latency_input.SetToolTip(str(e))
-            self.latency_input.SetBackgroundColour(wx.Colour(255, 192, 192))
+            self.latency_input.SetBackgroundColour(UI_COLOR_ERROR)
         self.latency_input.Refresh()
 
     def on_log_level(self, event: wx.CommandEvent):
