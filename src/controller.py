@@ -50,6 +50,7 @@ class HumanController:
         self.api.on_shutdown_ready = self.on_shutdown_ready
         self.api.on_unknown_command = self.on_unknown_command
         self.api.log_command = self.view.log_command
+        self.api.log_debug = self.view.log_debug
         self.api.log_info = self.view.log_info
         self.api.log_warning = self.view.log_warning
         self.api.log_error = self.view.log_error

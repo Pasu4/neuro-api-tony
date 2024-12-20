@@ -21,7 +21,7 @@ class NeuroAPI:
 
         self.message_queue = asyncio.Queue()
         self.current_game = ''
-        self.waiting_for_action_result = False
+        self.current_action_id: str | None = None
 
         # Dependency injection
         self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
@@ -33,6 +33,7 @@ class NeuroAPI:
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
         self.log_command: Callable[[str], None] = lambda message: None
+        self.log_debug: Callable[[str], None] = lambda message: None
         self.log_info: Callable[[str], None] = lambda message: None
         self.log_warning: Callable[[str], None] = lambda message: None
         self.log_error: Callable[[str], None] = lambda message: None
@@ -90,7 +91,7 @@ class NeuroAPI:
                     self.log_warning('No startup command received.')
 
                 # Check action result when waiting for it
-                if self.waiting_for_action_result and json_cmd['command'] == 'actions/force':
+                if self.current_action_id is not None and json_cmd['command'] == 'actions/force':
                     self.log_warning(f'Received actions/force while waiting for action/result.')
 
                 self.log_command(f'Command received: {json_cmd["command"]}')
@@ -98,7 +99,7 @@ class NeuroAPI:
                 # Handle the command
                 match json_cmd['command']:
                     case 'startup' | 'game/startup':
-                        self.waiting_for_action_result = False
+                        self.current_action_id = None
 
                         self.on_startup(StartupCommand())
 
@@ -141,10 +142,16 @@ class NeuroAPI:
                         self.on_actions_force(ActionsForceCommand(data.get('state'), data['query'], data.get('ephemeral_context', False), data['action_names']))
                     
                     case 'action/result':
-                        if not self.waiting_for_action_result:
+                        # Check if an action/result was expected
+                        if self.current_action_id is None:
                             self.log_warning('Unexpected action/result.')
+                        # Check if the action ID matches
+                        elif self.current_action_id != data['id']:
+                            self.log_warning(f'Received action ID "{data["id"]}" does not match the expected action ID "{self.current_action_id}".')
 
-                        self.waiting_for_action_result = False
+                        self.log_debug(f'Action ID: {data["id"]}')
+
+                        self.current_action_id = None
                         self.on_action_result(ActionResultCommand(data['success'], data.get('message', None)))
 
                     case 'shutdown/ready':
@@ -192,8 +199,9 @@ class NeuroAPI:
         message = json.dumps(obj)
 
         self.message_queue.put_nowait(message)
-        self.waiting_for_action_result = True
+        self.current_action_id = id
         self.log_command('Command sent: action')
+        self.log_debug(f'Action ID: {id}')
 
     def send_actions_reregister_all(self):
         '''Send an actions/reregister_all command.'''
