@@ -2,7 +2,7 @@ import logging
 import wx
 import sys
 from getopt import getopt
-from git import Repo
+from git import CommandError, Repo
 from git.exc import InvalidGitRepositoryError
 
 from .controller import HumanController
@@ -82,6 +82,12 @@ if __name__ == '__main__':
                 except InvalidGitRepositoryError:
                     print('Program is not in a git repository.')
                     print('Please install the new version manually from ' + GIT_REPO_URL + '.')
+
+                except CommandError as e:
+                    print(e)
+                    print()
+                    print('Failed to update program.')
+                    print('Please update manually using git or reinstall the program from ' + GIT_REPO_URL + '.')
 
                 sys.exit(1)
 
