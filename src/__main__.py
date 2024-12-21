@@ -1,7 +1,8 @@
+import logging
 import wx
 import sys
 from getopt import getopt
-from git import Repo, FetchInfo
+from git import Repo
 from git.exc import InvalidGitRepositoryError
 
 from .controller import HumanController
@@ -59,16 +60,18 @@ if __name__ == '__main__':
 
             case '--update':
                 try:
-                    repo = Repo('.')
-                    
-                     # Only allow fast-forward merges so nothing breaks if the program is modified
-                    fetch_info = repo.remote().pull(verbose=True, ff_only=True)
+                    logging.basicConfig(level=logging.DEBUG)
 
-                    if fetch_info[0].flags & FetchInfo.HEAD_UPTODATE:
+                    repo = Repo('.')
+
+                    if repo.head.commit == repo.remote().refs.master.commit: # Check if the local commit is the same as the remote commit
                         print('Program is already up to date.')
                         sys.exit(0)
 
-                    if fetch_info[0].flags & FetchInfo.REJECTED or fetch_info[0].flags & FetchInfo.ERROR:
+                     # Only allow fast-forward merges so nothing breaks if the program is modified
+                    repo.remote().pull(ff_only=True)
+
+                    if repo.head.commit != repo.remote().refs.master.commit: # Check if the local commit is still different from the remote commit
                         print('Failed to update program.')
                         print('Please update manually using git or reinstall the program from ' + GIT_REPO_URL + '.')
                         sys.exit(1)
@@ -89,8 +92,9 @@ if __name__ == '__main__':
     # Check if the program is up to date
     try:
         repo = Repo('.')
-        fetch_info = repo.remote().fetch()
-        if fetch_info[0].flags & FetchInfo.NEW_HEAD: # TODO: Change this to NEW_TAG when tags are added
+        repo.remote().fetch()
+
+        if repo.head.commit != repo.remote().refs.master.commit: # Check if the local commit is different from the remote commit
             print('An update is available. Run "python -m src --update" to update.')
     except InvalidGitRepositoryError:
         pass # Don't check for updates if the program is not in a git repository
