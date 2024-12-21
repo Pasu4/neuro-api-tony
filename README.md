@@ -44,10 +44,36 @@ The right panel shows an event log, below that is a smaller panel with some cont
 After sending an `action` command to the game, the next action can only be sent after the `action/result` command has been received.
 When the game sends an `actions/force` command, a window will open that only shows the applicable actions, and will only close once the `action/result` command indicates success.
 
-Like Randy, this application opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`).
+By default, this application opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`), this can be changed with command line arguments.
 
 > [!Note]
 > When working with the Unity SDK, you need to focus the Unity editor after sending an action for the game to receive the action.
+
+### Command line arguments
+
+Copy-pasted from the help message:
+
+```
+-h, --help:
+    Show this help message and exit.
+
+-a, --addr, --address:
+    The address to start the websocket server on. Default is localhost.
+
+-l, --log, --log-level:
+    The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
+    WARNING, ERROR, SYSTEM.
+
+-p, --port:
+    The port number to start the websocket server on. Default is 8000.
+
+--update:
+    Update the program to the latest version, if available. Only works if
+    the program is in a git repository.
+
+-v, --version:
+    Show the version of the program and exit.
+```
 
 ### Actions panel
 

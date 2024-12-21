@@ -20,10 +20,10 @@ def action_id_generator():
 
 class HumanController:
 
-    def __init__(self, app: wx.App):
+    def __init__(self, app: wx.App, log_level: str):
         self.app = app
         self.model = HumanModel()
-        self.view = HumanView(app, self.model)
+        self.view = HumanView(app, self.model, log_level)
         self.api = NeuroAPI()
 
         self.active_actions_force: ActionsForceCommand | None = None
@@ -32,9 +32,8 @@ class HumanController:
 
         self.inject()
 
-        self.api.start()
-
-    def run(self):
+    def run(self, address: str, port: int):
+        self.api.start(address, port)
         self.view.show()
         self.app.MainLoop()
 

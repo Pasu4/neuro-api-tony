@@ -1,8 +1,101 @@
 import wx
+import sys
+from getopt import getopt
+from git import Repo, FetchInfo
+from git.exc import InvalidGitRepositoryError
 
 from .controller import HumanController
+from .constants import APP_NAME, VERSION, GIT_REPO_URL
+
+help_message = '''
+Usage: python -m src [options]
+
+Options:
+    -h, --help:
+        Show this help message and exit.
+
+    -a, --addr, --address:
+        The address to start the websocket server on. Default is localhost.
+
+    -l, --log, --log-level:
+        The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
+        WARNING, ERROR, SYSTEM.
+
+    -p, --port:
+        The port number to start the websocket server on. Default is 8000.
+
+    --update:
+        Update the program to the latest version, if available. Only works if
+        the program is in a git repository.
+    
+    -v, --version:
+        Show the version of the program and exit.
+'''
 
 if __name__ == '__main__':
+    options, _ = getopt(sys.argv[1:], 'ha:l:p:v', ['help', 'addr=', 'address=', 'log=', 'log-level=', 'port=', 'update', 'version'])
+
+    address = 'localhost'
+    port = 8000
+    log_level = 'INFO'
+
+    for option, value in options:
+        match option:
+            case '-h' | '--help':
+                print(help_message)
+                sys.exit(0)
+
+            case '-a' | '--addr' | '--address':
+                address = value
+
+            case '-l' | '--log' | '--log-level':
+                if value.upper() not in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'SYSTEM']:
+                    print('Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, SYSTEM.')
+                    sys.exit(1)
+                log_level = value.upper()
+
+            case '-p' | '--port':
+                port = int(value)
+
+            case '--update':
+                try:
+                    repo = Repo('.')
+                    fetch_info = repo.remote().fetch()
+
+                    if fetch_info[0].flags & FetchInfo.HEAD_UPTODATE:
+                        print('Program is already up to date.')
+                        sys.exit(0)
+                     # Only allow fast-forward merges so nothing breaks if the program is modified
+                    fetch_info = repo.remote().pull(verbose=True, ff_only=True)
+
+                    if fetch_info[0].flags & FetchInfo.REJECTED or fetch_info[0].flags & FetchInfo.ERROR:
+                        print('Failed to update program.')
+                        print('Please update manually using git or reinstall the program from ' + GIT_REPO_URL + '.')
+                        sys.exit(1)
+
+                    print('Program updated successfully.')
+                    sys.exit(0)
+                
+                except InvalidGitRepositoryError:
+                    print('Program is not in a git repository.')
+                    print('Please install the new version manually from ' + GIT_REPO_URL + '.')
+
+                sys.exit(1)
+
+            case '-v' | '--version':
+                print(f'{APP_NAME} v{VERSION}')
+                sys.exit(0)
+
+    # Check if the program is up to date
+    try:
+        repo = Repo('.')
+        fetch_info = repo.remote().fetch()
+        if fetch_info[0].flags & FetchInfo.NEW_HEAD: # TODO: Change this to NEW_TAG when tags are added
+            print('An update is available. Run "python -m src --update" to update.')
+    except InvalidGitRepositoryError:
+        pass # Don't check for updates if the program is not in a git repository
+
+    # Start the program
     app = wx.App()
-    controller = HumanController(app)
-    controller.run()
+    controller = HumanController(app, log_level)
+    controller.run(address, port)

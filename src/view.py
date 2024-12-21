@@ -55,12 +55,12 @@ LOG_COLOR_NETWORK_OUTGOING              = wx.Colour(255, 128, 192)
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
 
 LOG_LEVELS = {
-    'Debug': 10,
-    'Info': 20,
-    'Warning': 30,
-    'Error': 40,
-    # 'Critical': 50,
-    'System': 60,
+    'DEBUG': 10,
+    'INFO': 20,
+    'WARNING': 30,
+    'ERROR': 40,
+    # 'CRITICAL': 50,
+    'SYSTEM': 60,
 }
 
 #endregion
@@ -68,10 +68,11 @@ LOG_LEVELS = {
 class HumanView:
     '''The view class for the Human Control application.'''
 
-    def __init__(self, app: wx.App, model: HumanModel):
+    def __init__(self, app: wx.App, model: HumanModel, log_level: str):
         self.model = model
 
         self.controls = Controls()
+        self.controls.set_log_level(log_level)
 
         self.frame = MainFrame(self)
         app.SetTopWindow(self.frame)
@@ -95,31 +96,31 @@ class HumanView:
     def log_system(self, message: str):
         '''Log a command.'''
 
-        if self.controls.log_level <= LOG_LEVELS['System']:
+        if self.controls.get_log_level() <= LOG_LEVELS['SYSTEM']:
             self.frame.panel.log_notebook.log_panel.log(message)
 
     def log_debug(self, message: str):
         '''Log a debug message.'''
 
-        if self.controls.log_level <= LOG_LEVELS['Debug']:
+        if self.controls.get_log_level() <= LOG_LEVELS['DEBUG']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Debug', LOG_COLOR_DEBUG)
 
     def log_info(self, message: str):
         '''Log an informational message.'''
 
-        if self.controls.log_level <= LOG_LEVELS['Info']:
+        if self.controls.get_log_level() <= LOG_LEVELS['INFO']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Info', LOG_COLOR_INFO)
 
     def log_warning(self, message: str):
         '''Log a warning message.'''
 
-        if self.controls.log_level <= LOG_LEVELS['Warning']:
+        if self.controls.get_log_level() <= LOG_LEVELS['WARNING']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Warning', LOG_COLOR_WARNING)
 
     def log_error(self, message: str):
         '''Log an error message.'''
 
-        if self.controls.log_level <= LOG_LEVELS['Error']:
+        if self.controls.get_log_level() <= LOG_LEVELS['ERROR']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Error', LOG_COLOR_ERROR)
 
     def log_context(self, message: str, silent: bool = False):
@@ -447,7 +448,7 @@ class ControlPanel(wx.Panel):
 
         log_level_panel = wx.Panel(self)
         log_level_text = wx.StaticText(log_level_panel, label='Log level:')
-        self.log_level_choice = wx.Choice(log_level_panel, choices=list(LOG_LEVELS.keys()))
+        self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS.keys()])
 
         self.send_actions_reregister_all_button = wx.Button(self, label='Clear all actions and request reregistration (experimental)')
         self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown (experimental)')
@@ -500,7 +501,7 @@ class ControlPanel(wx.Panel):
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
         # self.latency_input.SetValue('0')
-        self.log_level_choice.SetSelection(1) # Info
+        self.log_level_choice.SetStringSelection(self.view.controls.get_log_level_str())
 
         # Modify
 
@@ -540,7 +541,7 @@ class ControlPanel(wx.Panel):
         event.Skip()
 
         sel = self.log_level_choice.GetSelection()
-        self.view.controls.log_level = LOG_LEVELS[self.log_level_choice.GetString(sel)]
+        self.view.controls.set_log_level(self.log_level_choice.GetString(sel))
 
     def on_send_actions_reregister_all(self, event: wx.CommandEvent):
         event.Skip()
@@ -677,5 +678,23 @@ class Controls:
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
         self.latency: int = 0
-        self.log_level: int = LOG_LEVELS['Info']
+
+        self.__log_level_str: str = 'INFO'
+        self.__log_level: int = LOG_LEVELS['INFO']
+
+    def set_log_level(self, log_level: str):
+        '''Set the log level.'''
+
+        self.__log_level_str = log_level
+        self.__log_level = LOG_LEVELS[log_level]
+
+    def get_log_level(self) -> int:
+        '''Get the log level.'''
+
+        return self.__log_level
+    
+    def get_log_level_str(self) -> str:
+        '''Get the log level as a string.'''
+
+        return self.__log_level_str
     

@@ -41,23 +41,23 @@ class NeuroAPI:
         self.log_network: Callable[[str, bool], None] = lambda message: None
         self.get_delay: Callable[[], float] = lambda: -1
 
-    def start(self):
+    def start(self, address: str, port: int):
         '''Start the websocket thread.'''
 
         if self.thread is not None:
             return
         
-        self.thread = Thread(target=self.__start_thread, daemon=True, name='API Thread')
+        self.thread = Thread(target=self.__start_thread, args=[address, port], daemon=True, name='API Thread')
         self.thread.start()
 
-    def __start_thread(self):
+    def __start_thread(self, address: str, port: int):
         '''Start the websocket thread.'''
 
-        asyncio.run(self.__run())
+        asyncio.run(self.__run(address, port))
 
-    async def __run(self):
-        async with serve(self.__handle_message, 'localhost', 8000) as server:
-            self.log_system('Websocket started.')
+    async def __run(self, address: str, port: int):
+        async with serve(self.__handle_message, address, port) as server:
+            self.log_system('Websocket server started on ws://' + address + ':' + str(port) + '.')
             await server.serve_forever()
         
     # http://web.archive.org/web/20190623114747/https://websockets.readthedocs.io/en/stable/intro.html#both
