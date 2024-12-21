@@ -60,8 +60,6 @@ if __name__ == '__main__':
 
             case '--update':
                 try:
-                    logging.basicConfig(level=logging.DEBUG)
-
                     repo = Repo('.')
 
                     repo.remote().fetch()
