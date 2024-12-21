@@ -60,13 +60,13 @@ if __name__ == '__main__':
             case '--update':
                 try:
                     repo = Repo('.')
-                    fetch_info = repo.remote().fetch()
+                    
+                     # Only allow fast-forward merges so nothing breaks if the program is modified
+                    fetch_info = repo.remote().pull(verbose=True, ff_only=True)
 
                     if fetch_info[0].flags & FetchInfo.HEAD_UPTODATE:
                         print('Program is already up to date.')
                         sys.exit(0)
-                     # Only allow fast-forward merges so nothing breaks if the program is modified
-                    fetch_info = repo.remote().pull(verbose=True, ff_only=True)
 
                     if fetch_info[0].flags & FetchInfo.REJECTED or fetch_info[0].flags & FetchInfo.ERROR:
                         print('Failed to update program.')
