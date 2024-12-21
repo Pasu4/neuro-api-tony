@@ -64,6 +64,8 @@ if __name__ == '__main__':
 
                     repo = Repo('.')
 
+                    repo.remote().fetch()
+
                     if repo.head.commit == repo.remote().refs.master.commit: # Check if the local commit is the same as the remote commit
                         print('Program is already up to date.')
                         sys.exit(0)
