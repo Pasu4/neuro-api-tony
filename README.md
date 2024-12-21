@@ -22,6 +22,10 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 
 This assumes you have cloned the repository with git.
 If you didn't, you're better off re-downloading and re-installing than updating the files manually.
+To update the program, run it with the `--update` argument (see [Usage](#usage) on how to run it).
+
+If `--update` starts the program instead of updating, you might be running an old version.
+In that case, do the following steps.
 **All commands should be run in the folder of the application.**
 
 1. Run `git pull`
