@@ -4,6 +4,7 @@ import sys
 from getopt import getopt
 from git import CommandError, Repo
 from git.exc import InvalidGitRepositoryError
+import subprocess
 
 from .controller import HumanController
 from .constants import APP_NAME, VERSION, GIT_REPO_URL
@@ -62,19 +63,27 @@ if __name__ == '__main__':
                 try:
                     repo = Repo('.')
 
+                    print('Checking for updates...')
+
                     repo.remote().fetch()
 
                     if repo.head.commit == repo.remote().refs.master.commit: # Check if the local commit is the same as the remote commit
                         print('Program is already up to date.')
                         sys.exit(0)
 
-                     # Only allow fast-forward merges so nothing breaks if the program is modified
+                    print('Pulling changes from remote repository...')
+
+                    # Only allow fast-forward merges so nothing breaks if the program is modified
                     repo.remote().pull(ff_only=True)
 
                     if repo.head.commit != repo.remote().refs.master.commit: # Check if the local commit is still different from the remote commit
                         print('Failed to update program.')
                         print('Please update manually using git or reinstall the program from ' + GIT_REPO_URL + '.')
                         sys.exit(1)
+
+                    # Install dependencies
+                    print('Installing dependencies...')
+                    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
 
                     print('Program updated successfully.')
                     sys.exit(0)
@@ -88,6 +97,12 @@ if __name__ == '__main__':
                     print()
                     print('Failed to update program.')
                     print('Please update manually using git or reinstall the program from ' + GIT_REPO_URL + '.')
+
+                except subprocess.CalledProcessError as e:
+                    print(e)
+                    print()
+                    print('Failed to install dependencies.')
+                    print('Please install the dependencies manually using pip.')
 
                 sys.exit(1)
 
