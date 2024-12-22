@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-class HumanModel:
+class TonyModel:
     
     def __init__(self):
         self.actions: list[NeuroAction] = []

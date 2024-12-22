@@ -5,7 +5,8 @@ import wx
 from datetime import datetime as dt
 from jsf import JSF
 
-from .model import HumanModel, NeuroAction
+from .constants import VERSION
+from .model import TonyModel, NeuroAction
 
 #region Events
 
@@ -65,10 +66,10 @@ LOG_LEVELS = {
 
 #endregion
 
-class HumanView:
-    '''The view class for the Human Control application.'''
+class TonyView:
+    '''The view class for Tony.'''
 
-    def __init__(self, app: wx.App, model: HumanModel, log_level: str):
+    def __init__(self, app: wx.App, model: TonyModel, log_level: str):
         self.model = model
 
         self.controls = Controls()
@@ -249,10 +250,10 @@ class HumanView:
         self.enable_actions()
 
 class MainFrame(wx.Frame):
-    '''The main frame for the Human Control application.'''
+    '''The main frame for the Tony.'''
 
-    def __init__(self, view: HumanView):
-        super().__init__(None, title='Neuro API Human Control')
+    def __init__(self, view: TonyView):
+        super().__init__(None, title='Tony v' + VERSION)
 
         self.view = view
         self.panel = MainPanel(self)
@@ -261,7 +262,7 @@ class MainFrame(wx.Frame):
         self.SetSize((850, 600))
 
 class MainPanel(wx.Panel):
-    '''The main panel for the Human Control application.'''
+    '''The main panel for Tony.'''
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -433,7 +434,7 @@ class ControlPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
-        self.view: HumanView = self.GetTopLevelParent().view
+        self.view: TonyView = self.GetTopLevelParent().view
 
         # Create controls
 
@@ -631,7 +632,7 @@ class ActionDialog(wx.Dialog):
 
 class ActionsForceDialog(wx.Dialog):
 
-    def __init__(self, parent, view: HumanView, state: str, query: str, ephemeral_context: bool, actions: list[NeuroAction], retry: bool = False):
+    def __init__(self, parent, view: TonyView, state: str, query: str, ephemeral_context: bool, actions: list[NeuroAction], retry: bool = False):
         title = 'Forced Action' if not retry else 'Retry Forced Action'
         super().__init__(parent, title=title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 

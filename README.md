@@ -1,7 +1,7 @@
-# Neuro API Human Control
+# Tony
 
 Graphical implementation of the Neuro API in python.
-Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), it can answer `actions/force` commands automatically, but also allows the user to formulate the response Neuro would send themselves, as well as send non-forced actions whenever.
+Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), he can answer `actions/force` commands automatically, but also allows the user to formulate the response Neuro would send themselves, as well as send non-forced actions whenever.
 
 > [!Note]
 > I cannot guarantee that this implementation perfectly emulates what Neuro could/would do, or that it is error-free.
@@ -13,7 +13,7 @@ This will install the package in a virtual environment to not conflict with any 
 Skip steps 2 and 3 if you don't want a virtual environment.
 **All commands after step 1 should be run in the downloaded folder.**
 
-1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-human-control.git` or download it from GitHub
+1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
 2. Run `python -m venv .venv`
 3. Run `.\.venv\Scripts\activate` on Windows, or `source ./.venv/bin/activate` on Linux / Mac
 4. Run `pip install -r requirements.txt`
@@ -48,7 +48,7 @@ The right panel shows an event log, below that is a smaller panel with some cont
 After sending an `action` command to the game, the next action can only be sent after the `action/result` command has been received.
 When the game sends an `actions/force` command, a window will open that only shows the applicable actions, and will only close once the `action/result` command indicates success.
 
-By default, this application opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`), this can be changed with command line arguments.
+By default, Tony opens a websocket server on port `8000` (websocket URL `ws://localhost:8000`), this can be changed with command line arguments.
 
 > [!Note]
 > When working with the Unity SDK, you need to focus the Unity editor after sending an action for the game to receive the action.
@@ -104,7 +104,7 @@ The log panel on the top right has three different tabs:
 - The **log tab** logs all commands that are received and sent, without showing their content. It also shows messages with color-coded tags:
     - **Debug (gray):** Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.
     - **Info (blue):** Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).
-    - **Warning (yellow):** Things that do not comply with the API specification, but which this application can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.
+    - **Warning (yellow):** Things that do not comply with the API specification, but which Tony can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.
     - **Error (red):** Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.
 - The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the description of actions, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are diplayed in gray and ephemeral contexts in light blue. It has the following tags:
     - **Context:** Message is from a `context` command.

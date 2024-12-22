@@ -6,8 +6,8 @@ import jsonschema.tests
 import wx
 from jsf import JSF
 
-from .model import HumanModel, NeuroAction
-from .view import HumanView
+from .model import TonyModel, NeuroAction
+from .view import TonyView
 from .api import *
 
 def action_id_generator():
@@ -18,12 +18,12 @@ def action_id_generator():
         yield f'action_{i}'
         i += 1
 
-class HumanController:
+class TonyController:
 
     def __init__(self, app: wx.App, log_level: str):
         self.app = app
-        self.model = HumanModel()
-        self.view = HumanView(app, self.model, log_level)
+        self.model = TonyModel()
+        self.view = TonyView(app, self.model, log_level)
         self.api = NeuroAPI()
 
         self.active_actions_force: ActionsForceCommand | None = None

@@ -6,7 +6,7 @@ from git import CommandError, Repo
 from git.exc import InvalidGitRepositoryError
 import subprocess
 
-from .controller import HumanController
+from .controller import TonyController
 from .constants import APP_NAME, VERSION, GIT_REPO_URL
 
 help_message = '''
@@ -122,5 +122,5 @@ if __name__ == '__main__':
 
     # Start the program
     app = wx.App()
-    controller = HumanController(app, log_level)
+    controller = TonyController(app, log_level)
     controller.run(address, port)
