@@ -20,6 +20,10 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 
 ## Updating
 
+> [!Note]
+> This repository was renamed from `neuro-api-human-control` to `neuro-api-tony`.
+> GitHub should automatically redirect requests to the new URL, but in case you run into problems because of this, run `git remote set-url origin https://github.com/Pasu4/neuro-api-tony.git` in the repository.
+
 To update the program, run it with the `--update` argument (see [Usage](#usage) on how to run it).
 This assumes you have cloned the repository with git.
 If you didn't, you're better off re-downloading and re-installing than updating the files manually.
