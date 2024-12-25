@@ -9,14 +9,103 @@ Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), he can 
 
 ## Installation
 
+A Python version of 3.10 or higher is required.
+Python versions 3.9 and below will not work.
+
+<!-- #region Windows -->
+
+<details>
+
+<summary>Windows</summary>
+
+### Windows
+
 This will install the package in a virtual environment to not conflict with any global packages.
 Skip steps 2 and 3 if you don't want a virtual environment.
 **All commands after step 1 should be run in the downloaded folder.**
 
 1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
 2. Run `python -m venv .venv`
-3. Run `.\.venv\Scripts\activate` on Windows, or `source ./.venv/bin/activate` on Linux / Mac
+3. Run `.\.venv\Scripts\activate`
 4. Run `pip install -r requirements.txt`
+
+</details>
+
+<!-- #endregion -->
+
+<!-- #region MacOS -->
+
+<details>
+
+<summary>MacOS</summary>
+
+### MacOS
+
+> [!WARNING]
+> This has not been tested, as I don't own a Mac.
+
+This will install the package in a virtual environment to not conflict with any global packages.
+Skip steps 2 and 3 if you don't want a virtual environment.
+**All commands after step 1 should be run in the downloaded folder.**
+
+1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
+2. Run `python -m venv .venv`
+3. Run `source ./.venv/bin/activate`
+4. Run `pip install -r requirements.txt`
+
+</details>
+
+<!-- #endregion -->
+
+<!-- #region Fedora -->
+
+<details>
+
+<summary>Fedora</summary>
+
+### Fedora
+
+This will install the package in a virtual environment to not conflict with any global packages.
+Skip steps 2 and 3 if you don't want a virtual environment.
+**All commands after step 2 should be run in the downloaded folder.**
+
+1. Run `sudo dnf install g++ gtk3-devel python-config`
+2. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
+3. Run `python -m venv .venv`
+4. Run `source ./.venv/bin/activate`
+5. Run `pip install -r requirements.txt`
+
+Tested on Fedora 41 with Python 3.13.1.
+
+</details>
+
+<!-- #endregion -->
+
+<!-- #region Linux -->
+
+<details>
+
+<summary>Other Linux distributions</summary>
+
+### Other Linux distributions
+
+> [!WARNING]
+> Not all Linux distributions have been tested.
+> You might have to install GTK+ in some form.
+> If you run into problems with a specific distribution, please [submit an issue](https://github.com/Pasu4/neuro-api-tony/issues).
+
+This will install the package in a virtual environment to not conflict with any global packages.
+Skip steps 2 and 3 if you don't want a virtual environment.
+**All commands after step 1 should be run in the downloaded folder.**
+
+1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
+2. Run `python -m venv .venv`
+3. Run `source ./.venv/bin/activate`
+4. Run `pip install -r requirements.txt`
+
+</details>
+
+<!-- #endregion -->
 
 ## Updating
 
