@@ -38,7 +38,7 @@ class NeuroAPI:
         self.log_info: Callable[[str], None] = lambda message: None
         self.log_warning: Callable[[str], None] = lambda message: None
         self.log_error: Callable[[str], None] = lambda message: None
-        self.log_network: Callable[[str, bool], None] = lambda message: None
+        self.log_raw: Callable[[str, bool], None] = lambda message: None
         self.get_delay: Callable[[], float] = lambda: -1
 
     def start(self, address: str, port: int):
@@ -74,7 +74,7 @@ class NeuroAPI:
         async for message in websocket:
             try:
                 json_cmd = json.loads(message)
-                self.log_network(json.dumps(json_cmd, indent=2), True)
+                self.log_raw(json.dumps(json_cmd, indent=2), True)
 
                 game = json_cmd.get('game', {})
                 data = json_cmd.get('data', {})
@@ -185,9 +185,9 @@ class NeuroAPI:
             await websocket.send(message)
 
             try:
-                self.log_network(json.dumps(json.loads(message), indent=2), False)
+                self.log_raw(json.dumps(json.loads(message), indent=2), False)
             except:
-                self.log_network(message, False)
+                self.log_raw(message, False)
 
     def send_action(self, id: str, name: str, data: str | None):
         '''Send an action command.'''

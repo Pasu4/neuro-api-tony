@@ -60,8 +60,8 @@ LOG_COLOR_CONTEXT_EPHEMERAL             = wx.Colour(128, 192, 255)
 LOG_COLOR_CONTEXT_ACTION                = LOG_COLOR_DEFAULT
 LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
 LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
-LOG_COLOR_NETWORK_INCOMING              = wx.Colour(  0,   0, 255)
-LOG_COLOR_NETWORK_OUTGOING              = wx.Colour(255, 128, 192)
+LOG_COLOR_RAW_INCOMING              = wx.Colour(  0,   0, 255)
+LOG_COLOR_RAW_OUTGOING              = wx.Colour(255, 128, 192)
 
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
 
@@ -181,13 +181,13 @@ class TonyView:
         
         self.frame.panel.log_notebook.context_log_panel.log(message, 'Result', LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS if success else LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE)
 
-    def log_network(self, message: str, incoming: bool):
-        '''Log a network message.'''
+    def log_raw(self, message: str, incoming: bool):
+        '''Log raw data.'''
 
         tag = 'Game --> Neuro' if incoming else 'Game <-- Neuro'
-        color = LOG_COLOR_NETWORK_INCOMING if incoming else LOG_COLOR_NETWORK_OUTGOING
+        color = LOG_COLOR_RAW_INCOMING if incoming else LOG_COLOR_RAW_OUTGOING
 
-        self.frame.panel.log_notebook.network_log_panel.log(message, tag, color)
+        self.frame.panel.log_notebook.raw_log_panel.log(message, tag, color)
 
     def show_action_dialog(self, action: NeuroAction) -> Optional[str]:
         '''Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None.'''
@@ -396,11 +396,11 @@ class LogNotebook(wx.Notebook):
 
         self.log_panel = LogPanel(self)
         self.context_log_panel = LogPanel(self)
-        self.network_log_panel = LogPanel(self, text_ctrl_style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.HSCROLL)
+        self.raw_log_panel = LogPanel(self, text_ctrl_style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.HSCROLL)
 
         self.AddPage(self.log_panel, 'Log')
         self.AddPage(self.context_log_panel, 'Context')
-        self.AddPage(self.network_log_panel, 'Network')
+        self.AddPage(self.raw_log_panel, 'Raw')
 
 class LogPanel(wx.Panel):
     '''The panel for logging messages.'''
