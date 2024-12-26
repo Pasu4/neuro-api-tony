@@ -31,6 +31,16 @@ class ActionResultEvent(wx.PyCommandEvent):
         self.success = success
         self.message = message
 
+EVT_TYPE_EXECUTE = wx.NewEventType()
+EVT_EXECUTE = wx.PyEventBinder(EVT_TYPE_EXECUTE, 1)
+
+class ExecuteEvent(wx.PyCommandEvent):
+    '''An event for executing an action.'''
+
+    def __init__(self, id, action: NeuroAction):
+        super().__init__(EVT_TYPE_EXECUTE, id)
+        self.action = action
+
 #endregion
 
 #region Constants
@@ -81,7 +91,7 @@ class TonyView:
         self.action_dialog: Optional[ActionDialog] = None
 
         # Dependency injection
-        self.on_execute: Callable[[NeuroAction], None] = lambda action: None
+        self.on_execute: Callable[[NeuroAction], bool] = lambda action: None
         self.on_delete_action: Callable[[str], None] = lambda name: None
         self.on_unlock: Callable[[], None] = lambda: None
         self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
@@ -353,7 +363,11 @@ class ActionList(wx.Panel):
         action = self.actions[index]
 
         top: MainFrame = self.GetTopLevelParent()
-        top.view.on_execute(action)
+        sent = top.view.on_execute(action)
+        
+        if sent:
+            self.GetEventHandler().ProcessEvent(ExecuteEvent(self.GetId(), action))
+        top.view.log_debug(f'Sent: {sent}')
 
     def on_delete(self, event: wx.CommandEvent):
         event.Skip()
@@ -659,15 +673,10 @@ class ActionsForceDialog(wx.Dialog):
 
         self.action_list.list.Select(0)
 
-        self.Bind(wx.EVT_BUTTON, self.on_execute, self.action_list.execute_button)
+        self.Bind(EVT_EXECUTE, self.on_execute, self.action_list)
 
-    def on_execute(self, event: wx.CommandEvent):
+    def on_execute(self, event: ExecuteEvent):
         event.Skip()
-
-        index = self.action_list.list.GetFirstSelected()
-
-        if index == -1: # No action selected, nothing will be executed so don't close the dialog
-            return
 
         self.EndModal(wx.ID_OK)
 

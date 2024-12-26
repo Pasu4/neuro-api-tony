@@ -171,19 +171,23 @@ class TonyController:
 
         self.api.send_actions_reregister_all()
 
-    def on_view_execute(self, action: NeuroAction):
-        '''Handle an action execution request from the view.'''
+    def on_view_execute(self, action: NeuroAction) -> bool:
+        '''
+        Handle an action execution request from the view.
+        Returns True if an action was sent, False if the action was cancelled.
+        '''
 
         if not action.schema:
             self.send_action(next(self.id_generator), action.name, None) # No schema, so send the action immediately
-            return
+            return True
         
         # If there is a schema, open a dialog to get the data
         result = self.view.show_action_dialog(action)
         if result is None:
-            return # User cancelled the dialog
+            return False # User cancelled the dialog
         
         self.send_action(next(self.id_generator), action.name, result)
+        return True
 
     def on_view_delete_action(self, name: str):
         '''Handle a request to delete an action from the view.'''
