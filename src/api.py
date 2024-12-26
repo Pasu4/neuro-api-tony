@@ -133,6 +133,9 @@ class NeuroAPI:
 
                             if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action['name']):
                                 self.log_warning(f'Action name is not a lowercase string.')
+
+                            if action['name'] == '':
+                                self.log_warning('Action name is empty.')
                             
                         self.on_actions_register(ActionsRegisterCommand(data['actions']))
                     
