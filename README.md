@@ -204,10 +204,10 @@ The log panel on the top right has three different tabs:
     - **Silent:** Message is from a silent `context` command.
     - **State:** Message is the state of an `actions/force` command.
     - **Query:** Message is the query of an `actions/force` command.
-    - **Ethereal:** Message is the query or state of an `actions/force` command with ethereal context.
+    - **Ephemeral:** Message is the query or state of an `actions/force` command with ephemeral context.
     - **Action:** Message is the description of an action, logged at registration.
     - **Result:** Message is from an `action/result` command. The color denotes whether the result indicates success (green) or failure (red).
-- The **network tab** shows the full data sent over the websocket, as well as who sent that data. If it is valid JSON, it will be formatted for easier viewing.
+- The **raw tab** shows the full data sent over the websocket, as well as who sent that data. If it is valid JSON, it will be formatted for easier viewing.
 
 ### Control panel
 
