@@ -80,16 +80,15 @@ class NeuroAPI:
                 data = json_cmd.get('data', {})
 
                 if game == '' or not isinstance(game, str):
-                    self.log_error('Game name is not set.')
-                    continue
-
-                # Check game name
-                if json_cmd['command'] == 'startup' or json_cmd['command'] == 'game/startup':
-                    self.current_game = game
-                elif self.current_game != game:
-                    self.log_warning('Game name does not match the current game.')
-                elif self.current_game == '':
-                    self.log_warning('No startup command received.')
+                    self.log_warning('Game name is not set.')
+                else:
+                    # Check game name
+                    if json_cmd['command'] == 'startup' or json_cmd['command'] == 'game/startup':
+                        self.current_game = game
+                    elif self.current_game != game:
+                        self.log_warning('Game name does not match the current game.')
+                    elif self.current_game == '':
+                        self.log_warning('No startup command received.')
 
                 # Check action result when waiting for it
                 if self.current_action_id is not None and json_cmd['command'] == 'actions/force':
