@@ -113,7 +113,7 @@ class NeuroAPI:
                         # Check the actions
                         for action in data['actions']:
                             # Check the schema
-                            if 'schema' in action:
+                            if 'schema' in action and action['schema'] != {}:
                                 try:
                                     jsonschema.Draft7Validator.check_schema(action['schema'])
                                 except jsonschema.exceptions.SchemaError as e:
@@ -201,6 +201,8 @@ class NeuroAPI:
 
         if data is not None:
             obj['data']['data'] = data
+        else:
+            obj['data']['data'] = None
 
         message = json.dumps(obj)
 

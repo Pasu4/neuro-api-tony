@@ -333,7 +333,7 @@ class ActionList(wx.Panel):
 
         self.actions.append(action)
 
-        self.list.Append([action.name, action.description, 'Yes' if action.schema is not None else 'No'])
+        self.list.Append([action.name, action.description, 'Yes' if action.schema is not None and action.schema != {} else 'No'])
 
     def remove_action_by_name(self, name: str):
         '''Remove an action panel from the list.'''
