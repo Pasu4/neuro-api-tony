@@ -1,6 +1,6 @@
 # Tony
 
-Graphical implementation of the Neuro API in python.
+Tony is a graphical implementation of the [Neuro API](https://github.com/VedalAI/neuro-game-sdk) in python.
 Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), he can answer `actions/force` commands automatically, but also allows the user to formulate the response Neuro would send themselves, as well as send non-forced actions whenever.
 
 > [!Note]
