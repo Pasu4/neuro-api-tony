@@ -59,6 +59,7 @@ class TonyController:
         self.view.on_execute = self.on_view_execute
         self.view.on_delete_action = self.on_view_delete_action
         self.view.on_unlock = self.on_view_unlock
+        self.view.on_clear_logs = self.on_view_clear_logs
         self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
         self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
         self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
@@ -202,6 +203,12 @@ class TonyController:
 
         self.view.log_system('Unlocking actions.')
         self.view.enable_actions()
+
+    def on_view_clear_logs(self):
+        '''Handle a request to clear the logs from the view.'''
+
+        self.view.clear_logs()
+        self.view.log_system('Logs cleared.')
 
     def on_view_send_actions_reregister_all(self):
         '''Handle a request to send an actions/reregister_all command from the view.'''

@@ -94,6 +94,7 @@ class TonyView:
         self.on_execute: Callable[[NeuroAction], bool] = lambda action: None
         self.on_delete_action: Callable[[str], None] = lambda name: None
         self.on_unlock: Callable[[], None] = lambda: None
+        self.on_clear_logs: Callable[[], None] = lambda: None
         self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
@@ -188,6 +189,13 @@ class TonyView:
         color = LOG_COLOR_RAW_INCOMING if incoming else LOG_COLOR_RAW_OUTGOING
 
         self.frame.panel.log_notebook.raw_log_panel.log(message, tag, color)
+
+    def clear_logs(self):
+        '''Clear all logs.'''
+
+        self.frame.panel.log_notebook.log_panel.text.Clear()
+        self.frame.panel.log_notebook.context_log_panel.text.Clear()
+        self.frame.panel.log_notebook.raw_log_panel.text.Clear()
 
     def show_action_dialog(self, action: NeuroAction) -> Optional[str]:
         '''Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None.'''
@@ -465,6 +473,7 @@ class ControlPanel(wx.Panel):
         log_level_text = wx.StaticText(log_level_panel, label='Log level:')
         self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS.keys()])
 
+        self.clear_logs_button = wx.Button(self, label='Clear logs')
         self.send_actions_reregister_all_button = wx.Button(self, label='Clear all actions and request reregistration (experimental)')
         self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown (experimental)')
         self.send_shutdown_graceful_cancel_button = wx.Button(self, label='Cancel graceful shutdown (experimental)')
@@ -489,6 +498,7 @@ class ControlPanel(wx.Panel):
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
+        self.sizer.Add(self.clear_logs_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
@@ -505,6 +515,7 @@ class ControlPanel(wx.Panel):
 
         self.Bind(wx.EVT_CHOICE, self.on_log_level, self.log_level_choice)
 
+        self.Bind(wx.EVT_BUTTON, self.on_clear_logs, self.clear_logs_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
@@ -519,6 +530,11 @@ class ControlPanel(wx.Panel):
         self.log_level_choice.SetStringSelection(self.view.controls.get_log_level_str())
 
         # Modify
+
+    def on_clear_logs(self, event: wx.CommandEvent):
+        event.Skip()
+
+        self.view.on_clear_logs()
 
     def on_validate_schema(self, event: wx.CommandEvent):
         event.Skip()
