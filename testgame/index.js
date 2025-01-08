@@ -4,11 +4,13 @@
 const { NeuroClient } = NeuroGameSdk;
 
 const NEURO_SERVER_URL = 'ws://localhost:8000';
-const GAME_NAME = 'Test Game';
+const GAME_NAME = 'Chat';
 
 /** @type {NeuroClient} */
 var neuroClient = undefined;
 var username = undefined;
+var apiUsername = undefined;
+var apiColor = undefined;
 var connected = false;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,10 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         const message = chatForm.elements['chat-input'].value;
         chatForm.elements['chat-input'].value = '';
-        if (connected) {
-            neuroClient.sendContext(username + ' says: ' + message);
-            addChatMessage(username, userColor, message);
-        }
+        addChatMessage(username, userColor, message);
     });
 
     /** @type {HTMLFormElement} */
@@ -63,28 +62,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initNeuroClient() {
     neuroClient = new NeuroClient(NEURO_SERVER_URL, GAME_NAME, () => {
-        addChatMessage('System', "#ff0000", 'Connected to Neuro');
-
-        neuroClient.registerActions([{
-            name: 'send_chat_message',
-            description: 'Send a chat message to ' + username,
-            schema: {
-                type: 'object',
-                properties: {
-                    message: { type: 'string' }
-                },
-                required: ['message']
+        addChatMessage('System', "#ff0000", 'Connected to API');
+        
+        neuroClient.registerActions([
+            {
+                name: 'set_name',
+                description: 'Set the name and text color of the name that will be shown in chat when you send a message. The color must be in a CSS-compatible format.',
+                schema: {
+                    type: 'object',
+                    properties: {
+                        name: { type: 'string' },
+                        color: { type: 'string' }
+                    },
+                    required: ['name', 'color']
+                }
+            },
+            {
+                name: 'send_chat_message',
+                description: 'Send a message in chat.',
+                schema: {
+                    type: 'object',
+                    properties: {
+                        message: { type: 'string' }
+                    },
+                    required: ['message']
+                }
             }
-        }]);
+        ]);
+        
+        neuroClient.onAction(actionData => {
+            if(actionData.name === 'set_name') {
+                apiUsername = actionData.params.name
+                apiColor = actionData.params.color
+                neuroClient.sendActionResult(actionData.id, true);
+                neuroClient.unregisterActions(['set_name']);
 
+                addChatMessage('System', '#ff0000', `${username} has joined the chat room. Welcome!`);
+                addChatMessage('System', '#ff0000', `${apiUsername} has joined the chat room. Welcome!`);
+            }
+        })
+        
         neuroClient.onAction(actionData => {
             if(actionData.name === 'send_chat_message') {
-                addChatMessage('Neuro', '#c97baf', actionData.params.message);
+                addChatMessage(apiUsername, apiColor, actionData.params.message);
                 neuroClient.sendActionResult(actionData.id, true);
             }
         })
 
         connected = true;
+
+        neuroClient.sendContext('This game is a simple chat room designed to test the API.');
+
+        neuroClient.forceActions('Please set your name and text color.', ['set_name']);
     });
 }
 
@@ -104,7 +133,17 @@ function addChatMessage(author, color, message) {
     messageText.innerText = ' ' + message;
     messageElement.appendChild(messageText);
 
+    var atBottom = chat.scrollHeight - (chat.scrollTop + chat.clientHeight) < 5;
+
     chat.appendChild(messageElement);
+
+    if(atBottom) {
+        chat.scrollTop = chat.scrollHeight - chat.clientHeight;
+    }
+
+    if(connected) {
+        neuroClient.sendContext(`Chat message from ${author}: ${message}`);
+    }
 }
 
 var randomAction = 'send_chat_message';
