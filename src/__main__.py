@@ -2,7 +2,7 @@ import logging
 import wx
 import sys
 from getopt import getopt
-from git import CommandError, Repo
+from git import CommandError, GitCommandError, Repo
 from git.exc import InvalidGitRepositoryError
 import subprocess
 
@@ -119,6 +119,8 @@ if __name__ == '__main__':
             print('An update is available. Run "python -m src --update" to update.')
     except InvalidGitRepositoryError:
         pass # Don't check for updates if the program is not in a git repository
+    except GitCommandError:
+        print('Cannot check for updates. Please check your internet connection.')
 
     # Start the program
     app = wx.App()
