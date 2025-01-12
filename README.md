@@ -92,6 +92,8 @@ Tested on Fedora 41 with Python 3.13.1.
 > [!WARNING]
 > Not all Linux distributions have been tested.
 > You might have to install GTK+ in some form.
+> On ubuntu-based systems, this look for `libgtk-3-dev`
+> See https://github.com/wxWidgets/Phoenix/blob/wxPython-4.2.2/README.rst#prerequisites
 > If you run into problems with a specific distribution, please [submit an issue](https://github.com/Pasu4/neuro-api-tony/issues).
 
 This will install the package in a virtual environment to not conflict with any global packages.

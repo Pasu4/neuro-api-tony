@@ -34,7 +34,8 @@ Options:
         Show the version of the program and exit.
 '''
 
-if __name__ == '__main__':
+
+def cli_run() -> None:
     options, _ = getopt(sys.argv[1:], 'ha:l:p:v', ['help', 'addr=', 'address=', 'log=', 'log-level=', 'port=', 'update', 'version'])
 
     address = 'localhost'
@@ -126,3 +127,7 @@ if __name__ == '__main__':
     app = wx.App()
     controller = TonyController(app, log_level)
     controller.run(address, port)
+
+
+if __name__ == '__main__':
+    cli_run()
