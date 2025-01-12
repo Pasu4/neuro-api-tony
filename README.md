@@ -27,7 +27,7 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
 2. Run `python -m venv .venv`
 3. Run `.\.venv\Scripts\activate`
-4. Run `pip install -r requirements.txt`
+4. Run `pip install -e .`
 
 </details>
 
@@ -51,7 +51,7 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
 2. Run `python -m venv .venv`
 3. Run `source ./.venv/bin/activate`
-4. Run `pip install -r requirements.txt`
+4. Run `pip install -e .`
 
 </details>
 
@@ -73,7 +73,7 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 2. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
 3. Run `python -m venv .venv`
 4. Run `source ./.venv/bin/activate`
-5. Run `pip install -r requirements.txt`
+5. Run `pip install -e .`
 
 Tested on Fedora 41 with Python 3.13.1.
 
@@ -103,7 +103,7 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 1. Clone the repository with `git clone https://github.com/Pasu4/neuro-api-tony.git` or download it from GitHub
 2. Run `python -m venv .venv`
 3. Run `source ./.venv/bin/activate`
-4. Run `pip install -r requirements.txt`
+4. Run `pip install -e .`
 
 </details>
 
@@ -125,7 +125,7 @@ In that case, do the following steps.
 
 1. Run `git pull`
 2. Run `.\.venv\Scripts\activate` on Windows, or `source ./.venv/bin/activate` on Linux / Mac (Skip this step if you didn't set up a virtual environment)
-3. Run `pip install -r requirements.txt` to install any potential new dependencies
+3. Run `pip install -e .` to install any potential new dependencies
 
 ## Usage
 
@@ -134,7 +134,7 @@ Skip step 1 if you haven't, or if your virtual environment is already activated.
 **All commands should be run in the folder of the application.**
 
 1. Run `.\.venv\Scripts\activate` on Windows, or `source ./.venv/bin/activate` on Linux / Mac
-2. Run `python -m src`
+2. Run `neuro_api_tony`
 
 The application window should now open.
 The left panel will display the actions once they have been registered.
