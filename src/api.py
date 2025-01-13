@@ -51,6 +51,7 @@ class NeuroAPI:
         self.log_info: Callable[[str], None] = lambda message: None
         self.log_warning: Callable[[str], None] = lambda message: None
         self.log_error: Callable[[str], None] = lambda message: None
+        self.log_critical: Callable[[str], None] = lambda message: None
         self.log_raw: Callable[[str, bool], None] = lambda message, incoming: None
         self.get_delay: Callable[[], float] = lambda: 0.0
 
@@ -62,12 +63,13 @@ class NeuroAPI:
 
         if self.async_library_running:
             # Already running, skip
-            self.log_warning("[API] Something attempted to start websocket server a 2nd time, ignoring.")
+            self.log_critical('Something attempted to start websocket server a 2nd time, ignoring.')
             return
 
         def done_callback(run_outcome: Outcome[None]) -> None:
-            """Called when trio run completes."""
-            assert self.async_library_running, "How can stop running if not running?"
+            '''Called when trio run completes.'''
+
+            assert self.async_library_running, 'How can stop running if not running?'
             self.async_library_running = False
             # Unwrap to make sure exceptions are printed
             run_outcome.unwrap()
@@ -76,7 +78,8 @@ class NeuroAPI:
         self.async_library_root_cancel = trio.CancelScope()
 
         async def root_run() -> None:
-            """Root async run, wrapped with async_library_root_cancel so it's able to be stopped remotely."""
+            '''Root async run, wrapped with async_library_root_cancel so it's able to be stopped remotely.'''
+
             with self.async_library_root_cancel:
                 await self._run(address, port)
 
@@ -97,27 +100,31 @@ class NeuroAPI:
             raise
 
     def stop(self) -> None:
-        """Stop hosting background websocket server."""
+        '''Stop hosting background websocket server.'''
+
         if not self.async_library_running:
             return
         self.async_library_root_cancel.cancel()
 
     async def _run(self, address: str, port: int) -> None:
-        """Server run root function."""
+        '''Server run root function.'''
+
         self.log_system(f'Starting websocket server on ws://{address}:{port}.')
         await serve_websocket(self._handle_websocket_request, address, port, ssl_context=None)
 
     @property
     def client_connected(self) -> bool:
-        """Is there a client connected?"""
+        '''Is there a client connected?'''
+
         return self.message_send_channel is not None
 
     async def _handle_websocket_request(self, request: WebSocketRequest) -> None:
-        """Handle websocket connection request."""
+        '''Handle websocket connection request.'''
+
         if self.client_connected:
             # 503 is "service unavailable"
-            await request.reject(503, body=b"Server does not support multiple connections at once currently")
-            self.log_error("Another client attempted to connect, rejecting, server does not support multiple connections at once currently")
+            await request.reject(503, body=b'Server does not support multiple connections at once currently')
+            self.log_error('Another client attempted to connect, rejecting, server does not support multiple connections at once currently')
             return
 
         try:
@@ -138,27 +145,29 @@ class NeuroAPI:
         websocket: WebSocketConnection,
         receive_channel: trio.MemoryReceiveChannel[str],
     ) -> None:
-        """Handle websocket connection lifetime."""
+        '''Handle websocket connection lifetime.'''
+
         try:
             async with trio.open_nursery() as nursery:
                 # Start running connection read and write tasks in the background
                 nursery.start_soon(self._handle_consumer, websocket, nursery.cancel_scope)
                 nursery.start_soon(self._handle_producer, websocket, receive_channel)
         except trio.Cancelled:
-            self.log_info("Closing current websocket connection.")
+            self.log_system('Closing current websocket connection.')
 
     async def _handle_consumer(
         self,
         websocket: WebSocketConnection,
         cancel_scope: trio.CancelScope,
     ) -> None:
-        """Handle websocket reading head."""
+        '''Handle websocket reading head.'''
+
         while True:
             try:
                 # Read message from websocket
                 message = await websocket.get_message()
             except ConnectionClosed:
-                self.log_info("Websocket connection closed")
+                self.log_system('Websocket connection closed by client.')
                 break
 
             try:
@@ -266,7 +275,8 @@ class NeuroAPI:
         websocket: WebSocketConnection,
         receive_channel: trio.MemoryReceiveChannel[str],
     ) -> None:
-        """Handle websocket writing head."""
+        '''Handle websocket writing head.'''
+
         while True:
             # Wait for messages from sending side of memory channel (queue)
             message = await receive_channel.receive()
@@ -286,10 +296,11 @@ class NeuroAPI:
                 self.log_raw(message, False)
 
     def _submit_message(self, message: str) -> bool:
-        """Submit a message to the send queue. Return if client connected."""
+        '''Submit a message to the send queue. Return True if client connected.'''
+
         with self.queue_lock:
             if not self.client_connected:
-                self.log_error("No client connected!")
+                self.log_error('No client connected!')
                 return False
             # Otherwise send channel should exist
             # type checkers need help understanding `self.client_connected`
@@ -298,7 +309,7 @@ class NeuroAPI:
         return True
 
     def send_action(self, id_: str, name: str, data: str | None) -> bool:
-        '''Send an action command. Return if actually sent.'''
+        '''Send an action command. Return True if actually sent.'''
 
         obj = {
             'command': 'action',
@@ -388,7 +399,7 @@ class NeuroAPI:
                     if isinstance(item, dict):
                         invalid_keys.extend(self.check_invalid_keys_recursive(item))
             else:
-                self.log_error(f"Unhandled schema key type {type(key)!r} ({key!r})")
+                self.log_error(f'Unhandled schema key type {type(key)!r} ({key!r})')
 
         return invalid_keys
 
@@ -403,7 +414,7 @@ class ContextCommand(NamedTuple):
 
 
 class ActionsRegisterCommand:
-    __slots__ = ("actions",)
+    __slots__ = ('actions',)
 
     def __init__(self, actions: list[dict[str, Any]]) -> None:
         # 'schema' may be omitted, so get() is used

@@ -57,6 +57,7 @@ class TonyController:
         self.api.log_info = self.view.log_info
         self.api.log_warning = self.view.log_warning
         self.api.log_error = self.view.log_error
+        self.api.log_critical = self.view.log_critical
         self.api.log_raw = self.view.log_raw
         self.api.get_delay = lambda: float(self.view.controls.latency / 1000)
 
