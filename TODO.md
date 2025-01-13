@@ -2,7 +2,8 @@
 
 - Detect environment variable
 - Action result timeout warning
-- Clear log
+- Refactor logs (System messages are too broad)
+- Export logs
 
 ## At some point
 
