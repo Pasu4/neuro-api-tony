@@ -201,6 +201,7 @@ The log panel on the top right has three different tabs:
     - **Info (blue):** Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).
     - **Warning (yellow):** Things that do not comply with the API specification, but which Tony can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.
     - **Error (red):** Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.
+    - **Critical (dark red):** Something went wrong and it is not your fault. If you see such a message, please [submit a bug report](https://github.com/Pasu4/neuro-api-tony/issues).
 - The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the description of actions, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are diplayed in gray and ephemeral contexts in light blue. It has the following tags:
     - **Context:** Message is from a `context` command.
     - **Silent:** Message is from a silent `context` command.

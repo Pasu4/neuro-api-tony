@@ -52,6 +52,7 @@ LOG_COLOR_DEBUG                         = wx.Colour(128, 128, 128)
 LOG_COLOR_INFO                          = wx.Colour(128, 192, 255)
 LOG_COLOR_WARNING                       = wx.Colour(255, 192,   0)
 LOG_COLOR_ERROR                         = wx.Colour(255,   0,   0)
+LOG_COLOR_CRITICAL                      = wx.Colour(192,   0,   0)
 LOG_COLOR_CONTEXT                       = LOG_COLOR_DEFAULT
 LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255, 128, 255)
 LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
@@ -70,7 +71,7 @@ LOG_LEVELS = {
     'INFO': 20,
     'WARNING': 30,
     'ERROR': 40,
-    # 'CRITICAL': 50,
+    'CRITICAL': 50,
     'SYSTEM': 60,
 }
 
@@ -134,6 +135,12 @@ class TonyView:
 
         if self.controls.get_log_level() <= LOG_LEVELS['ERROR']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Error', LOG_COLOR_ERROR)
+
+    def log_critical(self, message: str):
+        '''Log a critical error message.'''
+
+        if self.controls.get_log_level() <= LOG_LEVELS['CRITICAL']:
+            self.frame.panel.log_notebook.log_panel.log(message, 'Critical', LOG_COLOR_CRITICAL)
 
     def log_context(self, message: str, silent: bool = False):
         '''Log a context message.'''

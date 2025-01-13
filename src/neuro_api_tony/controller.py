@@ -1,4 +1,5 @@
 import random
+
 import jsonschema._utils
 import jsonschema.benchmarks
 import jsonschema.exceptions
@@ -6,9 +7,10 @@ import jsonschema.tests
 import wx
 from jsf import JSF
 
-from .model import TonyModel, NeuroAction
-from .view import TonyView
 from .api import *
+from .model import NeuroAction, TonyModel
+from .view import TonyView
+
 
 def action_id_generator():
     '''Generate a unique ID for an action.'''
@@ -33,7 +35,9 @@ class TonyController:
         self.inject()
 
     def run(self, address: str, port: int):
-        self.api.start(address, port)
+        # Schedule the API start to run after the main loop starts
+        wx.CallAfter(self.api.start, address, port)
+
         self.view.show()
         self.app.MainLoop()
 
@@ -53,6 +57,7 @@ class TonyController:
         self.api.log_info = self.view.log_info
         self.api.log_warning = self.view.log_warning
         self.api.log_error = self.view.log_error
+        self.api.log_critical = self.view.log_critical
         self.api.log_raw = self.view.log_raw
         self.api.get_delay = lambda: float(self.view.controls.latency / 1000)
 
@@ -73,7 +78,7 @@ class TonyController:
 
         self.model.clear_actions()
         self.view.clear_actions()
-    
+
     def on_context(self, cmd: ContextCommand):
         '''Handle the context command.'''
 
@@ -88,7 +93,7 @@ class TonyController:
             if self.model.has_action(action.name):
                 self.view.log_warning(f'Action "{action.name}" already exists. Ignoring.')
                 continue
-            
+
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
             self.view.log_system(f'Action registered: {action.name}')
@@ -119,7 +124,7 @@ class TonyController:
             self.view.log_system('Forced action ignored.')
             self.active_actions_force = None
             return
-        
+
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning('actions/force with invalid actions received. Discarding.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
@@ -139,7 +144,7 @@ class TonyController:
             self.retry_actions_force(self.active_actions_force)
         else:
             self.active_actions_force = None
-        
+
         if cmd.message is not None:
             self.view.log_action_result(cmd.success, cmd.message)
         elif cmd.success:
@@ -181,12 +186,12 @@ class TonyController:
         if not action.schema:
             self.send_action(next(self.id_generator), action.name, None) # No schema, so send the action immediately
             return True
-        
+
         # If there is a schema, open a dialog to get the data
         result = self.view.show_action_dialog(action)
         if result is None:
             return False # User cancelled the dialog
-        
+
         self.send_action(next(self.id_generator), action.name, result)
         return True
 
@@ -246,7 +251,7 @@ class TonyController:
                 faker = JSF(action.schema)
                 sample = faker.generate()
                 self.send_action(next(self.id_generator), action.name, json.dumps(sample))
-                
+
         else:
             wx.CallAfter(self.view.force_actions, cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names, retry)
 
@@ -257,13 +262,13 @@ class TonyController:
             self.view.log_system('Forced action ignored.')
             self.active_actions_force = None
             return
-        
+
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning('Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: ' + ', '.join(name for name in cmd.action_names if not self.model.has_action(name)))
             self.active_actions_force = None
             return
-        
+
         self.view.log_system('Retrying forced action.')
 
         self.execute_actions_force(cmd, retry=True)
