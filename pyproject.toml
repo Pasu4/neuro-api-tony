@@ -1,0 +1,138 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuro-api-tony"
+dynamic = ["version"]
+authors = [
+  { name="Pasu4", email="pascalwieckhorst02@gmail.com" },
+]
+description = "Graphical implementation of the Neuro API in Python"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Games/Entertainment",
+    "Topic :: Games/Entertainment :: Turn Based Strategy",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Mocking",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+keywords = ["ai", "neuro-sama", "integration"]
+dependencies = [
+    "annotated-types~=0.7.0",
+    "attrs~=24.3.0",
+    "certifi~=2024.12.14",
+    "charset-normalizer~=3.4.0",
+    "Faker~=33.1.0",
+    "gitdb~=4.0.11",
+    "GitPython~=3.1.43",
+    "idna~=3.10",
+    "jsf~=0.11.2",
+    "jsonschema-specifications~=2024.10.1",
+    "jsonschema~=4.23.0",
+    "pydantic_core~=2.27.1",
+    "pydantic~=2.10.3",
+    "python-dateutil~=2.9.0.post0",
+    "referencing~=0.35.1",
+    "requests~=2.32.3",
+    "rpds-py~=0.22.3",
+    "rstr~=3.2.2",
+    "six~=1.17.0",
+    "smart-open~=7.0.5",
+    "smmap~=5.0.1",
+    "trio-websocket~=0.11.1",
+    "trio~=0.28.0",
+    "typing_extensions",
+    "urllib3~=2.3.0",
+    "wrapt~=1.17.0",
+    "wxPython~=4.2.2",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "neuro_api_tony.constants.VERSION"}
+
+[project.urls]
+"Source" = "https://github.com/Pasu4/neuro-api-tony"
+"Bug Tracker" = "https://github.com/Pasu4/neuro-api-tony/issues"
+
+[project.scripts]
+neuro-api-tony = "neuro_api_tony.cli:cli_run"
+
+[tool.setuptools.package-data]
+neuro_api_tony = ["py.typed"]
+
+[tool.mypy]
+files = ["src/neuro_api_tony/"]
+check_untyped_defs = true
+disallow_any_decorated = true
+disallow_any_generics = true
+disallow_any_unimported = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+local_partial_types = true
+no_implicit_optional = true
+no_implicit_reexport = true
+show_column_numbers = true
+show_error_codes = true
+show_traceback = true
+strict = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+
+[tool.pytest.ini_options]
+addopts = "--cov-report=xml --cov-report=term-missing --cov=neuro_api_tony"
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["neuro_api_tony"]
+omit = [
+    "__init__.py",
+]
+
+[tool.coverage.report]
+precision = 1
+skip_covered = true
+exclude_also = [
+    "pragma: no cover",
+    "abc.abstractmethod",
+    "if TYPE_CHECKING.*:",
+    "if _t.TYPE_CHECKING:",
+    "if t.TYPE_CHECKING:",
+    "@overload",
+    'class .*\bProtocol\b.*\):',
+    "raise NotImplementedError",
+]
+partial_branches = [
+    "pragma: no branch",
+    "if not TYPE_CHECKING:",
+    "if not _t.TYPE_CHECKING:",
+    "if not t.TYPE_CHECKING:",
+    "if .* or not TYPE_CHECKING:",
+    "if .* or not _t.TYPE_CHECKING:",
+    "if .* or not t.TYPE_CHECKING:",
+]

@@ -8,7 +8,7 @@
             "name": "Python Debugger: Module",
             "type": "debugpy",
             "request": "launch",
-            "module": "src",
+            "module": "src.neuro_api_tony",
             "args": ["--log-level", "DEBUG"]
         }
     ]

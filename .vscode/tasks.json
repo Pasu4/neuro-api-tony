@@ -4,8 +4,15 @@
         {
             "label": "Start",
             "type": "shell",
-            "command": "python -m src",
-            "problemMatcher": []
+            "command": "neuro-api-tony",
+            "problemMatcher": "$python"
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "pip install -e .",
+            "problemMatcher": [],
+            "group": "build"
         }
     ]
 }
