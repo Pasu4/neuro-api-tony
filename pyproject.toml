@@ -3,7 +3,7 @@ requires = ["setuptools >= 64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "neuro_api_tony"
+name = "neuro-api-tony"
 dynamic = ["version"]
 authors = [
   { name="Pasu4", email="pascalwieckhorst02@gmail.com" },
@@ -15,8 +15,7 @@ requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -26,6 +25,8 @@ classifiers = [
     "Topic :: Games/Entertainment",
     "Topic :: Games/Entertainment :: Turn Based Strategy",
     "Topic :: Internet",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Mocking",
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
@@ -68,7 +69,7 @@ version = {attr = "neuro_api_tony.constants.VERSION"}
 "Bug Tracker" = "https://github.com/Pasu4/neuro-api-tony/issues"
 
 [project.scripts]
-neuro_api_tony = "neuro_api_tony.cli:cli_run"
+neuro-api-tony = "neuro_api_tony.cli:cli_run"
 
 [tool.setuptools.package-data]
 neuro_api_tony = ["py.typed"]
