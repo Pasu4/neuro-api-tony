@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+  release:
+    types:
+      - created
   workflow_dispatch: # Allows manual triggering
       inputs:
         do-publish:
@@ -40,7 +43,7 @@ jobs:
 
   publish-to-pypi:
     name: Publish Python distribution to PyPI
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') || github.event.inputs.do-publish
+    if: github.event_name == 'release' || github.event.inputs.do-publish
     needs:
     - build
     runs-on: ubuntu-latest
