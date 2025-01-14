@@ -9,6 +9,15 @@ env | sort
 PROJECT='neuro_api_tony'
 echo "::endgroup::"
 
+# Check if running on Linux and install libgtk-3-dev
+if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
+    echo "::group::Installing dependencies for Linux"
+    sudo apt-get update -q
+    sudo apt-get install -y -q libgtk-3-dev
+    echo "::endgroup::"
+else
+    echo "RUNNER_OS is not set or not Linux. Skipping installation of libgtk-3-dev."
+fi
 
 ################################################################
 # We have a Python environment!
