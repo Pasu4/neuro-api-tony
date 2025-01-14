@@ -156,19 +156,15 @@ Copy-pasted from the help message:
 -h, --help:
     Show this help message and exit.
 
--a, --addr, --address:
+-a, --addr, --address <ADDRESS>:
     The address to start the websocket server on. Default is localhost.
 
--l, --log, --log-level:
+-l, --log, --log-level <LOG_LEVEL>:
     The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
     WARNING, ERROR, SYSTEM.
 
--p, --port:
+-p, --port <PORT>:
     The port number to start the websocket server on. Default is 8000.
-
---update:
-    Update the program to the latest version, if available. Only works if
-    the program is in a git repository.
 
 -v, --version:
     Show the version of the program and exit.
