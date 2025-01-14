@@ -118,8 +118,10 @@ def cli_run() -> None:
 
         if repo.head.commit != repo.remote().refs.master.commit: # Check if the local commit is different from the remote commit
             print('An update is available. Run "python -m src --update" to update.')
+
     except InvalidGitRepositoryError:
-        pass # Don't check for updates if the program is not in a git repository
+        print('Warning: Update checking is not yet implemented for PyPI distributions. Please check for updates manually until this feature is implemented.')
+
     except GitCommandError:
         print('Cannot check for updates. Please check your internet connection.')
 
