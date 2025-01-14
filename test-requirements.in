@@ -1,0 +1,41 @@
+# For tests
+pytest >= 5.0
+coverage >= 7.2.5
+pytest-trio
+pytest-cov
+
+# Tools
+black; implementation_name == "cpython"
+mypy >= 1.14.0
+uv >= 0.2.24
+
+# Neuro Api Tony's own dependencies
+#<TOML_DEPENDENCIES>
+Faker~=33.1.0
+GitPython~=3.1.43
+annotated-types~=0.7.0
+attrs~=24.3.0
+certifi~=2024.12.14
+charset-normalizer~=3.4.0
+gitdb~=4.0.11
+idna~=3.10
+jsf~=0.11.2
+jsonschema-specifications~=2024.10.1
+jsonschema~=4.23.0
+pydantic_core~=2.27.1
+pydantic~=2.10.3
+python-dateutil~=2.9.0.post0
+referencing~=0.35.1
+requests~=2.32.3
+rpds-py~=0.22.3
+rstr~=3.2.2
+six~=1.17.0
+smart-open~=7.0.5
+smmap~=5.0.1
+trio-websocket~=0.11.1
+trio~=0.28.0
+typing_extensions
+urllib3~=2.3.0
+wrapt~=1.17.0
+wxPython~=4.2.2
+#</TOML_DEPENDENCIES>

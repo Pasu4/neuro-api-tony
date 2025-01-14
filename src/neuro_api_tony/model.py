@@ -13,7 +13,7 @@ class NeuroAction(NamedTuple):
 class TonyModel:
     '''Tony Model.'''
     __slots__ = ("actions",)
-    
+
     def __init__(self) -> None:
         '''Initialize Tony Model'''
         self.actions: list[NeuroAction] = []
@@ -24,12 +24,12 @@ class TonyModel:
 
     def add_action(self, action: NeuroAction) -> None:
         '''Add an action to the list.'''
-        
+
         self.actions.append(action)
 
     def remove_action(self, action: NeuroAction) -> None:
         '''Remove an action from the list.'''
-        
+
         self.actions.remove(action)
 
     def remove_action_by_name(self, name: str) -> None:
@@ -43,17 +43,17 @@ class TonyModel:
 
     def clear_actions(self) -> None:
         '''Clear all actions from the list.'''
-        
+
         self.actions.clear()
 
     def has_action(self, name: str) -> bool:
         '''Check if an action exists in the list.'''
-        
+
         return any(action.name == name for action in self.actions)
-    
+
     def get_action_by_name(self, name: str) -> NeuroAction | None:
         '''Return an action by name.'''
-        
+
         for action in self.actions:
             if action.name == name:
                 return action

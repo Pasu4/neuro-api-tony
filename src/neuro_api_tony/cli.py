@@ -25,7 +25,7 @@ Options:
 
     -p, --port <PORT>:
         The port number to start the websocket server on. Default is 8000.
-    
+
     -v, --version:
         Show the version of the program and exit.
 '''
