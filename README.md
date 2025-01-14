@@ -12,6 +12,9 @@ Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), he can 
 A Python version of 3.10 or higher is required.
 Python versions 3.9 and below will not work.
 
+The program can be installed from GitHub or from PyPI.
+If you want to modify the project and/or contribute, use the GitHub method.
+
 <!-- #region Windows -->
 
 <details>
@@ -19,6 +22,15 @@ Python versions 3.9 and below will not work.
 <summary>Windows</summary>
 
 ### Windows
+
+#### From PyPI
+
+This will install the package from PyPI using pip.
+Update checking for this method will be added in a later update.
+
+1. Run `pip install neuro-api-tony`
+
+#### From GitHub
 
 This will install the package in a virtual environment to not conflict with any global packages.
 Skip steps 2 and 3 if you don't want a virtual environment.
@@ -41,8 +53,16 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 
 ### MacOS
 
-> [!WARNING]
-> This has not been tested, as I don't own a Mac.
+**Warning: This has not been tested, as I don't own a Mac.**
+
+#### From PyPI
+
+This will install the package from PyPI using pip.
+Update checking for this method will be added in a later update.
+
+1. Run `pip install neuro-api-tony`
+
+#### From GitHub
 
 This will install the package in a virtual environment to not conflict with any global packages.
 Skip steps 2 and 3 if you don't want a virtual environment.
@@ -64,6 +84,16 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 <summary>Fedora</summary>
 
 ### Fedora
+
+#### From PyPI
+
+This will install the package from PyPI using pip.
+Update checking for this method will be added in a later update.
+
+1. Run `sudo dnf install g++ gtk3-devel python-config`
+2. Run `pip install neuro-api-tony`
+
+#### From GitHub
 
 This will install the package in a virtual environment to not conflict with any global packages.
 Skip steps 2 and 3 if you don't want a virtual environment.
@@ -89,12 +119,21 @@ Tested on Fedora 41 with Python 3.13.1.
 
 ### Other Linux distributions
 
-> [!WARNING]
-> Not all Linux distributions have been tested.
-> You might have to install GTK+ in some form.
-> On ubuntu-based systems, this look for `libgtk-3-dev`
-> See https://github.com/wxWidgets/Phoenix/blob/wxPython-4.2.2/README.rst#prerequisites
-> If you run into problems with a specific distribution, please [submit an issue](https://github.com/Pasu4/neuro-api-tony/issues).
+Warning: 
+Not all Linux distributions have been tested.
+You might have to install GTK+ in some form.
+On ubuntu-based systems, look for `libgtk-3-dev`.
+Also see https://github.com/wxWidgets/Phoenix/blob/wxPython-4.2.2/README.rst#prerequisites.
+If you run into further problems with a specific distribution, please [submit an issue](https://github.com/Pasu4/neuro-api-tony/issues).
+
+#### From PyPI
+
+This will install the package from PyPI using pip.
+Update checking for this method will be added in a later update.
+
+1. Run `pip install neuro-api-tony`
+
+#### From GitHub
 
 This will install the package in a virtual environment to not conflict with any global packages.
 Skip steps 2 and 3 if you don't want a virtual environment.
@@ -115,26 +154,24 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 > This repository was renamed from `neuro-api-human-control` to `neuro-api-tony`.
 > GitHub should automatically redirect requests to the new URL, but in case you run into problems because of this, run `git remote set-url origin https://github.com/Pasu4/neuro-api-tony.git` in the repository.
 
-To update the program, run it with the `--update` argument (see [Usage](#usage) on how to run it).
-This assumes you have cloned the repository with git.
-If you didn't, you're better off re-downloading and re-installing than updating the files manually.
-
-If `--update` starts the program instead of updating, you might be running an old version.
-In that case, do the following steps.
-**All commands should be run in the folder of the application.**
+If you have installed Tony by cloning the repository, pull the latest changes using git.
+If you downloaded from GitHub without cloning it, you're better off re-downloading and re-installing than updating the files manually.
+**All commands should be run in the root folder of the repository.**
 
 1. Run `git pull`
 2. Run `.\.venv\Scripts\activate` on Windows, or `source ./.venv/bin/activate` on Linux / Mac (Skip this step if you didn't set up a virtual environment)
 3. Run `pip install -e .` to install any potential new dependencies
 
+If you installed Tony from PyPI, you can update using `pip install --upgrade neuro-api-tony`.
+Note that automatic update checking is currently not implemented in the PyPI version.
+
 ## Usage
 
 This assumes you have set up a virtual environment during installation.
 Skip step 1 if you haven't, or if your virtual environment is already activated.
-**All commands should be run in the folder of the application.**
 
-1. Run `.\.venv\Scripts\activate` on Windows, or `source ./.venv/bin/activate` on Linux / Mac
-2. Run `neuro_api_tony`
+1. In the folder of the application, run `.\.venv\Scripts\activate` on Windows, or `source ./.venv/bin/activate` on Linux / Mac
+2. Run `neuro-api-tony`
 
 The application window should now open.
 The left panel will display the actions once they have been registered.
