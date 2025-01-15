@@ -9,10 +9,6 @@ black; implementation_name == "cpython"
 mypy >= 1.14.0
 uv >= 0.2.24
 
-# Temporary limit so CI doesn't time out trying to compile
-# newest verison of wxPython
-wxPython <= 4.2.1; sys_platform == 'linux'
-
 # Neuro Api Tony's own dependencies
 #<TOML_DEPENDENCIES>
 Faker~=33.1.0

@@ -119,7 +119,7 @@ Tested on Fedora 41 with Python 3.13.1.
 
 ### Other Linux distributions
 
-Warning: 
+Warning:
 Not all Linux distributions have been tested.
 You might have to install GTK+ in some form.
 On ubuntu-based systems, look for `libgtk-3-dev`.
