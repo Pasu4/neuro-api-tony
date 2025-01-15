@@ -13,7 +13,7 @@ echo "::endgroup::"
 if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     echo "::group::Installing dependencies for Linux"
     sudo apt-get update -q
-    sudo apt-get install -y -q python-wxtools
+    sudo apt-get install -y -q python3-wxgtk4.0 python3-wxgtk-webview4.0 python3-wxgtk-media4.0
     echo "::endgroup::"
 else
     echo "RUNNER_OS is not set or not Linux. Skipping installation of libgtk-3-dev."
