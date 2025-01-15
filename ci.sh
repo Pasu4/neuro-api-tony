@@ -9,17 +9,6 @@ env | sort
 PROJECT='neuro_api_tony'
 echo "::endgroup::"
 
-# Check if running on Linux and install python3-wxgtk4.0
-if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
-    echo "::group::Installing dependencies for Linux"
-    sudo apt-get update -q
-    sudo apt-get install -y -q python3-wxgtk4.0
-    python -c "import wx; print(wx.__version__)"
-    echo "::endgroup::"
-else
-    echo "RUNNER_OS is not set or not Linux. Skipping installation of python3-wxgtk4.0."
-fi
-
 ################################################################
 # We have a Python environment!
 ################################################################
@@ -32,6 +21,18 @@ echo "::group::Install dependencies"
 python -m pip install -U pip uv -c test-requirements.txt
 python -m pip --version
 python -m uv --version
+
+# Check if running on Linux and install wxPython from binaries
+if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
+    echo "::group::Installing dependencies for Linux"
+    # Get the Ubuntu version
+    UBUNTU_VERSION=$(lsb_release -rs)
+    # Install wxPython from binaries
+    uv pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION} wxPython
+    # Make sure installation was successful
+    python -c "import wx; print(wx.__version__)"
+    echo "::endgroup::"
+fi
 
 python -m uv pip install build
 
