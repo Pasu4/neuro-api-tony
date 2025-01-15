@@ -26,7 +26,7 @@ python -m uv --version
 if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     echo "::group::Installing dependencies for Linux"
     sudo apt-get update -q
-    sudo apt-get install -y -q python3-dev libgtk-3-dev libnotify-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libwebkit2gtk-4.1-dev
+    sudo apt-get install -y -q python3-dev libgtk-3-dev libnotify-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libwebkit2gtk-4.1-dev libsdl2-2.0-0
     # Get the Ubuntu version
     UBUNTU_VERSION=$(lsb_release -rs)
     # Install wxPython from binaries
