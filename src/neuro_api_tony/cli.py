@@ -2,8 +2,6 @@ import logging
 import wx
 import sys
 from getopt import getopt
-from git import CommandError, GitCommandError, Repo
-from git.exc import InvalidGitRepositoryError
 import semver
 import requests
 
