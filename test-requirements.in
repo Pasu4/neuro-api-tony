@@ -9,6 +9,10 @@ black; implementation_name == "cpython"
 mypy >= 1.14.0
 uv >= 0.2.24
 
+# Temporary limit so CI doesn't time out trying to compile
+# newest verison of wxPython
+wxPython <= 4.2.1; sys_platform == 'linux'
+
 # Neuro Api Tony's own dependencies
 #<TOML_DEPENDENCIES>
 Faker~=33.1.0
@@ -37,5 +41,5 @@ trio~=0.28.0
 typing_extensions
 urllib3~=2.3.0
 wrapt~=1.17.0
-wxPython~=4.2.2
+wxPython~=4.2.0
 #</TOML_DEPENDENCIES>
