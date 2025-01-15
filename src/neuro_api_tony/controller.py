@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import json
 import random
+from typing import TYPE_CHECKING, Any
 
 import jsonschema._utils
 import jsonschema.benchmarks
@@ -7,12 +11,24 @@ import jsonschema.tests
 import wx
 from jsf import JSF
 
-from .api import *
+from .api import (
+    NeuroAPI,
+    StartupCommand,
+    ContextCommand,
+    ActionsRegisterCommand,
+    ActionsUnregisterCommand,
+    ActionsForceCommand,
+    ActionResultCommand,
+    ShutdownReadyCommand,
+)
 from .model import NeuroAction, TonyModel
 from .view import TonyView
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
-def action_id_generator():
+
+def action_id_generator() -> Generator[str, None, None]:
     '''Generate a unique ID for an action.'''
 
     i = 0
@@ -22,7 +38,7 @@ def action_id_generator():
 
 class TonyController:
 
-    def __init__(self, app: wx.App, log_level: str):
+    def __init__(self, app: wx.App, log_level: str) -> None:
         self.app = app
         self.model = TonyModel()
         self.view = TonyView(app, self.model, log_level)
@@ -34,14 +50,14 @@ class TonyController:
 
         self.inject()
 
-    def run(self, address: str, port: int):
+    def run(self, address: str, port: int) -> None:
         # Schedule the API start to run after the main loop starts
         wx.CallAfter(self.api.start, address, port)
 
         self.view.show()
         self.app.MainLoop()
 
-    def inject(self):
+    def inject(self) -> None:
         '''Inject methods into the view and API.'''
 
         self.api.on_startup = self.on_startup
@@ -70,21 +86,21 @@ class TonyController:
         self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
         self.view.on_send_shutdown_immediate = self.on_view_send_shutdown_immediate
 
-    def on_any_command(self, cmd: Any):
+    def on_any_command(self, cmd: Any) -> None:
         '''Callback for any command received from the API.'''
 
-    def on_startup(self, cmd: StartupCommand):
+    def on_startup(self, cmd: StartupCommand) -> None:
         '''Handle the startup command.'''
 
         self.model.clear_actions()
         self.view.clear_actions()
 
-    def on_context(self, cmd: ContextCommand):
+    def on_context(self, cmd: ContextCommand) -> None:
         '''Handle the context command.'''
 
         self.view.log_context(cmd.message, silent=cmd.silent)
 
-    def on_actions_register(self, cmd: ActionsRegisterCommand):
+    def on_actions_register(self, cmd: ActionsRegisterCommand) -> None:
         '''Handle the actions/register command.'''
 
         for action in cmd.actions:
@@ -99,7 +115,7 @@ class TonyController:
             self.view.log_system(f'Action registered: {action.name}')
             self.view.log_description(f'{action.name}: {action.description}')
 
-    def on_actions_unregister(self, cmd: ActionsUnregisterCommand):
+    def on_actions_unregister(self, cmd: ActionsUnregisterCommand) -> None:
         '''Handle the actions/unregister command.'''
 
         for name in cmd.action_names:
@@ -110,7 +126,7 @@ class TonyController:
             self.view.remove_action_by_name(name)
             self.view.log_system(f'Action unregistered: {name}')
 
-    def on_actions_force(self, cmd: ActionsForceCommand):
+    def on_actions_force(self, cmd: ActionsForceCommand) -> None:
         '''Handle the actions/force command.'''
 
         if cmd.state is not None and cmd.state != '':
@@ -133,7 +149,7 @@ class TonyController:
 
         self.execute_actions_force(cmd)
 
-    def on_action_result(self, cmd: ActionResultCommand):
+    def on_action_result(self, cmd: ActionResultCommand) -> None:
         '''Handle the action/result command.'''
 
         self.view.log_system('Action result indicates ' + ('success' if cmd.success else 'failure'))
@@ -154,17 +170,17 @@ class TonyController:
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 
-    def on_shutdown_ready(self, cmd: ShutdownReadyCommand):
+    def on_shutdown_ready(self, cmd: ShutdownReadyCommand) -> None:
         '''Handle the shutdown/ready command.'''
 
         self.view.log_warning('This command is not officially supported.')
 
-    def on_unknown_command(self, json_cmd: Any):
+    def on_unknown_command(self, json_cmd: Any) -> None:
         '''Handle an unknown command.'''
 
         # self.view.log_warning(f'Unknown command received: {json_cmd['command']}')
 
-    def send_action(self, id: str, name: str, data: str | None):
+    def send_action(self, id: str, name: str, data: str | None) -> None:
         '''Send an action command to the API.'''
 
         self.view.log_system(f'Sending action: {name}')
@@ -172,7 +188,7 @@ class TonyController:
 
         self.view.disable_actions() # Disable the actions until the result is received
 
-    def send_actions_reregister_all(self):
+    def send_actions_reregister_all(self) -> None:
         '''Send an actions/reregister_all command to the API.'''
 
         self.api.send_actions_reregister_all()
@@ -195,7 +211,7 @@ class TonyController:
         self.send_action(next(self.id_generator), action.name, result)
         return True
 
-    def on_view_delete_action(self, name: str):
+    def on_view_delete_action(self, name: str) -> None:
         '''Handle a request to delete an action from the view.'''
 
         self.model.remove_action_by_name(name)
@@ -203,41 +219,41 @@ class TonyController:
 
         self.view.log_system(f'Action deleted: {name}')
 
-    def on_view_unlock(self):
+    def on_view_unlock(self) -> None:
         '''Handle a request to unlock the view.'''
 
         self.view.log_system('Unlocking actions.')
         self.view.enable_actions()
 
-    def on_view_clear_logs(self):
+    def on_view_clear_logs(self) -> None:
         '''Handle a request to clear the logs from the view.'''
 
         self.view.clear_logs()
         self.view.log_system('Logs cleared.')
 
-    def on_view_send_actions_reregister_all(self):
+    def on_view_send_actions_reregister_all(self) -> None:
         '''Handle a request to send an actions/reregister_all command from the view.'''
 
         self.model.clear_actions()
         wx.CallAfter(self.view.clear_actions)
         self.send_actions_reregister_all()
 
-    def on_view_send_shutdown_graceful(self):
+    def on_view_send_shutdown_graceful(self) -> None:
         '''Handle a request to send a shutdown/graceful command with wants_shutdown=true from the view.'''
 
         self.api.send_shutdown_graceful(True)
 
-    def on_view_send_shutdown_graceful_cancel(self):
+    def on_view_send_shutdown_graceful_cancel(self) -> None:
         '''Handle a request to send a shutdown/graceful with wants_shutdown=false command from the view.'''
 
         self.api.send_shutdown_graceful(False)
 
-    def on_view_send_shutdown_immediate(self):
+    def on_view_send_shutdown_immediate(self) -> None:
         '''Handle a request to send a shutdown/immediate command from the view.'''
 
         self.api.send_shutdown_immediate()
 
-    def execute_actions_force(self, cmd: ActionsForceCommand, retry: bool = False):
+    def execute_actions_force(self, cmd: ActionsForceCommand, retry: bool = False) -> None:
         self.active_actions_force = cmd
 
         if self.view.controls.auto_send:
@@ -255,7 +271,7 @@ class TonyController:
         else:
             wx.CallAfter(self.view.force_actions, cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names, retry)
 
-    def retry_actions_force(self, cmd: ActionsForceCommand):
+    def retry_actions_force(self, cmd: ActionsForceCommand) -> None:
         '''Retry the actions/force command.'''
 
         if self.view.controls.ignore_actions_force:

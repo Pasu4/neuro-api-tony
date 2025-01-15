@@ -1,44 +1,54 @@
+from __future__ import annotations
+
 import json
-from typing import Any, Callable, Optional
+from datetime import datetime as dt
+from typing import TYPE_CHECKING, Any, Final
+
 import jsonschema
 import wx
-from datetime import datetime as dt
 from jsf import JSF
 
 from .constants import VERSION
-from .model import TonyModel, NeuroAction
+from .model import NeuroAction, TonyModel
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 #region Events
 
 EVTTYPE_ADD_ACTION = wx.NewEventType()
 EVT_ADD_ACTION = wx.PyEventBinder(EVTTYPE_ADD_ACTION, 1)
 
-class AddActionEvent(wx.PyCommandEvent):
+class AddActionEvent(wx.PyCommandEvent):  # type: ignore[misc]
     '''An event for adding an action to the list.'''
+    __slots__ = ("action",)
 
-    def __init__(self, id, action: NeuroAction):
-        super().__init__(EVTTYPE_ADD_ACTION, id)
+    def __init__(self, id_: int, action: NeuroAction) -> None:
+        super().__init__(EVTTYPE_ADD_ACTION, id_)
         self.action = action
 
 EVTTYPE_ACTION_RESULT = wx.NewEventType()
 EVT_ACTION_RESULT = wx.PyEventBinder(EVTTYPE_ACTION_RESULT, 1)
 
-class ActionResultEvent(wx.PyCommandEvent):
+class ActionResultEvent(wx.PyCommandEvent):  # type: ignore[misc]
     '''An event for an action result message.'''
+    __slots__ = ("success", "message")
 
-    def __init__(self, id, success: bool, message: str | None):
-        super().__init__(EVTTYPE_ACTION_RESULT, id)
+    def __init__(self, id_: int, success: bool, message: str | None) -> None:
+        super().__init__(EVTTYPE_ACTION_RESULT, id_)
         self.success = success
         self.message = message
 
 EVT_TYPE_EXECUTE = wx.NewEventType()
 EVT_EXECUTE = wx.PyEventBinder(EVT_TYPE_EXECUTE, 1)
 
-class ExecuteEvent(wx.PyCommandEvent):
+class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
     '''An event for executing an action.'''
+    __slots__ = ("action",)
 
-    def __init__(self, id, action: NeuroAction):
-        super().__init__(EVT_TYPE_EXECUTE, id)
+    def __init__(self, id_: int, action: NeuroAction) -> None:
+        super().__init__(EVT_TYPE_EXECUTE, id_)
         self.action = action
 
 #endregion
@@ -80,7 +90,7 @@ LOG_LEVELS = {
 class TonyView:
     '''The view class for Tony.'''
 
-    def __init__(self, app: wx.App, model: TonyModel, log_level: str):
+    def __init__(self, app: wx.App, model: TonyModel, log_level: str) -> None:
         self.model = model
 
         self.controls = Controls()
@@ -89,10 +99,10 @@ class TonyView:
         self.frame = MainFrame(self)
         app.SetTopWindow(self.frame)
 
-        self.action_dialog: Optional[ActionDialog] = None
+        self.action_dialog: ActionDialog | None = None
 
         # Dependency injection
-        self.on_execute: Callable[[NeuroAction], bool] = lambda action: None
+        self.on_execute: Callable[[NeuroAction], bool] = lambda action: False
         self.on_delete_action: Callable[[str], None] = lambda name: None
         self.on_unlock: Callable[[], None] = lambda: None
         self.on_clear_logs: Callable[[], None] = lambda: None
@@ -101,48 +111,48 @@ class TonyView:
         self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
         self.on_send_shutdown_immediate: Callable[[], None] = lambda: None
 
-    def show(self):
+    def show(self) -> None:
         '''Show the main frame.'''
 
         self.frame.Show()
 
-    def log_system(self, message: str):
+    def log_system(self, message: str) -> None:
         '''Log a command.'''
 
         if self.controls.get_log_level() <= LOG_LEVELS['SYSTEM']:
             self.frame.panel.log_notebook.log_panel.log(message)
 
-    def log_debug(self, message: str):
+    def log_debug(self, message: str) -> None:
         '''Log a debug message.'''
 
         if self.controls.get_log_level() <= LOG_LEVELS['DEBUG']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Debug', LOG_COLOR_DEBUG)
 
-    def log_info(self, message: str):
+    def log_info(self, message: str) -> None:
         '''Log an informational message.'''
 
         if self.controls.get_log_level() <= LOG_LEVELS['INFO']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Info', LOG_COLOR_INFO)
 
-    def log_warning(self, message: str):
+    def log_warning(self, message: str) -> None:
         '''Log a warning message.'''
 
         if self.controls.get_log_level() <= LOG_LEVELS['WARNING']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Warning', LOG_COLOR_WARNING)
 
-    def log_error(self, message: str):
+    def log_error(self, message: str) -> None:
         '''Log an error message.'''
 
         if self.controls.get_log_level() <= LOG_LEVELS['ERROR']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Error', LOG_COLOR_ERROR)
 
-    def log_critical(self, message: str):
+    def log_critical(self, message: str) -> None:
         '''Log a critical error message.'''
 
         if self.controls.get_log_level() <= LOG_LEVELS['CRITICAL']:
             self.frame.panel.log_notebook.log_panel.log(message, 'Critical', LOG_COLOR_CRITICAL)
 
-    def log_context(self, message: str, silent: bool = False):
+    def log_context(self, message: str, silent: bool = False) -> None:
         '''Log a context message.'''
 
         tags = ['Context']
@@ -154,12 +164,12 @@ class TonyView:
 
         self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
 
-    def log_description(self, message: str):
+    def log_description(self, message: str) -> None:
         '''Log an action description.'''
 
         self.frame.panel.log_notebook.context_log_panel.log(message, 'Action', LOG_COLOR_CONTEXT)
 
-    def log_query(self, message: str, ephemeral: bool = False):
+    def log_query(self, message: str, ephemeral: bool = False) -> None:
         '''Log an actions/force query.'''
 
         tags = ['Query']
@@ -171,7 +181,7 @@ class TonyView:
 
         self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
 
-    def log_state(self, message: str, ephemeral: bool = False):
+    def log_state(self, message: str, ephemeral: bool = False) -> None:
         '''Log an actions/force state.'''
 
         tags = ['State']
@@ -183,13 +193,12 @@ class TonyView:
 
         self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
 
-    def log_action_result(self, success: bool, message: str | None):
+    def log_action_result(self, success: bool, message: str) -> None:
         '''Log an action result message.'''
 
-        
         self.frame.panel.log_notebook.context_log_panel.log(message, 'Result', LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS if success else LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE)
 
-    def log_raw(self, message: str, incoming: bool):
+    def log_raw(self, message: str, incoming: bool) -> None:
         '''Log raw data.'''
 
         tag = 'Game --> Neuro' if incoming else 'Game <-- Neuro'
@@ -197,14 +206,14 @@ class TonyView:
 
         self.frame.panel.log_notebook.raw_log_panel.log(message, tag, color)
 
-    def clear_logs(self):
+    def clear_logs(self) -> None:
         '''Clear all logs.'''
 
         self.frame.panel.log_notebook.log_panel.text.Clear()
         self.frame.panel.log_notebook.context_log_panel.text.Clear()
         self.frame.panel.log_notebook.raw_log_panel.text.Clear()
 
-    def show_action_dialog(self, action: NeuroAction) -> Optional[str]:
+    def show_action_dialog(self, action: NeuroAction) -> str | None:
         '''Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None.'''
 
         self.action_dialog = ActionDialog(self.frame, action, self.controls.validate_schema)
@@ -214,11 +223,11 @@ class TonyView:
         self.action_dialog = None
 
         if result == wx.ID_OK:
+            assert isinstance(text, str)
             return text
-        else:
-            return None
+        return None
 
-    def close_action_dialog(self):
+    def close_action_dialog(self) -> None:
         '''
         Close the currently opened action dialog.
         Does nothing if no dialog is open.
@@ -229,27 +238,27 @@ class TonyView:
             self.action_dialog.EndModal(wx.ID_CANCEL)
             self.action_dialog = None
 
-    def add_action(self, action: NeuroAction):
+    def add_action(self, action: NeuroAction) -> None:
         '''Add an action to the list.'''
 
         self.frame.panel.action_list.add_action(action)
 
-    def remove_action_by_name(self, name: str):
+    def remove_action_by_name(self, name: str) -> None:
         '''Remove an action from the list by name.'''
 
         self.frame.panel.action_list.remove_action_by_name(name)
 
-    def enable_actions(self):
+    def enable_actions(self) -> None:
         '''Enable all action buttons.'''
-        
+
         wx.CallAfter(self.frame.panel.action_list.execute_button.Enable)
 
-    def disable_actions(self):
+    def disable_actions(self) -> None:
         '''Disable all action buttons.'''
-        
+
         self.frame.panel.action_list.execute_button.Disable()
 
-    def force_actions(self, state: str, query: str, ephemeral_context: bool, action_names: list[str], retry: bool = False):
+    def force_actions(self, state: str, query: str, ephemeral_context: bool, action_names: list[str], retry: bool = False) -> None:
         '''Show a dialog for forcing actions.'''
 
         actions = [action for action in self.model.actions if action.name in action_names]
@@ -261,12 +270,12 @@ class TonyView:
         if result != wx.ID_OK:
             self.log_system('Manually ignored forced action.')
 
-    def clear_actions(self):
+    def clear_actions(self) -> None:
         '''Clear the list of actions.'''
 
         self.frame.panel.action_list.clear()
 
-    def on_action_result(self, success: bool, message: str | None):
+    def on_action_result(self, success: bool, message: str | None) -> None:
         '''
         Handle an action/result message.
         Enables the execute button.
@@ -274,22 +283,22 @@ class TonyView:
 
         self.enable_actions()
 
-class MainFrame(wx.Frame):
+class MainFrame(wx.Frame):  # type: ignore[misc]
     '''The main frame for the Tony.'''
 
-    def __init__(self, view: TonyView):
-        super().__init__(None, title='Tony v' + VERSION)
+    def __init__(self, view: TonyView) -> None:
+        super().__init__(None, title=f'Tony v{VERSION}')
 
         self.view = view
         self.panel = MainPanel(self)
-        
+
         best_size: wx.Size = self.panel.GetBestSize()
         self.SetSize((850, 600))
 
-class MainPanel(wx.Panel):
+class MainPanel(wx.Panel):  # type: ignore[misc]
     '''The main panel for Tony.'''
 
-    def __init__(self, parent):
+    def __init__(self, parent: MainFrame) -> None:
         super().__init__(parent)
 
         self.action_list = ActionList(self, True)
@@ -306,11 +315,11 @@ class MainPanel(wx.Panel):
         self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Add(right_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
-            
-class ActionList(wx.Panel):
+
+class ActionList(wx.Panel):  # type: ignore[misc]
     '''The list of actions.'''
-    
-    def __init__(self, parent, can_delete: bool):
+
+    def __init__(self, parent: MainPanel | ActionsForceDialog, can_delete: bool) -> None:
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
         self.actions: list[NeuroAction] = []
@@ -343,70 +352,70 @@ class ActionList(wx.Panel):
         if not can_delete:
             self.delete_button.Disable()
 
-    def add_action(self, action: NeuroAction):
+    def add_action(self, action: NeuroAction) -> None:
         '''Add an action panel to the list.'''
 
         self.actions.append(action)
 
         self.list.Append([action.name, action.description, 'Yes' if action.schema is not None and action.schema != {} else 'No'])
 
-    def remove_action_by_name(self, name: str):
+    def remove_action_by_name(self, name: str) -> None:
         '''Remove an action panel from the list.'''
 
         self.actions = [action for action in self.actions if action.name != name]
-        
+
         index = self.list.FindItem(-1, name)
-        if(index != -1):
+        if index != -1:
             self.list.DeleteItem(index)
         # else:
         #     self.GetTopLevelParent().view.log_error(f'Action "{name}" not found in list.')
-    
-    def clear(self):
+
+    def clear(self) -> None:
         '''Clear the list of actions.'''
 
         self.actions.clear()
         self.list.DeleteAllItems()
 
-    def on_execute(self, event: wx.CommandEvent):
+    def on_execute(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         index = self.list.GetFirstSelected()
 
         if index == -1:
             return
-        
+
         action = self.actions[index]
 
         top: MainFrame = self.GetTopLevelParent()
         sent = top.view.on_execute(action)
-        
+
         if sent:
             self.GetEventHandler().ProcessEvent(ExecuteEvent(self.GetId(), action))
         top.view.log_debug(f'Sent: {sent}')
 
-    def on_delete(self, event: wx.CommandEvent):
+    def on_delete(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         index = self.list.GetFirstSelected()
 
         if index == -1:
             return
-        
+
         action: NeuroAction = self.actions[index]
 
         top: MainFrame = self.GetTopLevelParent()
         top.view.on_delete_action(action.name)
 
-    def on_unlock(self, event: wx.CommandEvent):
+    def on_unlock(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         top: MainFrame = self.GetTopLevelParent()
         top.view.on_unlock()
-    
-class LogNotebook(wx.Notebook):
+
+class LogNotebook(wx.Notebook):  # type: ignore[misc]
     '''The notebook for logging messages.'''
 
-    def __init__(self, parent):
+    def __init__(self, parent: MainPanel) -> None:
         super().__init__(parent)
 
         self.log_panel = LogPanel(self)
@@ -417,10 +426,10 @@ class LogNotebook(wx.Notebook):
         self.AddPage(self.context_log_panel, 'Context')
         self.AddPage(self.raw_log_panel, 'Raw')
 
-class LogPanel(wx.Panel):
+class LogPanel(wx.Panel):  # type: ignore[misc]
     '''The panel for logging messages.'''
 
-    def __init__(self, parent, text_ctrl_style = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH):
+    def __init__(self, parent: LogNotebook, text_ctrl_style: int = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH) -> None:
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
         self.text = wx.TextCtrl(self, style=text_ctrl_style)
@@ -428,7 +437,12 @@ class LogPanel(wx.Panel):
         self.sizer.Add(self.text, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
 
-    def log(self, message: str, tags: str | list[str] | None = [], tag_colors: wx.Colour | list[wx.Colour] | None = []):
+    def log(
+        self,
+        message: str,
+        tags: str | list[str] | None = None,
+        tag_colors: wx.Colour | list[wx.Colour] | None = None,
+    ) -> None:
         '''Log a message with optional tags and colors.'''
 
         # Convert single tags and colors to lists
@@ -447,20 +461,20 @@ class LogPanel(wx.Panel):
         # Log timestamp
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
         self.text.AppendText(f'[{dt.now().strftime("%X")}] ')
-        
+
         # Log tags
-        for tag, tag_color in zip(tags, tag_colors):
+        for tag, tag_color in zip(tags, tag_colors, strict=True):
             self.text.SetDefaultStyle(wx.TextAttr(tag_color))
             self.text.AppendText(f'[{tag}] ')
-        
+
         # Log message
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
         self.text.AppendText(f'{message}\n')
 
-class ControlPanel(wx.Panel):
+class ControlPanel(wx.Panel):  # type: ignore[misc]
     '''The panel for controlling the application.'''
 
-    def __init__(self, parent):
+    def __init__(self, parent: MainPanel) -> None:
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
         self.view: TonyView = self.GetTopLevelParent().view
@@ -538,27 +552,27 @@ class ControlPanel(wx.Panel):
 
         # Modify
 
-    def on_clear_logs(self, event: wx.CommandEvent):
+    def on_clear_logs(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.on_clear_logs()
 
-    def on_validate_schema(self, event: wx.CommandEvent):
+    def on_validate_schema(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.controls.validate_schema = event.IsChecked()
 
-    def on_ignore_actions_force(self, event: wx.CommandEvent):
+    def on_ignore_actions_force(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.controls.ignore_actions_force = event.IsChecked()
 
-    def on_auto_send(self, event: wx.CommandEvent):
+    def on_auto_send(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.controls.auto_send = event.IsChecked()
 
-    def on_latency(self, event: wx.CommandEvent):
+    def on_latency(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         try:
@@ -570,40 +584,40 @@ class ControlPanel(wx.Panel):
             self.view.controls.latency = latency
             self.latency_input.UnsetToolTip()
             self.latency_input.SetBackgroundColour(wx.NullColour) # Default color
-        except ValueError as e:
-            self.latency_input.SetToolTip(str(e))
+        except ValueError as exc:
+            self.latency_input.SetToolTip(str(exc))
             self.latency_input.SetBackgroundColour(UI_COLOR_ERROR)
         self.latency_input.Refresh()
 
-    def on_log_level(self, event: wx.CommandEvent):
+    def on_log_level(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         sel = self.log_level_choice.GetSelection()
         self.view.controls.set_log_level(self.log_level_choice.GetString(sel))
 
-    def on_send_actions_reregister_all(self, event: wx.CommandEvent):
+    def on_send_actions_reregister_all(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.on_send_actions_reregister_all()
 
-    def on_send_shutdown_graceful(self, event: wx.CommandEvent):
+    def on_send_shutdown_graceful(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.on_send_shutdown_graceful()
 
-    def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent):
+    def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.on_send_shutdown_graceful_cancel()
 
-    def on_send_shutdown_immediate(self, event: wx.CommandEvent):
+    def on_send_shutdown_immediate(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.view.on_send_shutdown_immediate()
 
-class ActionDialog(wx.Dialog):
+class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
-    def __init__(self, parent, action: NeuroAction, do_validate: bool):
+    def __init__(self, parent: MainFrame, action: NeuroAction, do_validate: bool) -> None:
         super().__init__(parent, title=action.name)
 
         self.action = action
@@ -637,7 +651,7 @@ class ActionDialog(wx.Dialog):
 
         self.text.SetValue(json.dumps(sample, indent=2))
 
-    def on_send(self, event: wx.CommandEvent):
+    def on_send(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         try:
@@ -645,31 +659,40 @@ class ActionDialog(wx.Dialog):
             json_cmd = json.loads(json_str)
             if self.do_validate:
                 jsonschema.validate(json_cmd, self.action.schema)
-            
+
             self.EndModal(wx.ID_OK)
             return
-        
-        except Exception as e:
-            if isinstance(e, jsonschema.ValidationError):
-                wx.MessageBox(f'JSON schema validation error: {e}', 'Error', wx.OK | wx.ICON_ERROR)
-            elif isinstance(e, json.JSONDecodeError):
-                wx.MessageBox(f'JSON decode error: {e}', 'Error', wx.OK | wx.ICON_ERROR)
-            else:
-                raise e
 
-    def on_show_schema(self, event: wx.CommandEvent):
+        except Exception as exc:
+            if isinstance(exc, jsonschema.ValidationError):
+                wx.MessageBox(f'JSON schema validation error: {exc}', 'Error', wx.OK | wx.ICON_ERROR)
+            elif isinstance(exc, json.JSONDecodeError):
+                wx.MessageBox(f'JSON decode error: {exc}', 'Error', wx.OK | wx.ICON_ERROR)
+            else:
+                raise exc
+
+    def on_show_schema(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         wx.MessageBox(json.dumps(self.action.schema, indent=2), 'Schema', wx.OK | wx.ICON_INFORMATION)
 
-    def on_cancel(self, event: wx.CommandEvent):
+    def on_cancel(self, event: wx.CommandEvent) -> None:
         event.Skip()
 
         self.EndModal(wx.ID_CANCEL)
 
-class ActionsForceDialog(wx.Dialog):
+class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
 
-    def __init__(self, parent, view: TonyView, state: str, query: str, ephemeral_context: bool, actions: list[NeuroAction], retry: bool = False):
+    def __init__(
+        self,
+        parent: MainFrame,
+        view: TonyView,
+        state: str,
+        query: str,
+        ephemeral_context: bool,
+        actions: list[NeuroAction],
+        retry: bool = False,
+    ) -> None:
         title = 'Forced Action' if not retry else 'Retry Forced Action'
         super().__init__(parent, title=title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
@@ -698,7 +721,7 @@ class ActionsForceDialog(wx.Dialog):
 
         self.Bind(EVT_EXECUTE, self.on_execute, self.action_list)
 
-    def on_execute(self, event: ExecuteEvent):
+    def on_execute(self, event: ExecuteEvent) -> None:
         event.Skip()
 
         self.EndModal(wx.ID_OK)
@@ -706,7 +729,7 @@ class ActionsForceDialog(wx.Dialog):
 class Controls:
     '''The content of the control panel.'''
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.validate_schema: bool = True
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
@@ -715,7 +738,7 @@ class Controls:
         self.__log_level_str: str = 'INFO'
         self.__log_level: int = LOG_LEVELS['INFO']
 
-    def set_log_level(self, log_level: str):
+    def set_log_level(self, log_level: str) -> None:
         '''Set the log level.'''
 
         self.__log_level_str = log_level
@@ -725,9 +748,8 @@ class Controls:
         '''Get the log level.'''
 
         return self.__log_level
-    
+
     def get_log_level_str(self) -> str:
         '''Get the log level as a string.'''
 
         return self.__log_level_str
-    
