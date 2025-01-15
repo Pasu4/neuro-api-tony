@@ -14,6 +14,7 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     echo "::group::Installing dependencies for Linux"
     sudo apt-get update -q
     sudo apt-get install -y -q python3-wxgtk4.0
+    python -c "import wx; print(wx.__version__)"
     echo "::endgroup::"
 else
     echo "RUNNER_OS is not set or not Linux. Skipping installation of python3-wxgtk4.0."
