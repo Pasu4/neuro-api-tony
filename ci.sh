@@ -28,7 +28,7 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     # Get the Ubuntu version
     UBUNTU_VERSION=$(lsb_release -rs)
     # Install wxPython from binaries
-    uv pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION} wxPython
+    python -m uv pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION} wxPython
     # Make sure installation was successful
     python -c "import wx; print(wx.__version__)"
     echo "::endgroup::"
