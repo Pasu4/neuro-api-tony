@@ -26,7 +26,6 @@ If you want to modify the project and/or contribute, use the GitHub method.
 #### From PyPI
 
 This will install the package from PyPI using pip.
-Update checking for this method will be added in a later update.
 
 1. Run `pip install neuro-api-tony`
 
@@ -58,7 +57,6 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 #### From PyPI
 
 This will install the package from PyPI using pip.
-Update checking for this method will be added in a later update.
 
 1. Run `pip install neuro-api-tony`
 
@@ -88,7 +86,6 @@ Skip steps 2 and 3 if you don't want a virtual environment.
 #### From PyPI
 
 This will install the package from PyPI using pip.
-Update checking for this method will be added in a later update.
 
 1. Run `sudo dnf install g++ gtk3-devel python-config`
 2. Run `pip install neuro-api-tony`
@@ -129,7 +126,6 @@ If you run into further problems with a specific distribution, please [submit an
 #### From PyPI
 
 This will install the package from PyPI using pip.
-Update checking for this method will be added in a later update.
 
 1. Run `pip install neuro-api-tony`
 
@@ -163,7 +159,6 @@ If you downloaded from GitHub without cloning it, you're better off re-downloadi
 3. Run `pip install -e .` to install any potential new dependencies
 
 If you installed Tony from PyPI, you can update using `pip install --upgrade neuro-api-tony`.
-Note that automatic update checking is currently not implemented in the PyPI version.
 
 ## Usage
 

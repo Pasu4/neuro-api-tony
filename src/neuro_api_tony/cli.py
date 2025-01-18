@@ -2,12 +2,11 @@ import logging
 import wx
 import sys
 from getopt import getopt
-from git import CommandError, GitCommandError, Repo
-from git.exc import InvalidGitRepositoryError
-import subprocess
+import semver
+import requests
 
 from .controller import TonyController
-from .constants import APP_NAME, VERSION, GIT_REPO_URL
+from .constants import APP_NAME, VERSION, PYPI_API_URL, PACKAGE_NAME
 
 help_message = '''
 Usage: neuro-api-tony [OPTIONS]
@@ -29,7 +28,6 @@ Options:
     -v, --version:
         Show the version of the program and exit.
 '''
-
 
 def cli_run() -> None:
     options, _ = getopt(sys.argv[1:], 'ha:l:p:v', ['help', 'addr=', 'address=', 'log=', 'log-level=', 'port=', 'update', 'version'])
@@ -65,26 +63,25 @@ def cli_run() -> None:
                 print(f'{APP_NAME} v{VERSION}')
                 sys.exit(0)
 
-    # Check if the program is a repository and if there are updates available
+    # Check if there are updates available
     try:
-        repo = Repo('.')
-        repo.remote().fetch()
+        remote_version = requests.get(PYPI_API_URL).json()['info']['version']
 
-        if repo.head.commit != repo.remote().refs.master.commit: # Check if the local commit is different from the remote commit
-            print('An update is available. To update, pull the latest changes using git.')
+        if semver.compare(remote_version, VERSION) > 0:
+            print(f'An update is available. ({VERSION} -> {remote_version})\n'
+                  f'Depending on your installation method, pull the latest changes from GitHub or\n'
+                  f'run "pip install --upgrade {PACKAGE_NAME}" to update.')
 
-    except InvalidGitRepositoryError:
-        print('Warning: Update checking is not yet implemented for PyPI distributions. Please\n'
-              'check for updates manually until this feature is implemented.')
+    except ConnectionError as exc:
+        print('Failed to check for updates. Please check your internet connection.')
 
-    except GitCommandError:
-        print('Cannot check for updates. Please check your internet connection.')
+    except Exception as exc:
+        print('An unknown error occured while checking for updates.')
 
     # Start the program
     app = wx.App()
     controller = TonyController(app, log_level)
     controller.run(address, port)
-
 
 if __name__ == '__main__':
     cli_run()
