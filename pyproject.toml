@@ -57,12 +57,12 @@ neuro-api-tony = "neuro_api_tony.cli:cli_run"
 [project.optional-dependencies]
 tests = [
     "pytest>=5.0",
-    "pytest-cov",
-    "pytest-trio",
+    "pytest-cov>=6.0",
+    "pytest-trio>=0.8.0",
     "coverage>=7.2.5",
     "uv>=0.5.21",
     "mypy>=1.14.1",
-    "types-requests",
+    "types-requests>=2.32.0.20241016",
 ]
 tools = [
     'black>=24.10.0; implementation_name == "cpython"',
@@ -84,7 +84,6 @@ show_traceback = true
 # wxPython does not have type annotations and there are errors
 # left and right from wxPython types resolving to Any
 disallow_any_unimported = false
-disallow_any_unimported = true
 ignore_missing_imports = true
 local_partial_types = true
 no_implicit_optional = true

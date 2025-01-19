@@ -22,6 +22,7 @@ echo "::group::Install dependencies"
 python -m pip install -U pip tomli
 python -m pip --version
 UV_VERSION=$(python -c 'import tomli; from pathlib import Path; print({p["name"]:p for p in tomli.loads(Path("uv.lock").read_text())["package"]}["uv"]["version"])')
+WXPYTHON_VERSION=$(python -c 'import tomli; from pathlib import Path; print({p["name"]:p for p in tomli.loads(Path("uv.lock").read_text())["package"]}["wxpython"]["version"])')
 python -m pip install uv==$UV_VERSION
 python -m uv --version
 
@@ -52,8 +53,9 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     sudo apt-get install -y -q python3-dev libgtk-3-dev libnotify-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libwebkit2gtk-4.1-dev libsdl2-2.0-0
     # Get the Ubuntu version
     UBUNTU_VERSION=$(lsb_release -rs)
+    PYTHON_VERSION=$(python -c 'import sys; print("".join(map(str, sys.version_info[:2])))')
     # Install wxPython from binaries
-    python -m uv pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION} wxPython
+    uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxPython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
     # Make sure installation was successful
     python -c "import wx; print(wx.__version__)"
     echo "::endgroup::"
@@ -62,6 +64,10 @@ fi
 if [ "$CHECK_FORMATTING" = "1" ]; then
     python -m uv sync --extra tests --extra tools
     echo "::endgroup::"
+    # Restore files to original state on Linux
+    if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
+        git restore pyproject.toml uv.lock
+    fi
     source check.sh
 else
     # Actual tests
