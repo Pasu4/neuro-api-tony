@@ -498,7 +498,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.send_actions_reregister_all_button = wx.Button(self, label='Clear all actions and request reregistration (experimental)')
         self.send_shutdown_graceful_button = wx.Button(self, label='Request graceful shutdown (experimental)')
         self.send_shutdown_graceful_cancel_button = wx.Button(self, label='Cancel graceful shutdown (experimental)')
-        self.send_shutdown_immidiate_button = wx.Button(self, label='Request immediate shutdown (experimental)')
+        self.send_shutdown_immediate_button = wx.Button(self, label='Request immediate shutdown (experimental)')
 
         # Create sizers
 
@@ -523,7 +523,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_shutdown_immidiate_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.send_shutdown_immediate_button, 0, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
         # Bind events
@@ -540,7 +540,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
-        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_immediate, self.send_shutdown_immidiate_button)
+        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_immediate, self.send_shutdown_immediate_button)
 
         # Set default values
 
