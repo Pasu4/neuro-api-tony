@@ -19,6 +19,8 @@ jobs:
   build:
     name: Build distribution
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  # Only read permissions are needed for this job
     steps:
     - uses: actions/checkout@v4
       with:
@@ -31,10 +33,10 @@ jobs:
       run: >-
         python3 -m
         pip install
-        build
+        uv
         --user
     - name: Build a binary wheel and a source tarball
-      run: python3 -m build
+      run: python3 -m uv build
     - name: Store the distribution packages
       uses: actions/upload-artifact@v4
       with:
