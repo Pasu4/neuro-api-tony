@@ -1,10 +1,10 @@
 #!/bin/bash
-# -*- coding: utf-8 -*-
 
 set -ex
 
 ON_GITHUB_CI=true
 EXIT_STATUS=0
+PROJECT='neuro_api_tony'
 
 # If not running on Github's CI, discard the summaries
 if [ -z "${GITHUB_STEP_SUMMARY+x}" ]; then
@@ -41,18 +41,20 @@ fi
 
 # Check pip compile is consistent
 echo "::group::Pip Compile - Tests"
-uv pip compile --universal --python-version=3.10 test-requirements.in -o test-requirements.txt
+uv lock
 echo "::endgroup::"
 
-if git status --porcelain | grep -q "requirements.txt"; then
-    echo "::error::requirements.txt changed."
-    echo "::group::requirements.txt changed"
-    echo "* requirements.txt changed" >> "$GITHUB_STEP_SUMMARY"
+if git status --porcelain | grep -q "uv.lock"; then
+    echo "::error::uv.lock changed."
+    echo "::group::uv.lock changed"
+    echo "* uv.lock changed" >> "$GITHUB_STEP_SUMMARY"
     git status --porcelain
-    git --no-pager diff --color ./*requirements.txt
+    git --no-pager diff --color ./*uv.lock
     EXIT_STATUS=1
     echo "::endgroup::"
 fi
+
+codespell || EXIT_STATUS=$?
 
 # Finally, leave a really clear warning of any issues and exit
 if [ $EXIT_STATUS -ne 0 ]; then
@@ -63,7 +65,8 @@ if [ $EXIT_STATUS -ne 0 ]; then
 Problems were found by static analysis (listed above).
 To fix formatting and see remaining errors, run
 
-    uv pip install -e .
+    uv sync --extra tools
+    mypy
     ./check.sh
 
 in your local checkout.

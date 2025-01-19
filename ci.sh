@@ -9,6 +9,7 @@ env | sort
 PROJECT='neuro_api_tony'
 echo "::endgroup::"
 
+
 ################################################################
 # We have a Python environment!
 ################################################################
@@ -18,9 +19,31 @@ python -c "import sys, struct; print('python:', sys.version); print('version_inf
 echo "::endgroup::"
 
 echo "::group::Install dependencies"
-python -m pip install -U pip uv -c test-requirements.txt
+python -m pip install -U pip tomli
 python -m pip --version
+UV_VERSION=$(python -c 'import tomli; from pathlib import Path; print({p["name"]:p for p in tomli.loads(Path("uv.lock").read_text())["package"]}["uv"]["version"])')
+python -m pip install uv==$UV_VERSION
 python -m uv --version
+
+UV_VENV_SEED="pip"
+python -m uv venv --seed --allow-existing
+
+# Determine the platform and activate the virtual environment accordingly
+case "$OSTYPE" in
+  linux-gnu*|linux-musl*|darwin*)
+    source .venv/bin/activate
+    ;;
+  cygwin*|msys*)
+    source .venv/Scripts/activate
+    ;;
+  *)
+    echo "::error:: Unknown OS. Please add an activation method for '$OSTYPE'."
+    exit 1
+    ;;
+esac
+
+# Install uv in virtual environment
+python -m pip install uv==$UV_VERSION
 
 # Check if running on Linux and install wxPython from binaries
 if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
@@ -36,14 +59,8 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     echo "::endgroup::"
 fi
 
-python -m uv pip install build
-
-python -m build
-wheel_package=$(ls dist/*.whl)
-python -m uv pip install "$PROJECT @ $wheel_package" -c test-requirements.txt
-
 if [ "$CHECK_FORMATTING" = "1" ]; then
-    python -m uv pip install -r test-requirements.txt exceptiongroup
+    python -m uv sync --extra tests --extra tools
     echo "::endgroup::"
     source check.sh
 else
@@ -51,10 +68,11 @@ else
     # expands to 0 != 1 if NO_TEST_REQUIREMENTS is not set, if set the `-0` has no effect
     # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
     if [ "${NO_TEST_REQUIREMENTS-0}" == 1 ]; then
-        python -m uv pip install pytest coverage -c test-requirements.txt
-        flags="--skip-optional-imports"
+        python -m uv sync --extra tests
+        flags=""
+        #"--skip-optional-imports"
     else
-        python -m uv pip install -r test-requirements.txt
+        python -m uv sync --extra tests --extra tools
         flags=""
     fi
 
@@ -74,9 +92,6 @@ else
     # get mypy tests a nice cache
     MYPYPATH=".." mypy --config-file= --cache-dir=./.mypy_cache -c "import $PROJECT" >/dev/null 2>/dev/null || true
 
-    # support subprocess spawning with coverage.py
-    # echo "import coverage; coverage.process_startup()" | tee -a "$INSTALLDIR/../sitecustomize.py"
-
     echo "::endgroup::"
     echo "::group:: Run Tests"
     if coverage run --rcfile=../pyproject.toml -m pytest -ra --junitxml=../test-results.xml ../tests --verbose --durations=10 $flags; then
@@ -84,10 +99,14 @@ else
     else
         PASSED=false
     fi
+    PREV_DIR="$PWD"
+    cd "$INSTALLDIR"
+    rm pyproject.toml
+    cd "$PREV_DIR"
     echo "::endgroup::"
     echo "::group::Coverage"
 
-    #coverage combine --rcfile ../pyproject.toml
+    coverage combine --rcfile ../pyproject.toml
     coverage report -m --rcfile ../pyproject.toml
     coverage xml --rcfile ../pyproject.toml
 

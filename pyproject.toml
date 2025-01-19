@@ -51,39 +51,45 @@ version = {attr = "neuro_api_tony.constants.VERSION"}
 "Source" = "https://github.com/Pasu4/neuro-api-tony"
 "Bug Tracker" = "https://github.com/Pasu4/neuro-api-tony/issues"
 
-[project.scripts]
+[project.gui-scripts]
 neuro-api-tony = "neuro_api_tony.cli:cli_run"
+
+[project.optional-dependencies]
+tests = [
+    "pytest>=5.0",
+    "pytest-cov",
+    "pytest-trio",
+    "coverage>=7.2.5",
+    "uv>=0.5.21",
+    "mypy>=1.14.1",
+    "types-requests",
+]
+tools = [
+    'black>=24.10.0; implementation_name == "cpython"',
+    "ruff>=0.9.2",
+    "codespell>=2.3.0",
+]
 
 [tool.setuptools.package-data]
 neuro_api_tony = ["py.typed"]
 
+[tool.uv]
+package = true
+
 [tool.mypy]
 files = ["src/neuro_api_tony/"]
-check_untyped_defs = true
-disallow_any_decorated = true
-disallow_any_generics = true
-# wxPython does not have type annotations and there are errors
-# left and right from wxPython types resolving to Any
-disallow_any_unimported = false
-disallow_incomplete_defs = true
-disallow_subclassing_any = true
-disallow_untyped_calls = true
-disallow_untyped_decorators = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
-local_partial_types = true
-no_implicit_optional = true
-no_implicit_reexport = true
 show_column_numbers = true
 show_error_codes = true
 show_traceback = true
+# wxPython does not have type annotations and there are errors
+# left and right from wxPython types resolving to Any
+disallow_any_unimported = false
+disallow_any_unimported = true
+ignore_missing_imports = true
+local_partial_types = true
+no_implicit_optional = true
 strict = true
-strict_equality = true
-warn_redundant_casts = true
-warn_return_any = true
 warn_unreachable = true
-warn_unused_configs = true
-warn_unused_ignores = true
 
 
 [tool.pytest.ini_options]
@@ -98,6 +104,9 @@ source_pkgs = ["neuro_api_tony"]
 omit = [
     "__init__.py",
 ]
+parallel = true
+relative_files = true
+source = ["."]
 
 [tool.coverage.report]
 precision = 1
