@@ -1,5 +1,7 @@
 # Project-Specific
 /test-log.txt
+mypy_annotate.dat
+test-results.xml
 
 # MacOS files
 **/.DS_Store

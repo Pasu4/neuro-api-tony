@@ -1,0 +1,5 @@
+# Bash does not like CRLF
+*.sh text eol=lf
+
+# From https://github.com/python-trio/trio/blob/main/src/trio/_tools/mypy_annotate.py
+/tools/mypy_annotate.py linguist-vendored

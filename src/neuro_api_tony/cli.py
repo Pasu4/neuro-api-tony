@@ -24,7 +24,7 @@ Options:
 
     -p, --port <PORT>:
         The port number to start the websocket server on. Default is 8000.
-    
+
     -v, --version:
         Show the version of the program and exit.
 '''
@@ -76,7 +76,7 @@ def cli_run() -> None:
         print('Failed to check for updates. Please check your internet connection.')
 
     except Exception as exc:
-        print('An unknown error occured while checking for updates.')
+        print('An unknown error occurred while checking for updates.')
 
     # Start the program
     app = wx.App()
