@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initNeuroClient() {
     neuroClient = new NeuroClient(NEURO_SERVER_URL, GAME_NAME, () => {
         addChatMessage('System', "#ff0000", 'Connected to API');
-        
+
         neuroClient.registerActions([
             {
                 name: 'set_name',
@@ -89,7 +89,7 @@ function initNeuroClient() {
                 }
             }
         ]);
-        
+
         neuroClient.onAction(actionData => {
             if(actionData.name === 'set_name') {
                 apiUsername = actionData.params.name
@@ -101,7 +101,7 @@ function initNeuroClient() {
                 addChatMessage('System', '#ff0000', `${apiUsername} has joined the chat room. Welcome!`);
             }
         })
-        
+
         neuroClient.onAction(actionData => {
             if(actionData.name === 'send_chat_message') {
                 addChatMessage(apiUsername, apiColor, actionData.params.message);
