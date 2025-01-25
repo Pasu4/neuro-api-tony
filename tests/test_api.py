@@ -56,7 +56,23 @@ def test_run_start_stop(api: NeuroAPI) -> None:
     api.stop()
 
     assert api.async_library_running
-    run_tasks_until_empty()
+
+    close_mock = Mock()
+    with patch(
+        "wx.CallAfter",
+        run_sync_soon_threadsafe,
+    ):
+        api.on_close(close_mock)
+
+        # 2nd start should be ignored while shutting down
+        api.start("localhost", 8080)
+
+        # 2nd close handle should be skipped
+        api.on_close(close_mock)
+
+        run_tasks_until_empty()
+
+    close_mock.assert_called_once()
 
     assert not api.async_library_running
     # Make sure stop when not running is also fine
