@@ -387,7 +387,7 @@ class NeuroAPI:
         for key, value in sub_schema.items():
             if key in INVALID_SCHEMA_KEYS:
                 invalid_keys.append(key)
-            elif isinstance(value, str | int):
+            elif isinstance(value, str | int | bool):
                 pass
             elif isinstance(value, dict):
                 invalid_keys.extend(self.check_invalid_keys_recursive(value))
@@ -396,7 +396,7 @@ class NeuroAPI:
                     if isinstance(item, dict):
                         invalid_keys.extend(self.check_invalid_keys_recursive(item))
             else:
-                self.log_error(f'Unhandled schema key type {type(key)!r} ({key!r})')
+                self.log_error(f'Unhandled schema value type {type(value)!r} ({value!r})')
 
         return invalid_keys
 

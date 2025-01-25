@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import logging
 import wx
 import sys
 from getopt import getopt
 import semver
 import requests
+import traceback
+from typing import Final
 
 from .controller import TonyController
 from .constants import APP_NAME, VERSION, PYPI_API_URL, PACKAGE_NAME
 
-help_message = '''
+
+HELP_MESSAGE: Final = '''
 Usage: neuro-api-tony [OPTIONS]
 
 Options:
@@ -29,6 +34,7 @@ Options:
         Show the version of the program and exit.
 '''
 
+
 def cli_run() -> None:
     options, _ = getopt(sys.argv[1:], 'ha:l:p:v', ['help', 'addr=', 'address=', 'log=', 'log-level=', 'port=', 'update', 'version'])
 
@@ -39,7 +45,7 @@ def cli_run() -> None:
     for option, value in options:
         match option:
             case '-h' | '--help':
-                print(help_message)
+                print(HELP_MESSAGE)
                 sys.exit(0)
 
             case '-a' | '--addr' | '--address':
@@ -76,12 +82,14 @@ def cli_run() -> None:
         print('Failed to check for updates. Please check your internet connection.')
 
     except Exception as exc:
-        print('An unknown error occurred while checking for updates.')
+        print('An error occurred while checking for updates:')
+        traceback.print_exception(exc)
 
     # Start the program
     app = wx.App()
     controller = TonyController(app, log_level)
     controller.run(address, port)
+
 
 if __name__ == '__main__':
     cli_run()
