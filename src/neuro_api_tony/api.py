@@ -112,6 +112,7 @@ class NeuroAPI:
 
     def on_close(self, shutdown_function: Callable[[], None]) -> None:
         '''Gracefully handle application quit, cancel async run properly then call shutdown_function.'''
+
         if self.received_loop_close_request:
             self.log_critical("Already closing, ignoring 2nd close request.")
             return
