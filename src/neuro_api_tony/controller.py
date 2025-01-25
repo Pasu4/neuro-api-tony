@@ -41,8 +41,8 @@ class TonyController:
     def __init__(self, app: wx.App, log_level: str) -> None:
         self.app = app
         self.model = TonyModel()
-        self.view = TonyView(app, self.model, log_level)
         self.api = NeuroAPI()
+        self.view = TonyView(app, self.model, log_level, self.api.on_close)
 
         self.active_actions_force: ActionsForceCommand | None = None
 

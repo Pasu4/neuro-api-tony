@@ -55,9 +55,15 @@ class NeuroAPI:
 
         self.async_library_running = False
         self.async_library_root_cancel: trio.CancelScope
+        self.received_loop_close_request = False
 
     def start(self, address: str, port: int) -> None:
         '''Start hosting the websocket server with Trio in the background.'''
+
+        if self.received_loop_close_request:
+            # Attempting to shut down
+            self.log_critical('Something attempted to start websocket server during shutdown, ignoring.')
+            return
 
         if self.async_library_running:
             # Already running, skip
@@ -103,6 +109,38 @@ class NeuroAPI:
         if not self.async_library_running:
             return
         self.async_library_root_cancel.cancel()
+
+    def on_close(self, shutdown_function: Callable[[], None]) -> None:
+        '''Gracefully handle application quit, cancel async run properly then call shutdown_function.'''
+
+        if self.received_loop_close_request:
+            self.log_critical("Already closing, ignoring 2nd close request.")
+            return
+
+        self.received_loop_close_request = True
+
+        # Already shut down, close
+        if not self.async_library_running:
+            shutdown_function()
+            return
+
+        # Tell trio run to cancel
+        try:
+            self.stop()
+        except Exception:
+            # If trigger stop somehow fails, close window
+            shutdown_function()
+
+        def shutdown_then_call() -> None:
+            # If still running, reschedule this function to run again
+            if self.async_library_running:
+                wx.CallAfter(shutdown_then_call)
+            else:
+                # Finally shut down, call shutdown function
+                shutdown_function()
+
+        # Schedule `shutdown_function` to be called once trio run closes
+        wx.CallAfter(shutdown_then_call)
 
     async def _run(self, address: str, port: int) -> None:
         '''Server run root function.'''

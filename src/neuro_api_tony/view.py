@@ -90,7 +90,13 @@ LOG_LEVELS = {
 class TonyView:
     '''The view class for Tony.'''
 
-    def __init__(self, app: wx.App, model: TonyModel, log_level: str) -> None:
+    def __init__(
+        self,
+        app: wx.App,
+        model: TonyModel,
+        log_level: str,
+        api_close: Callable[[Callable[[], None]], None],
+    ) -> None:
         self.model = model
 
         self.controls = Controls()
@@ -98,6 +104,9 @@ class TonyView:
 
         self.frame = MainFrame(self)
         app.SetTopWindow(self.frame)
+
+        self.api_close = api_close
+        self.frame.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.action_dialog: ActionDialog | None = None
 
@@ -110,6 +119,12 @@ class TonyView:
         self.on_send_shutdown_graceful: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
         self.on_send_shutdown_immediate: Callable[[], None] = lambda: None
+
+    def on_close(self, event: wx.CloseEvent) -> None:
+        # Do not let application exit
+        event.Veto()
+        # Tell api to close async run cleanly and then call destroy this frame
+        self.api_close(self.frame.Destroy)
 
     def show(self) -> None:
         '''Show the main frame.'''
