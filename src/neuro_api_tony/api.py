@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from threading import Lock
 import traceback
 from typing import TYPE_CHECKING, Any, NamedTuple, Final
 
@@ -33,7 +32,6 @@ class NeuroAPI:
 
     def __init__(self) -> None:
         self.message_send_channel: trio.MemorySendChannel[str] | None = None
-        self.queue_lock = Lock() # threading, not trio
         self.current_game = ''
         self.current_action_id: str | None = None
 
@@ -298,14 +296,13 @@ class NeuroAPI:
     def _submit_message(self, message: str) -> bool:
         '''Submit a message to the send queue. Return True if client connected.'''
 
-        with self.queue_lock:
-            if not self.client_connected:
-                self.log_error('No client connected!')
-                return False
-            # Otherwise send channel should exist
-            # type checkers need help understanding `self.client_connected`
-            assert self.message_send_channel is not None
-            self.message_send_channel.send_nowait(message)
+        if not self.client_connected:
+            self.log_error('No client connected!')
+            return False
+        # Otherwise send channel should exist
+        # type checkers need help understanding `self.client_connected`
+        assert self.message_send_channel is not None
+        self.message_send_channel.send_nowait(message)
         return True
 
     def send_action(self, id_: str, name: str, data: str | None) -> bool:
