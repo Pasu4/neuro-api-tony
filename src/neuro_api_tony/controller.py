@@ -261,7 +261,7 @@ class TonyController:
             actions = [action for action in self.model.actions if action.name in cmd.action_names]
             action = random.choice(actions)
 
-            if action.schema is None:
+            if not action.schema:
                 self.send_action(next(self.id_generator), action.name, None)
             else:
                 faker = JSF(action.schema)
