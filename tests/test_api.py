@@ -14,6 +14,7 @@ from trio_websocket import (
     WebSocketRequest,
     serve_websocket,
 )
+from exceptiongroup import BaseExceptionGroup, catch
 
 from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
@@ -318,17 +319,25 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     # Missing closing brace
     await send.send('{"command": "startup", "game": "test_game"')
 
-    try:
+
+    def handle_json_error(multi_exc: BaseExceptionGroup) -> None:
+        nonlocal had_json_error
+        exc = multi_exc.args[1][0]
+        assert exc.args[0] == "Expecting ',' delimiter: line 1 column 43 (char 42)"
+        had_json_error = True
+
+
+    with catch({
+        JSONDecodeError: handle_json_error,
+    }):
         async with trio.open_nursery() as nursery:
             cancel_scope = trio.CancelScope()
             nursery.start_soon(api._handle_consumer, mock_websocket, cancel_scope)
             await trio.sleep(0.05)
             cancel_scope.cancel()
             nursery.cancel_scope.cancel()
-    except* JSONDecodeError as multi_exc:
-        exc = multi_exc.args[1][0]
-        assert exc.args[0] == "Expecting ',' delimiter: line 1 column 43 (char 42)"
-    else:
+
+    if not had_json_error:
         raise ValueError("Should have gotten JSONDecodeError")
 
     assert api.current_game == ''

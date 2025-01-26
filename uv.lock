@@ -395,6 +395,7 @@ dependencies = [
 [package.optional-dependencies]
 tests = [
     { name = "coverage" },
+    { name = "exceptiongroup" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -414,6 +415,7 @@ requires-dist = [
     { name = "black", marker = "implementation_name == 'cpython' and extra == 'tools'", specifier = ">=24.10.0" },
     { name = "codespell", marker = "extra == 'tools'", specifier = ">=2.3.0" },
     { name = "coverage", marker = "extra == 'tests'", specifier = ">=7.2.5" },
+    { name = "exceptiongroup", marker = "extra == 'tests'" },
     { name = "faker", specifier = "~=33.1.3" },
     { name = "jsf", specifier = "~=0.11.2" },
     { name = "jsonschema", specifier = "~=4.23.0" },
