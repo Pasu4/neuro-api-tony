@@ -1,3 +1,5 @@
+"""CLI - Command Line Interface module."""
+
 import sys
 from getopt import getopt
 
@@ -30,6 +32,7 @@ Options:
 """
 
 def cli_run() -> None:
+    """Command line interface entry point."""
     options, _ = getopt(sys.argv[1:], "ha:l:p:v", ["help", "addr=", "address=", "log=", "log-level=", "port=", "update", "version"])
 
     address = "localhost"

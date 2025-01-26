@@ -1,3 +1,5 @@
+"""Controller - Application controller module."""
+
 from __future__ import annotations
 
 import json
@@ -31,9 +33,12 @@ def action_id_generator() -> Generator[str, None, None]:
         yield f"action_{i}"
         i += 1
 
+
 class TonyController:
+    """TonyController class."""
 
     def __init__(self, app: wx.App, log_level: str) -> None:
+        """Initialize Tony Controller."""
         self.app = app
         self.model = TonyModel()
         self.api = NeuroAPI()
@@ -46,6 +51,7 @@ class TonyController:
         self.inject()
 
     def run(self, address: str, port: int) -> None:
+        """Start websocket server on given address and run GUI main event loop."""
         # Schedule the API start to run after the main loop starts
         wx.CallAfter(self.api.start, address, port)
 
@@ -81,7 +87,7 @@ class TonyController:
         self.view.on_send_shutdown_immediate = self.on_view_send_shutdown_immediate
 
     def on_any_command(self, cmd: Any) -> None:
-        """Callback for any command received from the API."""
+        """Handle any command received from the API."""
 
     def on_startup(self, cmd: StartupCommand) -> None:
         """Handle the startup command."""
@@ -180,6 +186,7 @@ class TonyController:
 
     def on_view_execute(self, action: NeuroAction) -> bool:
         """Handle an action execution request from the view.
+
         Returns True if an action was sent, False if the action was cancelled.
         """
         if not action.schema:
@@ -230,6 +237,7 @@ class TonyController:
         self.api.send_shutdown_immediate()
 
     def execute_actions_force(self, cmd: ActionsForceCommand, retry: bool = False) -> None:
+        """Handle a request from the game to execute a forced action."""
         self.active_actions_force = cmd
 
         if self.view.controls.auto_send:

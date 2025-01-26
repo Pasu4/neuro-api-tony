@@ -1,3 +1,9 @@
+"""API Module - Handles sending and receiving data over the Neuro Websocket API.
+
+See https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md
+for more information.
+"""
+
 from __future__ import annotations
 
 import json
@@ -29,8 +35,10 @@ INVALID_SCHEMA_KEYS: Final = frozenset({"$anchor", "$comment", "$defs", "$dynami
 
 
 class NeuroAPI:
+    """NeuroAPI class."""
 
     def __init__(self) -> None:
+        """Initialize NeuroAPI."""
         self.message_send_channel: trio.MemorySendChannel[str] | None = None
         self.current_game = ""
         self.current_action_id: str | None = None
@@ -70,7 +78,7 @@ class NeuroAPI:
             return
 
         def done_callback(run_outcome: Outcome[None]) -> None:
-            """Called when trio run completes."""
+            """Handle when trio run completes."""
             assert self.async_library_running, "How can stop running if not running?"
             self.async_library_running = False
             # Unwrap to make sure exceptions are printed
@@ -144,7 +152,7 @@ class NeuroAPI:
 
     @property
     def client_connected(self) -> bool:
-        """Is there a client connected?"""
+        """Is there a client connected."""
         return self.message_send_channel is not None
 
     async def _handle_websocket_request(self, request: WebSocketRequest) -> None:
@@ -400,6 +408,7 @@ class NeuroAPI:
 
     def check_invalid_keys_recursive(self, sub_schema: dict[str, Any]) -> list[str]:
         """Recursively checks for invalid keys in the schema.
+
         Returns a list of invalid keys that were found.
         """
         invalid_keys = []
@@ -422,18 +431,24 @@ class NeuroAPI:
 
 
 class StartupCommand:
-    pass  # No data needed
+    """Startup command."""
+
+    __slots__ = ()
 
 
 class ContextCommand(NamedTuple):
+    """Context command."""
+
     message: str
     silent: bool
 
 
 class ActionsRegisterCommand:
+    """Actions register command."""
     __slots__ = ("actions",)
 
     def __init__(self, actions: list[dict[str, Any]]) -> None:
+        """Initialize actions register command."""
         # 'schema' may be omitted, so get() is used
         self.actions = [
             NeuroAction(
@@ -446,10 +461,14 @@ class ActionsRegisterCommand:
 
 
 class ActionsUnregisterCommand(NamedTuple):
+    """Actions unregister command."""
+
     action_names: list[str]
 
 
 class ActionsForceCommand(NamedTuple):
+    """Actions force command."""
+
     state: str | None
     query: str
     ephemeral_context: bool
@@ -457,9 +476,13 @@ class ActionsForceCommand(NamedTuple):
 
 
 class ActionResultCommand(NamedTuple):
+    """Action result command."""
+
     success: bool
     message: str | None
 
 
 class ShutdownReadyCommand:
-    pass  # No data needed
+    """Shutdown ready command."""
+
+    __slots__ = ()

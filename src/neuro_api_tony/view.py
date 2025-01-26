@@ -1,3 +1,5 @@
+"""View - Main GUI frame logic."""
+
 from __future__ import annotations
 
 import json
@@ -21,34 +23,42 @@ if TYPE_CHECKING:
 EVTTYPE_ADD_ACTION = wx.NewEventType()
 EVT_ADD_ACTION = wx.PyEventBinder(EVTTYPE_ADD_ACTION, 1)
 
+
 class AddActionEvent(wx.PyCommandEvent):  # type: ignore[misc]
     """An event for adding an action to the list."""
     __slots__ = ("action",)
 
     def __init__(self, id_: int, action: NeuroAction) -> None:
+        """Initialize AddActionEvent."""
         super().__init__(EVTTYPE_ADD_ACTION, id_)
         self.action = action
 
+
 EVTTYPE_ACTION_RESULT = wx.NewEventType()
 EVT_ACTION_RESULT = wx.PyEventBinder(EVTTYPE_ACTION_RESULT, 1)
+
 
 class ActionResultEvent(wx.PyCommandEvent):  # type: ignore[misc]
     """An event for an action result message."""
     __slots__ = ("message", "success")
 
     def __init__(self, id_: int, success: bool, message: str | None) -> None:
+        """Initialize ActionResultEvent."""
         super().__init__(EVTTYPE_ACTION_RESULT, id_)
         self.success = success
         self.message = message
 
+
 EVT_TYPE_EXECUTE = wx.NewEventType()
 EVT_EXECUTE = wx.PyEventBinder(EVT_TYPE_EXECUTE, 1)
+
 
 class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
     """An event for executing an action."""
     __slots__ = ("action",)
 
     def __init__(self, id_: int, action: NeuroAction) -> None:
+        """Initialize ExecuteEvent."""
         super().__init__(EVT_TYPE_EXECUTE, id_)
         self.action = action
 
@@ -98,6 +108,7 @@ class TonyView:
         log_level: str,
         api_close: Callable[[Callable[[], None]], None],
     ) -> None:
+        """Initialize TonyView."""
         self.model = model
 
         self.controls = Controls()
@@ -122,6 +133,7 @@ class TonyView:
         self.on_send_shutdown_immediate: Callable[[], None] = lambda: None
 
     def on_close(self, event: wx.CloseEvent) -> None:
+        """Handle application close event."""
         # Do not let application exit
         event.Veto()
         # Tell api to close async run cleanly and then call destroy this frame
@@ -230,6 +242,7 @@ class TonyView:
 
     def close_action_dialog(self) -> None:
         """Close the currently opened action dialog.
+
         Does nothing if no dialog is open.
         Handled as if the "Cancel" button was clicked.
         """
@@ -270,14 +283,17 @@ class TonyView:
 
     def on_action_result(self, success: bool, message: str | None) -> None:
         """Handle an action/result message.
+
         Enables the execute button.
         """
         self.enable_actions()
+
 
 class MainFrame(wx.Frame):  # type: ignore[misc]
     """The main frame for the Tony."""
 
     def __init__(self, view: TonyView) -> None:
+        """Initialize MainFrame."""
         super().__init__(None, title=f"Tony v{VERSION}")
 
         self.view = view
@@ -286,10 +302,12 @@ class MainFrame(wx.Frame):  # type: ignore[misc]
         self.panel.GetBestSize()
         self.SetSize((850, 600))
 
+
 class MainPanel(wx.Panel):  # type: ignore[misc]
     """The main panel for Tony."""
 
     def __init__(self, parent: MainFrame) -> None:
+        """Initialize MainPanel."""
         super().__init__(parent)
 
         self.action_list = ActionList(self, True)
@@ -307,10 +325,12 @@ class MainPanel(wx.Panel):  # type: ignore[misc]
         self.sizer.Add(right_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
 
+
 class ActionList(wx.Panel):  # type: ignore[misc]
     """The list of actions."""
 
     def __init__(self, parent: MainPanel | ActionsForceDialog, can_delete: bool) -> None:
+        """Initialize ActionList panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
         self.actions: list[NeuroAction] = []
@@ -365,6 +385,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.list.DeleteAllItems()
 
     def on_execute(self, event: wx.CommandEvent) -> None:
+        """Handle execute command event."""
         event.Skip()
 
         index = self.list.GetFirstSelected()
@@ -382,6 +403,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         top.view.log_debug(f"Sent: {sent}")
 
     def on_delete(self, event: wx.CommandEvent) -> None:
+        """Handle delete command event."""
         event.Skip()
 
         index = self.list.GetFirstSelected()
@@ -395,15 +417,18 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         top.view.on_delete_action(action.name)
 
     def on_unlock(self, event: wx.CommandEvent) -> None:
+        """Handle unlock command event."""
         event.Skip()
 
         top: MainFrame = self.GetTopLevelParent()
         top.view.on_unlock()
 
+
 class LogNotebook(wx.Notebook):  # type: ignore[misc]
     """The notebook for logging messages."""
 
     def __init__(self, parent: MainPanel) -> None:
+        """Initialize Log Notebook."""
         super().__init__(parent)
 
         self.log_panel = LogPanel(self)
@@ -414,10 +439,12 @@ class LogNotebook(wx.Notebook):  # type: ignore[misc]
         self.AddPage(self.context_log_panel, "Context")
         self.AddPage(self.raw_log_panel, "Raw")
 
+
 class LogPanel(wx.Panel):  # type: ignore[misc]
     """The panel for logging messages."""
 
     def __init__(self, parent: LogNotebook, text_ctrl_style: int = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH) -> None:
+        """Initialize Log Panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
         self.text = wx.TextCtrl(self, style=text_ctrl_style)
@@ -458,10 +485,12 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
         self.text.AppendText(f"{message}\n")
 
+
 class ControlPanel(wx.Panel):  # type: ignore[misc]
     """The panel for controlling the application."""
 
     def __init__(self, parent: MainPanel) -> None:
+        """Initialize Control Panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
         self.view: TonyView = self.GetTopLevelParent().view
@@ -540,26 +569,31 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         # Modify
 
     def on_clear_logs(self, event: wx.CommandEvent) -> None:
+        """Handle clear_logs command event."""
         event.Skip()
 
         self.view.on_clear_logs()
 
     def on_validate_schema(self, event: wx.CommandEvent) -> None:
+        """Handle validate_schema command event."""
         event.Skip()
 
         self.view.controls.validate_schema = event.IsChecked()
 
     def on_ignore_actions_force(self, event: wx.CommandEvent) -> None:
+        """Handle ignore_actions_force command event."""
         event.Skip()
 
         self.view.controls.ignore_actions_force = event.IsChecked()
 
     def on_auto_send(self, event: wx.CommandEvent) -> None:
+        """Handle auto_send command event."""
         event.Skip()
 
         self.view.controls.auto_send = event.IsChecked()
 
     def on_latency(self, event: wx.CommandEvent) -> None:
+        """Handle latency command event."""
         event.Skip()
 
         try:
@@ -577,34 +611,42 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.latency_input.Refresh()
 
     def on_log_level(self, event: wx.CommandEvent) -> None:
+        """Handle log_level command event."""
         event.Skip()
 
         sel = self.log_level_choice.GetSelection()
         self.view.controls.set_log_level(self.log_level_choice.GetString(sel))
 
     def on_send_actions_reregister_all(self, event: wx.CommandEvent) -> None:
+        """Handle send_actions_reregister_all command event."""
         event.Skip()
 
         self.view.on_send_actions_reregister_all()
 
     def on_send_shutdown_graceful(self, event: wx.CommandEvent) -> None:
+        """Handle send_shutdown_graceful command event."""
         event.Skip()
 
         self.view.on_send_shutdown_graceful()
 
     def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent) -> None:
+        """Handle send_shutdown_graceful_cancel command event."""
         event.Skip()
 
         self.view.on_send_shutdown_graceful_cancel()
 
     def on_send_shutdown_immediate(self, event: wx.CommandEvent) -> None:
+        """Handle send_shutdown_immediate command event."""
         event.Skip()
 
         self.view.on_send_shutdown_immediate()
 
+
 class ActionDialog(wx.Dialog):  # type: ignore[misc]
+    """Action dialog."""
 
     def __init__(self, parent: MainFrame, action: NeuroAction, do_validate: bool) -> None:
+        """Initialize Action Dialog."""
         super().__init__(parent, title=action.name)
 
         self.action = action
@@ -639,6 +681,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.text.SetValue(json.dumps(sample, indent=2))
 
     def on_send(self, event: wx.CommandEvent) -> None:
+        """Handle send command event."""
         event.Skip()
 
         try:
@@ -659,16 +702,20 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
                 raise exc
 
     def on_show_schema(self, event: wx.CommandEvent) -> None:
+        """Handle show_schema command event."""
         event.Skip()
 
         wx.MessageBox(json.dumps(self.action.schema, indent=2), "Schema", wx.OK | wx.ICON_INFORMATION)
 
     def on_cancel(self, event: wx.CommandEvent) -> None:
+        """Handle skip command event."""
         event.Skip()
 
         self.EndModal(wx.ID_CANCEL)
 
+
 class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
+    """Actions Force Dialog."""
 
     def __init__(
         self,
@@ -680,6 +727,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         actions: list[NeuroAction],
         retry: bool = False,
     ) -> None:
+        """Initialize Actions Force Dialog."""
         title = "Forced Action" if not retry else "Retry Forced Action"
         super().__init__(parent, title=title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
@@ -709,6 +757,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.Bind(EVT_EXECUTE, self.on_execute, self.action_list)
 
     def on_execute(self, event: ExecuteEvent) -> None:
+        """Handle execute command event."""
         event.Skip()
 
         self.EndModal(wx.ID_OK)
@@ -717,6 +766,7 @@ class Controls:
     """The content of the control panel."""
 
     def __init__(self) -> None:
+        """Initialize control panel."""
         self.validate_schema: bool = True
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
