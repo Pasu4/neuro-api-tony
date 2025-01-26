@@ -9,10 +9,11 @@ import wx
 from jsf import JSF
 
 from .constants import VERSION
-from .model import NeuroAction, TonyModel
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from .model import NeuroAction, TonyModel
 
 
 #region Events
@@ -282,7 +283,7 @@ class MainFrame(wx.Frame):  # type: ignore[misc]
         self.view = view
         self.panel = MainPanel(self)
 
-        best_size: wx.Size = self.panel.GetBestSize()
+        self.panel.GetBestSize()
         self.SetSize((850, 600))
 
 class MainPanel(wx.Panel):  # type: ignore[misc]

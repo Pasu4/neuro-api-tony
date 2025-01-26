@@ -15,7 +15,7 @@ class TonyModel:
     __slots__ = ("actions",)
 
     def __init__(self) -> None:
-        """Initialize Tony Model"""
+        """Initialize Tony Model."""
         self.actions: list[NeuroAction] = []
 
     def __repr__(self) -> str:
