@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 import trio
+import wx
 from unittest.mock import AsyncMock, MagicMock, patch, Mock
 from neuro_api_tony.api import NeuroAPI, ActionsRegisterCommand
 from neuro_api_tony.model import NeuroAction
