@@ -1,6 +1,6 @@
-APP_NAME = 'Tony'
-VERSION = '1.1.3'
-PACKAGE_NAME = 'neuro-api-tony'
-GIT_REPO_URL = 'https://github.com/Pasu4/neuro-api-tony'
-PYPI_URL = 'https://pypi.org/project/neuro-api-tony'
-PYPI_API_URL = 'https://pypi.org/pypi/neuro-api-tony/json'
+APP_NAME = "Tony"
+VERSION = "1.1.3"
+PACKAGE_NAME = "neuro-api-tony"
+GIT_REPO_URL = "https://github.com/Pasu4/neuro-api-tony"
+PYPI_URL = "https://pypi.org/project/neuro-api-tony"
+PYPI_API_URL = "https://pypi.org/pypi/neuro-api-tony/json"
