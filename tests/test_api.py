@@ -319,7 +319,7 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     # Missing closing brace
     await send.send('{"command": "startup", "game": "test_game"')
 
-
+    had_json_error = False
     def handle_json_error(multi_exc: BaseExceptionGroup) -> None:
         nonlocal had_json_error
         exc = multi_exc.args[1][0]
