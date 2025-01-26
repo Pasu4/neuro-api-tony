@@ -1,5 +1,6 @@
 import pytest
-from neuro_api_tony.model import TonyModel, NeuroAction
+
+from neuro_api_tony.model import NeuroAction, TonyModel
 
 
 @pytest.fixture

@@ -1,18 +1,41 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from contextlib import asynccontextmanager
+from json import JSONDecodeError
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
 import pytest
 import trio
 import wx
-from unittest.mock import AsyncMock, MagicMock, patch, Mock
-from neuro_api_tony.api import NeuroAPI, ActionsRegisterCommand
+from trio_websocket import (
+    ConnectionClosed,
+    WebSocketConnection,
+    WebSocketRequest,
+    serve_websocket,
+)
+
+from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
-from collections.abc import Callable
 
 
 @pytest.fixture
 def api() -> NeuroAPI:
     """Create a NeuroAPI instance for testing."""
     return NeuroAPI()
+
+
+@pytest.fixture(autouse=True)
+def print_exception_to_raise() -> None:
+    """Make traceback.print_exception raise exception instead of printing it."""
+    def raise_(exc: BaseException) -> None:
+        raise exc from None
+
+    with patch(
+        "traceback.print_exception",
+        raise_,
+    ):
+        yield None
 
 
 def test_start(api: NeuroAPI) -> None:
@@ -221,3 +244,162 @@ def test_actions_register_command() -> None:
         NeuroAction("jerald", "jerald action", None),
         NeuroAction("jerald_schema", "jerald action with schema", {}),
     ]
+
+
+@pytest.mark.trio
+async def test_handle_websocket_request_accept(api: NeuroAPI) -> None:
+    """Test handling a WebSocket connection request."""
+    send, receive = trio.open_memory_channel[str](1)
+    class Request:
+        async def accept(self) -> MagicMock:
+            class Websocket:
+                get_message = receive.receive
+                send_message = send.send
+            @asynccontextmanager
+            async def manager() -> Generator[Websocket, None, None]:
+                yield Websocket
+            return manager()
+    request = Request()
+
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(api._handle_websocket_request, request)
+        await trio.sleep(0.05)
+        nursery.cancel_scope.cancel()
+
+    assert api.message_send_channel is None
+
+
+@pytest.mark.trio
+async def test_handle_client_connection(api: NeuroAPI) -> None:
+    """Test handling a client connection."""
+    mock_websocket = MagicMock()
+    send, receive = trio.open_memory_channel[str](1)
+    ws_send, ws_receive = trio.open_memory_channel[str](1)
+    mock_websocket.get_message = ws_receive.receive
+    mock_websocket.send_message = ws_send.send
+    api.message_send_channel = send
+
+    await send.send('{"command": "startup", "game": "test_game"}')
+
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(api._handle_client_connection, mock_websocket, receive)
+        await trio.sleep(0.05)
+        nursery.cancel_scope.cancel()
+
+
+@pytest.mark.trio
+async def test_handle_consumer(api: NeuroAPI) -> None:
+    """Test handling a consumer message."""
+    mock_websocket = MagicMock()
+    send, receive = trio.open_memory_channel[str](1)
+    mock_websocket.get_message = receive.receive
+    api.message_send_channel = send
+
+    await send.send('{"command": "startup", "game": "test_game"}')
+
+    async with trio.open_nursery() as nursery:
+        cancel_scope = trio.CancelScope()
+        nursery.start_soon(api._handle_consumer, mock_websocket, cancel_scope)
+        await trio.sleep(0.05)
+        cancel_scope.cancel()
+        nursery.cancel_scope.cancel()
+
+    assert api.current_game == 'test_game'
+
+
+@pytest.mark.trio
+async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
+    """Test handling an invalid JSON message."""
+    mock_websocket = MagicMock()
+    send, receive = trio.open_memory_channel[str](1)
+    mock_websocket.get_message = receive.receive
+    api.message_send_channel = send
+
+    # Missing closing brace
+    await send.send('{"command": "startup", "game": "test_game"')
+
+    try:
+        async with trio.open_nursery() as nursery:
+            cancel_scope = trio.CancelScope()
+            nursery.start_soon(api._handle_consumer, mock_websocket, cancel_scope)
+            await trio.sleep(0.05)
+            cancel_scope.cancel()
+            nursery.cancel_scope.cancel()
+    except* JSONDecodeError as multi_exc:
+        exc = multi_exc.args[1][0]
+        assert exc.args[0] == "Expecting ',' delimiter: line 1 column 43 (char 42)"
+    else:
+        raise ValueError("Should have gotten JSONDecodeError")
+
+    assert api.current_game == ''
+
+
+@pytest.mark.trio
+async def test_handle_producer(api: NeuroAPI) -> None:
+    """Test handling a producer message."""
+    mock_websocket = MagicMock()
+    send, receive = trio.open_memory_channel[str](1)
+    mock_websocket.send_message = AsyncMock(return_value=None)
+    api.message_send_channel = send
+
+    send.send_nowait('{"command": "action", "data": {"id": "123", "name": "test_action"}}')
+
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(api._handle_producer, mock_websocket, receive)
+        await trio.sleep(0.05)
+        nursery.cancel_scope.cancel()
+
+    mock_websocket.send_message.assert_called_once_with('{"command": "action", "data": {"id": "123", "name": "test_action"}}')
+
+
+@pytest.mark.trio
+async def test_handle_producer_no_client(api: NeuroAPI) -> None:
+    """Test handling a producer message when no client is connected."""
+    send, receive = trio.open_memory_channel[str](1)
+
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(api._handle_producer, MagicMock(), receive)
+        await trio.sleep(0.05)
+        nursery.cancel_scope.cancel()
+
+
+@pytest.mark.trio
+async def test_handle_consumer_unexpected_command(api: NeuroAPI) -> None:
+    """Test handling an unexpected command in the consumer."""
+    mock_websocket = MagicMock()
+    send, receive = trio.open_memory_channel[str](1)
+    mock_websocket.get_message = receive.receive
+    api.message_send_channel = send
+
+    await send.send('{"command": "unknown_command"}')
+
+    api.log_warning = Mock()
+
+    async with trio.open_nursery() as nursery:
+        cancel_scope = trio.CancelScope()
+        nursery.start_soon(api._handle_consumer, mock_websocket, cancel_scope)
+        await trio.sleep(0.05)
+        cancel_scope.cancel()
+        nursery.cancel_scope.cancel()
+
+    api.log_warning.assert_called_with('Unknown command.')
+
+
+@pytest.mark.trio
+async def test_handle_consumer_action_result(api: NeuroAPI) -> None:
+    """Test handling an action/result command in the consumer."""
+    mock_websocket = MagicMock()
+    send, receive = trio.open_memory_channel[str](1)
+    mock_websocket.get_message = receive.receive
+    api.message_send_channel = send
+
+    await send.send('{"command": "action/result", "data": {"id": "123", "success": true}}')
+
+    async with trio.open_nursery() as nursery:
+        cancel_scope = trio.CancelScope()
+        nursery.start_soon(api._handle_consumer, mock_websocket, cancel_scope)
+        await trio.sleep(0.05)
+        cancel_scope.cancel()
+        nursery.cancel_scope.cancel()
+
+    assert api.current_action_id is None
