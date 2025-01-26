@@ -173,12 +173,13 @@ class TonyController:
 
         # self.view.log_warning(f'Unknown command received: {json_cmd['command']}')
 
-    def send_action(self, id: str, name: str, data: str | None) -> None:
+    def send_action(self, id_: str, name: str, data: str | None) -> None:
         """Send an action command to the API."""
         self.view.log_system(f"Sending action: {name}")
-        self.api.send_action(id, name, data)
+        self.api.send_action(id_, name, data)
 
-        self.view.disable_actions() # Disable the actions until the result is received
+        # Disable the actions until the result is received
+        self.view.disable_actions()
 
     def send_actions_reregister_all(self) -> None:
         """Send an actions/reregister_all command to the API."""
@@ -243,7 +244,9 @@ class TonyController:
         if self.view.controls.auto_send:
             self.view.log_system("Automatically sending random action.")
             actions = [action for action in self.model.actions if action.name in cmd.action_names]
-            action = random.choice(actions)
+            # S311 - Standard pseudo-random generators are not suitable for cryptographic purposes
+            # Not using for cryptographic purposes so we should be fine
+            action = random.choice(actions)  # noqa: S311
 
             if not action.schema:
                 self.send_action(next(self.id_generator), action.name, None)
