@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from json import JSONDecodeError
+from typing import Any, Generator
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -101,7 +102,7 @@ def test_run_start_stop(api: NeuroAPI) -> None:
 
     assert not api.async_library_running
     # Make sure stop when not running is also fine
-    api.stop()
+    api.stop() # type: ignore
 
 
 def test_run_start_failure(api: NeuroAPI) -> None:
@@ -228,7 +229,7 @@ def test_check_invalid_keys_recursive_unhandled(api: NeuroAPI) -> None:
     )
 
 def test_actions_register_command() -> None:
-    actions = [
+    actions: list[dict[str, Any]] = [
         {
             "name": "jerald",
             "description": "jerald action",
