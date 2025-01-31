@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from json import JSONDecodeError
 from typing import TYPE_CHECKING, Any
@@ -7,7 +8,10 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import trio
-from exceptiongroup import BaseExceptionGroup, catch
+from exceptiongroup import catch
+
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup
 
 from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
@@ -316,7 +320,7 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     await send.send('{"command": "startup", "game": "test_game"')
 
     had_json_error = False
-    def handle_json_error(multi_exc: BaseExceptionGroup) -> None:
+    def handle_json_error(multi_exc: BaseExceptionGroup[JSONDecodeError]) -> None:
         nonlocal had_json_error
         exc = multi_exc.args[1][0]
         assert exc.args[0] == "Expecting ',' delimiter: line 1 column 43 (char 42)"
