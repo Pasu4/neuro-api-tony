@@ -38,7 +38,20 @@ Options:
 
 def cli_run() -> None:
     """Command line interface entry point."""
-    options, _ = getopt(sys.argv[1:], "ha:l:p:v", ["help", "addr=", "address=", "log=", "log-level=", "port=", "update", "version"])
+    options, _ = getopt(
+        sys.argv[1:],
+        "ha:l:p:v",
+        [
+            "help",
+            "addr=",
+            "address=",
+            "log=",
+            "log-level=",
+            "port=",
+            "update",
+            "version",
+        ],
+    )
 
     address = "localhost"
     port = 8000
@@ -54,8 +67,16 @@ def cli_run() -> None:
                 address = value
 
             case "-l" | "--log" | "--log-level":
-                if value.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "SYSTEM"]:
-                    print("Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, SYSTEM.")
+                if value.upper() not in [
+                    "DEBUG",
+                    "INFO",
+                    "WARNING",
+                    "ERROR",
+                    "SYSTEM",
+                ]:
+                    print(
+                        "Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, SYSTEM.",
+                    )
                     sys.exit(1)
                 log_level = value.upper()
 
@@ -63,7 +84,9 @@ def cli_run() -> None:
                 port = int(value)
 
             case "--update":
-                print("This option is deprecated. Please update the program using git or pip.")
+                print(
+                    "This option is deprecated. Please update the program using git or pip.",
+                )
 
                 sys.exit(1)
 
@@ -73,15 +96,21 @@ def cli_run() -> None:
 
     # Check if there are updates available
     try:
-        remote_version = requests.get(PYPI_API_URL, timeout=10).json()["info"]["version"]
+        remote_version = requests.get(PYPI_API_URL, timeout=10).json()["info"][
+            "version"
+        ]
 
         if semver.compare(remote_version, VERSION) > 0:
-            print(f'An update is available. ({VERSION} -> {remote_version})\n'
-                  f'Depending on your installation method, pull the latest changes from GitHub or\n'
-                  f'run "pip install --upgrade {PACKAGE_NAME}" to update.')
+            print(
+                f"An update is available. ({VERSION} -> {remote_version})\n"
+                f"Depending on your installation method, pull the latest changes from GitHub or\n"
+                f'run "pip install --upgrade {PACKAGE_NAME}" to update.',
+            )
 
     except ConnectionError:
-        print("Failed to check for updates. Please check your internet connection.")
+        print(
+            "Failed to check for updates. Please check your internet connection.",
+        )
 
     except Exception as exc:
         print("An error occurred while checking for updates:")

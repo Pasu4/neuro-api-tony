@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .model import NeuroAction, TonyModel
 
 
-#region Events
+# region Events
 
 EVTTYPE_ADD_ACTION = wx.NewEventType()
 EVT_ADD_ACTION = wx.PyEventBinder(EVTTYPE_ADD_ACTION, 1)
@@ -26,6 +26,7 @@ EVT_ADD_ACTION = wx.PyEventBinder(EVTTYPE_ADD_ACTION, 1)
 
 class AddActionEvent(wx.PyCommandEvent):  # type: ignore[misc]
     """An event for adding an action to the list."""
+
     __slots__ = ("action",)
 
     def __init__(self, id_: int, action: NeuroAction) -> None:
@@ -40,6 +41,7 @@ EVT_ACTION_RESULT = wx.PyEventBinder(EVTTYPE_ACTION_RESULT, 1)
 
 class ActionResultEvent(wx.PyCommandEvent):  # type: ignore[misc]
     """An event for an action result message."""
+
     __slots__ = ("message", "success")
 
     def __init__(self, id_: int, success: bool, message: str | None) -> None:
@@ -55,6 +57,7 @@ EVT_EXECUTE = wx.PyEventBinder(EVT_TYPE_EXECUTE, 1)
 
 class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
     """An event for executing an action."""
+
     __slots__ = ("action",)
 
     def __init__(self, id_: int, action: NeuroAction) -> None:
@@ -62,28 +65,29 @@ class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
         super().__init__(EVT_TYPE_EXECUTE, id_)
         self.action = action
 
-#endregion
 
-#region Constants
+# endregion
+
+# region Constants
 
 # Colors
-LOG_COLOR_DEFAULT                       = wx.Colour(  0,   0,   0)
-LOG_COLOR_TIMESTAMP                     = wx.Colour(  0, 128,   0)
-LOG_COLOR_DEBUG                         = wx.Colour(128, 128, 128)
-LOG_COLOR_INFO                          = wx.Colour(128, 192, 255)
-LOG_COLOR_WARNING                       = wx.Colour(255, 192,   0)
-LOG_COLOR_ERROR                         = wx.Colour(255,   0,   0)
-LOG_COLOR_CRITICAL                      = wx.Colour(192,   0,   0)
-LOG_COLOR_CONTEXT                       = LOG_COLOR_DEFAULT
-LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255, 128, 255)
-LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
-LOG_COLOR_CONTEXT_SILENT                = wx.Colour(128, 128, 128)
-LOG_COLOR_CONTEXT_EPHEMERAL             = wx.Colour(128, 192, 255)
-LOG_COLOR_CONTEXT_ACTION                = LOG_COLOR_DEFAULT
-LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
-LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
-LOG_COLOR_RAW_INCOMING              = wx.Colour(  0,   0, 255)
-LOG_COLOR_RAW_OUTGOING              = wx.Colour(255, 128, 192)
+LOG_COLOR_DEFAULT = wx.Colour(0, 0, 0)
+LOG_COLOR_TIMESTAMP = wx.Colour(0, 128, 0)
+LOG_COLOR_DEBUG = wx.Colour(128, 128, 128)
+LOG_COLOR_INFO = wx.Colour(128, 192, 255)
+LOG_COLOR_WARNING = wx.Colour(255, 192, 0)
+LOG_COLOR_ERROR = wx.Colour(255, 0, 0)
+LOG_COLOR_CRITICAL = wx.Colour(192, 0, 0)
+LOG_COLOR_CONTEXT = LOG_COLOR_DEFAULT
+LOG_COLOR_CONTEXT_QUERY = wx.Colour(255, 128, 255)
+LOG_COLOR_CONTEXT_STATE = wx.Colour(128, 255, 128)
+LOG_COLOR_CONTEXT_SILENT = wx.Colour(128, 128, 128)
+LOG_COLOR_CONTEXT_EPHEMERAL = wx.Colour(128, 192, 255)
+LOG_COLOR_CONTEXT_ACTION = LOG_COLOR_DEFAULT
+LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(0, 128, 0)
+LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255, 0, 0)
+LOG_COLOR_RAW_INCOMING = wx.Colour(0, 0, 255)
+LOG_COLOR_RAW_OUTGOING = wx.Colour(255, 128, 192)
 
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
 
@@ -96,7 +100,8 @@ LOG_LEVELS = {
     "SYSTEM": 60,
 }
 
-#endregion
+# endregion
+
 
 class TonyView:
     """The view class for Tony."""
@@ -129,7 +134,9 @@ class TonyView:
         self.on_clear_logs: Callable[[], None] = lambda: None
         self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful: Callable[[], None] = lambda: None
-        self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
+        self.on_send_shutdown_graceful_cancel: Callable[[], None] = (
+            lambda: None
+        )
         self.on_send_shutdown_immediate: Callable[[], None] = lambda: None
 
     def on_close(self, event: wx.CloseEvent) -> None:
@@ -151,27 +158,47 @@ class TonyView:
     def log_debug(self, message: str) -> None:
         """Log a debug message."""
         if self.controls.get_log_level() <= LOG_LEVELS["DEBUG"]:
-            self.frame.panel.log_notebook.log_panel.log(message, "Debug", LOG_COLOR_DEBUG)
+            self.frame.panel.log_notebook.log_panel.log(
+                message,
+                "Debug",
+                LOG_COLOR_DEBUG,
+            )
 
     def log_info(self, message: str) -> None:
         """Log an informational message."""
         if self.controls.get_log_level() <= LOG_LEVELS["INFO"]:
-            self.frame.panel.log_notebook.log_panel.log(message, "Info", LOG_COLOR_INFO)
+            self.frame.panel.log_notebook.log_panel.log(
+                message,
+                "Info",
+                LOG_COLOR_INFO,
+            )
 
     def log_warning(self, message: str) -> None:
         """Log a warning message."""
         if self.controls.get_log_level() <= LOG_LEVELS["WARNING"]:
-            self.frame.panel.log_notebook.log_panel.log(message, "Warning", LOG_COLOR_WARNING)
+            self.frame.panel.log_notebook.log_panel.log(
+                message,
+                "Warning",
+                LOG_COLOR_WARNING,
+            )
 
     def log_error(self, message: str) -> None:
         """Log an error message."""
         if self.controls.get_log_level() <= LOG_LEVELS["ERROR"]:
-            self.frame.panel.log_notebook.log_panel.log(message, "Error", LOG_COLOR_ERROR)
+            self.frame.panel.log_notebook.log_panel.log(
+                message,
+                "Error",
+                LOG_COLOR_ERROR,
+            )
 
     def log_critical(self, message: str) -> None:
         """Log a critical error message."""
         if self.controls.get_log_level() <= LOG_LEVELS["CRITICAL"]:
-            self.frame.panel.log_notebook.log_panel.log(message, "Critical", LOG_COLOR_CRITICAL)
+            self.frame.panel.log_notebook.log_panel.log(
+                message,
+                "Critical",
+                LOG_COLOR_CRITICAL,
+            )
 
     def log_context(self, message: str, silent: bool = False) -> None:
         """Log a context message."""
@@ -182,11 +209,19 @@ class TonyView:
             tags.append("silent")
             colors.append(LOG_COLOR_CONTEXT_SILENT)
 
-        self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            tags,
+            colors,
+        )
 
     def log_description(self, message: str) -> None:
         """Log an action description."""
-        self.frame.panel.log_notebook.context_log_panel.log(message, "Action", LOG_COLOR_CONTEXT)
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            "Action",
+            LOG_COLOR_CONTEXT,
+        )
 
     def log_query(self, message: str, ephemeral: bool = False) -> None:
         """Log an actions/force query."""
@@ -197,7 +232,11 @@ class TonyView:
             tags.append("ephemeral")
             colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
 
-        self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            tags,
+            colors,
+        )
 
     def log_state(self, message: str, ephemeral: bool = False) -> None:
         """Log an actions/force state."""
@@ -208,11 +247,21 @@ class TonyView:
             tags.append("Ephemeral")
             colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
 
-        self.frame.panel.log_notebook.context_log_panel.log(message, tags, colors)
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            tags,
+            colors,
+        )
 
     def log_action_result(self, success: bool, message: str) -> None:
         """Log an action result message."""
-        self.frame.panel.log_notebook.context_log_panel.log(message, "Result", LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS if success else LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE)
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            "Result",
+            LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS
+            if success
+            else LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE,
+        )
 
     def log_raw(self, message: str, incoming: bool) -> None:
         """Log raw data."""
@@ -229,7 +278,11 @@ class TonyView:
 
     def show_action_dialog(self, action: NeuroAction) -> str | None:
         """Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None."""
-        self.action_dialog = ActionDialog(self.frame, action, self.controls.validate_schema)
+        self.action_dialog = ActionDialog(
+            self.frame,
+            action,
+            self.controls.validate_schema,
+        )
         result = self.action_dialog.ShowModal()
         text = self.action_dialog.text.GetValue()
         self.action_dialog.Destroy()
@@ -266,10 +319,29 @@ class TonyView:
         """Disable all action buttons."""
         self.frame.panel.action_list.execute_button.Disable()
 
-    def force_actions(self, state: str, query: str, ephemeral_context: bool, action_names: list[str], retry: bool = False) -> None:
+    def force_actions(
+        self,
+        state: str,
+        query: str,
+        ephemeral_context: bool,
+        action_names: list[str],
+        retry: bool = False,
+    ) -> None:
         """Show a dialog for forcing actions."""
-        actions = [action for action in self.model.actions if action.name in action_names]
-        actions_force_dialog = ActionsForceDialog(self.frame, self, state, query, ephemeral_context, actions, retry)
+        actions = [
+            action
+            for action in self.model.actions
+            if action.name in action_names
+        ]
+        actions_force_dialog = ActionsForceDialog(
+            self.frame,
+            self,
+            state,
+            query,
+            ephemeral_context,
+            actions,
+            retry,
+        )
         result = actions_force_dialog.ShowModal()
         actions_force_dialog.Destroy()
 
@@ -328,7 +400,11 @@ class MainPanel(wx.Panel):  # type: ignore[misc]
 class ActionList(wx.Panel):  # type: ignore[misc]
     """The list of actions."""
 
-    def __init__(self, parent: MainPanel | ActionsForceDialog, can_delete: bool) -> None:
+    def __init__(
+        self,
+        parent: MainPanel | ActionsForceDialog,
+        can_delete: bool,
+    ) -> None:
         """Initialize ActionList panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
@@ -366,11 +442,21 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         """Add an action panel to the list."""
         self.actions.append(action)
 
-        self.list.Append([action.name, action.description, "Yes" if action.schema is not None and action.schema != {} else "No"])
+        self.list.Append(
+            [
+                action.name,
+                action.description,
+                "Yes"
+                if action.schema is not None and action.schema != {}
+                else "No",
+            ],
+        )
 
     def remove_action_by_name(self, name: str) -> None:
         """Remove an action panel from the list."""
-        self.actions = [action for action in self.actions if action.name != name]
+        self.actions = [
+            action for action in self.actions if action.name != name
+        ]
 
         index = self.list.FindItem(-1, name)
         if index != -1:
@@ -398,7 +484,9 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         sent = top.view.on_execute(action)
 
         if sent:
-            self.GetEventHandler().ProcessEvent(ExecuteEvent(self.GetId(), action))
+            self.GetEventHandler().ProcessEvent(
+                ExecuteEvent(self.GetId(), action),
+            )
         top.view.log_debug(f"Sent: {sent}")
 
     def on_delete(self, event: wx.CommandEvent) -> None:
@@ -432,7 +520,13 @@ class LogNotebook(wx.Notebook):  # type: ignore[misc]
 
         self.log_panel = LogPanel(self)
         self.context_log_panel = LogPanel(self)
-        self.raw_log_panel = LogPanel(self, text_ctrl_style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.HSCROLL)
+        self.raw_log_panel = LogPanel(
+            self,
+            text_ctrl_style=wx.TE_MULTILINE
+            | wx.TE_READONLY
+            | wx.TE_RICH
+            | wx.HSCROLL,
+        )
 
         self.AddPage(self.log_panel, "Log")
         self.AddPage(self.context_log_panel, "Context")
@@ -442,7 +536,11 @@ class LogNotebook(wx.Notebook):  # type: ignore[misc]
 class LogPanel(wx.Panel):  # type: ignore[misc]
     """The panel for logging messages."""
 
-    def __init__(self, parent: LogNotebook, text_ctrl_style: int = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH) -> None:
+    def __init__(
+        self,
+        parent: LogNotebook,
+        text_ctrl_style: int = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH,
+    ) -> None:
         """Initialize Log Panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
@@ -473,7 +571,7 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
 
         # Log timestamp
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
-        self.text.AppendText(f'[{dt.now().strftime("%X")}] ')
+        self.text.AppendText(f"[{dt.now().strftime('%X')}] ")
 
         # Log tags
         for tag, tag_color in zip(tags, tag_colors, strict=True):
@@ -496,55 +594,131 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Create controls
 
-        self.validate_schema_checkbox = wx.CheckBox(self, label="Validate JSON schema")
-        self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
-        self.auto_send_checkbox = wx.CheckBox(self, label="Automatically answer forced actions")
+        self.validate_schema_checkbox = wx.CheckBox(
+            self,
+            label="Validate JSON schema",
+        )
+        self.ignore_actions_force_checkbox = wx.CheckBox(
+            self,
+            label="Ignore forced actions",
+        )
+        self.auto_send_checkbox = wx.CheckBox(
+            self,
+            label="Automatically answer forced actions",
+        )
 
         latency_panel = wx.Panel(self)
         latency_text1 = wx.StaticText(latency_panel, label="L*tency:")
-        self.latency_input = wx.TextCtrl(latency_panel, value="0", size=(50, -1))
+        self.latency_input = wx.TextCtrl(
+            latency_panel,
+            value="0",
+            size=(50, -1),
+        )
         latency_text2 = wx.StaticText(latency_panel, label="ms")
 
         log_level_panel = wx.Panel(self)
         log_level_text = wx.StaticText(log_level_panel, label="Log level:")
-        self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS])
+        self.log_level_choice = wx.Choice(
+            log_level_panel,
+            choices=[s.capitalize() for s in LOG_LEVELS],
+        )
 
         self.clear_logs_button = wx.Button(self, label="Clear logs")
-        self.send_actions_reregister_all_button = wx.Button(self, label="Clear all actions and request reregistration (experimental)")
-        self.send_shutdown_graceful_button = wx.Button(self, label="Request graceful shutdown (experimental)")
-        self.send_shutdown_graceful_cancel_button = wx.Button(self, label="Cancel graceful shutdown (experimental)")
-        self.send_shutdown_immediate_button = wx.Button(self, label="Request immediate shutdown (experimental)")
+        self.send_actions_reregister_all_button = wx.Button(
+            self,
+            label="Clear all actions and request reregistration (experimental)",
+        )
+        self.send_shutdown_graceful_button = wx.Button(
+            self,
+            label="Request graceful shutdown (experimental)",
+        )
+        self.send_shutdown_graceful_cancel_button = wx.Button(
+            self,
+            label="Cancel graceful shutdown (experimental)",
+        )
+        self.send_shutdown_immediate_button = wx.Button(
+            self,
+            label="Request immediate shutdown (experimental)",
+        )
 
         # Create sizers
 
         latency_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         latency_panel_sizer.Add(latency_text1, 0, wx.ALL | wx.ALIGN_CENTER, 2)
-        latency_panel_sizer.Add(self.latency_input, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        latency_panel_sizer.Add(
+            self.latency_input,
+            0,
+            wx.ALL | wx.ALIGN_CENTER,
+            2,
+        )
         latency_panel_sizer.Add(latency_text2, 0, wx.ALL | wx.ALIGN_CENTER, 2)
         latency_panel.SetSizer(latency_panel_sizer)
 
         log_lever_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        log_lever_panel_sizer.Add(log_level_text, 0, wx.ALL | wx.ALIGN_CENTER, 2)
-        log_lever_panel_sizer.Add(self.log_level_choice, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        log_lever_panel_sizer.Add(
+            log_level_text,
+            0,
+            wx.ALL | wx.ALIGN_CENTER,
+            2,
+        )
+        log_lever_panel_sizer.Add(
+            self.log_level_choice,
+            0,
+            wx.ALL | wx.ALIGN_CENTER,
+            2,
+        )
         log_level_panel.SetSizer(log_lever_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(
+            self.ignore_actions_force_checkbox,
+            0,
+            wx.EXPAND | wx.ALL,
+            2,
+        )
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(self.clear_logs_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_shutdown_immediate_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(
+            self.send_actions_reregister_all_button,
+            0,
+            wx.EXPAND | wx.ALL,
+            2,
+        )
+        self.sizer.Add(
+            self.send_shutdown_graceful_button,
+            0,
+            wx.EXPAND | wx.ALL,
+            2,
+        )
+        self.sizer.Add(
+            self.send_shutdown_graceful_cancel_button,
+            0,
+            wx.EXPAND | wx.ALL,
+            2,
+        )
+        self.sizer.Add(
+            self.send_shutdown_immediate_button,
+            0,
+            wx.EXPAND | wx.ALL,
+            2,
+        )
         self.SetSizer(self.sizer)
 
         # Bind events
 
-        self.Bind(wx.EVT_CHECKBOX, self.on_validate_schema, self.validate_schema_checkbox)
-        self.Bind(wx.EVT_CHECKBOX, self.on_ignore_actions_force, self.ignore_actions_force_checkbox)
+        self.Bind(
+            wx.EVT_CHECKBOX,
+            self.on_validate_schema,
+            self.validate_schema_checkbox,
+        )
+        self.Bind(
+            wx.EVT_CHECKBOX,
+            self.on_ignore_actions_force,
+            self.ignore_actions_force_checkbox,
+        )
         self.Bind(wx.EVT_CHECKBOX, self.on_auto_send, self.auto_send_checkbox)
 
         self.Bind(wx.EVT_TEXT, self.on_latency, self.latency_input)
@@ -552,10 +726,26 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_CHOICE, self.on_log_level, self.log_level_choice)
 
         self.Bind(wx.EVT_BUTTON, self.on_clear_logs, self.clear_logs_button)
-        self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
-        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
-        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
-        self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_immediate, self.send_shutdown_immediate_button)
+        self.Bind(
+            wx.EVT_BUTTON,
+            self.on_send_actions_reregister_all,
+            self.send_actions_reregister_all_button,
+        )
+        self.Bind(
+            wx.EVT_BUTTON,
+            self.on_send_shutdown_graceful,
+            self.send_shutdown_graceful_button,
+        )
+        self.Bind(
+            wx.EVT_BUTTON,
+            self.on_send_shutdown_graceful_cancel,
+            self.send_shutdown_graceful_cancel_button,
+        )
+        self.Bind(
+            wx.EVT_BUTTON,
+            self.on_send_shutdown_immediate,
+            self.send_shutdown_immediate_button,
+        )
 
         # Set default values
 
@@ -563,7 +753,9 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
         # self.latency_input.SetValue('0')
-        self.log_level_choice.SetStringSelection(self.view.controls.get_log_level_str())
+        self.log_level_choice.SetStringSelection(
+            self.view.controls.get_log_level_str(),
+        )
 
         # Modify
 
@@ -603,7 +795,9 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
                 raise ValueError("Latency must not exceed 10000 ms.")
             self.view.controls.latency = latency
             self.latency_input.UnsetToolTip()
-            self.latency_input.SetBackgroundColour(wx.NullColour) # Default color
+            self.latency_input.SetBackgroundColour(
+                wx.NullColour,
+            )  # Default color
         except ValueError as exc:
             self.latency_input.SetToolTip(str(exc))
             self.latency_input.SetBackgroundColour(UI_COLOR_ERROR)
@@ -644,7 +838,12 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 class ActionDialog(wx.Dialog):  # type: ignore[misc]
     """Action dialog."""
 
-    def __init__(self, parent: MainFrame, action: NeuroAction, do_validate: bool) -> None:
+    def __init__(
+        self,
+        parent: MainFrame,
+        action: NeuroAction,
+        do_validate: bool,
+    ) -> None:
         """Initialize Action Dialog."""
         super().__init__(parent, title=action.name)
 
@@ -694,9 +893,17 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         except Exception as exc:
             if isinstance(exc, jsonschema.ValidationError):
-                wx.MessageBox(f"JSON schema validation error: {exc}", "Error", wx.OK | wx.ICON_ERROR)
+                wx.MessageBox(
+                    f"JSON schema validation error: {exc}",
+                    "Error",
+                    wx.OK | wx.ICON_ERROR,
+                )
             elif isinstance(exc, json.JSONDecodeError):
-                wx.MessageBox(f"JSON decode error: {exc}", "Error", wx.OK | wx.ICON_ERROR)
+                wx.MessageBox(
+                    f"JSON decode error: {exc}",
+                    "Error",
+                    wx.OK | wx.ICON_ERROR,
+                )
             else:
                 raise exc
 
@@ -704,7 +911,11 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         """Handle show_schema command event."""
         event.Skip()
 
-        wx.MessageBox(json.dumps(self.action.schema, indent=2), "Schema", wx.OK | wx.ICON_INFORMATION)
+        wx.MessageBox(
+            json.dumps(self.action.schema, indent=2),
+            "Schema",
+            wx.OK | wx.ICON_INFORMATION,
+        )
 
     def on_cancel(self, event: wx.CommandEvent) -> None:
         """Handle cancel command event."""
@@ -728,7 +939,11 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
     ) -> None:
         """Initialize Forced Action Dialog."""
         title = "Forced Action" if not retry else "Retry Forced Action"
-        super().__init__(parent, title=title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        super().__init__(
+            parent,
+            title=title,
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
 
         self.view = view
         self.state = state
@@ -738,7 +953,10 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
 
         self.state_label = wx.StaticText(self, label=f"State: {state}")
         self.query_label = wx.StaticText(self, label=f"Query: {query}")
-        self.ephemeral_context_label = wx.StaticText(self, label=f"Ephemeral Context: {ephemeral_context}")
+        self.ephemeral_context_label = wx.StaticText(
+            self,
+            label=f"Ephemeral Context: {ephemeral_context}",
+        )
         self.action_list = ActionList(self, False)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -760,6 +978,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         event.Skip()
 
         self.EndModal(wx.ID_OK)
+
 
 class Controls:
     """The content of the control panel."""

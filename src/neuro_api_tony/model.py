@@ -7,6 +7,7 @@ from typing import Any, NamedTuple
 
 class NeuroAction(NamedTuple):
     """Neuro Action Object."""
+
     name: str
     description: str
     schema: dict[str, Any] | None
@@ -14,6 +15,7 @@ class NeuroAction(NamedTuple):
 
 class TonyModel:
     """Tony Model."""
+
     __slots__ = ("actions",)
 
     def __init__(self) -> None:
