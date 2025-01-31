@@ -78,7 +78,7 @@ neuro_api_tony = ["py.typed"]
 package = true
 
 [tool.mypy]
-files = ["src/neuro_api_tony/"]
+files = ["src/neuro_api_tony/", "tests/"]
 show_column_numbers = true
 show_error_codes = true
 show_traceback = true

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from contextlib import asynccontextmanager
+from collections.abc import Callable, Generator, AsyncGenerator
+from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from json import JSONDecodeError
-from typing import Any, Generator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -28,7 +28,7 @@ def api() -> NeuroAPI:
 
 
 @pytest.fixture(autouse=True)
-def print_exception_to_raise() -> None:
+def print_exception_to_raise() -> Generator[None, None, None]:
     """Make traceback.print_exception raise exception instead of printing it."""
     def raise_(exc: BaseException) -> None:
         raise exc from None
@@ -102,7 +102,7 @@ def test_run_start_stop(api: NeuroAPI) -> None:
 
     assert not api.async_library_running
     # Make sure stop when not running is also fine
-    api.stop() # type: ignore
+    api.stop()  # type: ignore[unreachable]
 
 
 def test_run_start_failure(api: NeuroAPI) -> None:
@@ -252,14 +252,14 @@ def test_actions_register_command() -> None:
 async def test_handle_websocket_request_accept(api: NeuroAPI) -> None:
     """Test handling a WebSocket connection request."""
     send, receive = trio.open_memory_channel[str](1)
+    class Websocket:
+        get_message = receive.receive
+        send_message = send.send
     class Request:
-        async def accept(self) -> MagicMock:
-            class Websocket:
-                get_message = receive.receive
-                send_message = send.send
+        async def accept(self) -> AbstractAsyncContextManager[Websocket]:
             @asynccontextmanager
-            async def manager() -> Generator[Websocket, None, None]:
-                yield Websocket
+            async def manager() -> AsyncGenerator[Websocket, None]:
+                yield Websocket()
             return manager()
     request = Request()
 
