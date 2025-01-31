@@ -1,24 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Generator, AsyncGenerator
-from contextlib import asynccontextmanager, AbstractAsyncContextManager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from json import JSONDecodeError
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import trio
-import wx
-from trio_websocket import (
-    ConnectionClosed,
-    WebSocketConnection,
-    WebSocketRequest,
-    serve_websocket,
-)
 from exceptiongroup import BaseExceptionGroup, catch
 
 from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Callable, Generator
 
 
 @pytest.fixture
@@ -206,12 +201,12 @@ def test_check_invalid_keys_recursive(api: NeuroAPI) -> None:
                     "uses_waffle_iron": True,
                 },
                 "spaghetti",
-            ]
+            ],
         },
     }
     invalid_keys = api.check_invalid_keys_recursive(schema)
 
-    assert invalid_keys == ['allOf', '$vocabulary', 'additionalProperties']
+    assert invalid_keys == ["allOf", "$vocabulary", "additionalProperties"]
 
 
 def test_check_invalid_keys_recursive_unhandled(api: NeuroAPI) -> None:
@@ -225,7 +220,7 @@ def test_check_invalid_keys_recursive_unhandled(api: NeuroAPI) -> None:
     invalid = api.check_invalid_keys_recursive(schema)
     assert invalid == ["writeOnly"]
     api.log_error.assert_called_once_with(
-        "Unhandled schema value type <class 'set'> (set())"
+        "Unhandled schema value type <class 'set'> (set())",
     )
 
 def test_actions_register_command() -> None:
@@ -306,7 +301,7 @@ async def test_handle_consumer(api: NeuroAPI) -> None:
         cancel_scope.cancel()
         nursery.cancel_scope.cancel()
 
-    assert api.current_game == 'test_game'
+    assert api.current_game == "test_game"
 
 
 @pytest.mark.trio
@@ -341,7 +336,7 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     if not had_json_error:
         raise ValueError("Should have gotten JSONDecodeError")
 
-    assert api.current_game == ''
+    assert api.current_game == ""
 
 
 @pytest.mark.trio
@@ -392,7 +387,7 @@ async def test_handle_consumer_unexpected_command(api: NeuroAPI) -> None:
         cancel_scope.cancel()
         nursery.cancel_scope.cancel()
 
-    api.log_warning.assert_called_with('Unknown command.')
+    api.log_warning.assert_called_with("Unknown command.")
 
 
 @pytest.mark.trio

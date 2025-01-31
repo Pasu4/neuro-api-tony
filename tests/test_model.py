@@ -5,17 +5,17 @@ from neuro_api_tony.model import NeuroAction, TonyModel
 
 @pytest.fixture
 def model() -> TonyModel:
-    '''Fixture to create a TonyModel instance for testing.'''
+    """Fixture to create a TonyModel instance for testing."""
     return TonyModel()
 
 
 def test_repr(model: TonyModel) -> None:
-    '''Test that repr works properly.'''
-    assert repr(model) == 'TonyModel()'
+    """Test that repr works properly."""
+    assert repr(model) == "TonyModel()"
 
 
 def test_add_action(model: TonyModel) -> None:
-    '''Test adding an action to the model.'''
+    """Test adding an action to the model."""
     action = NeuroAction(
         name="test_action",
         description="A test action",
@@ -26,7 +26,7 @@ def test_add_action(model: TonyModel) -> None:
 
 
 def test_remove_action(model: TonyModel) -> None:
-    '''Test removing an action from the model.'''
+    """Test removing an action from the model."""
     action = NeuroAction(
         name="test_action",
         description="A test action",
@@ -38,7 +38,7 @@ def test_remove_action(model: TonyModel) -> None:
 
 
 def test_remove_action_by_name(model: TonyModel) -> None:
-    '''Test removing an action by name.'''
+    """Test removing an action by name."""
     action1 = NeuroAction(
         name="action1",
         description="First action",
@@ -56,7 +56,7 @@ def test_remove_action_by_name(model: TonyModel) -> None:
 
 
 def test_clear_actions(model: TonyModel) -> None:
-    '''Test clearing all actions from the model.'''
+    """Test clearing all actions from the model."""
     action = NeuroAction(
         name="test_action",
         description="A test action",
@@ -68,7 +68,7 @@ def test_clear_actions(model: TonyModel) -> None:
 
 
 def test_has_action(model: TonyModel) -> None:
-    '''Test checking if an action exists in the model.'''
+    """Test checking if an action exists in the model."""
     action = NeuroAction(
         name="test_action",
         description="A test action",
@@ -80,7 +80,7 @@ def test_has_action(model: TonyModel) -> None:
 
 
 def test_get_action_by_name(model: TonyModel) -> None:
-    '''Test getting an action by name.'''
+    """Test getting an action by name."""
     action = NeuroAction(
         name="test_action",
         description="A test action",
