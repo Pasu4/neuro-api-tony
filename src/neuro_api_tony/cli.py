@@ -1,7 +1,11 @@
 """CLI - Command Line Interface module."""
 
+from __future__ import annotations
+
 import sys
+import traceback
 from getopt import getopt
+from typing import Final
 
 import requests
 import semver
@@ -10,7 +14,7 @@ import wx
 from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
 from .controller import TonyController
 
-help_message = """
+HELP_MESSAGE: Final = """
 Usage: neuro-api-tony [OPTIONS]
 
 Options:
@@ -31,6 +35,7 @@ Options:
         Show the version of the program and exit.
 """
 
+
 def cli_run() -> None:
     """Command line interface entry point."""
     options, _ = getopt(sys.argv[1:], "ha:l:p:v", ["help", "addr=", "address=", "log=", "log-level=", "port=", "update", "version"])
@@ -42,7 +47,7 @@ def cli_run() -> None:
     for option, value in options:
         match option:
             case "-h" | "--help":
-                print(help_message)
+                print(HELP_MESSAGE)
                 sys.exit(0)
 
             case "-a" | "--addr" | "--address":
@@ -78,13 +83,15 @@ def cli_run() -> None:
     except ConnectionError:
         print("Failed to check for updates. Please check your internet connection.")
 
-    except Exception:
-        print("An unknown error occurred while checking for updates.")
+    except Exception as exc:
+        print("An error occurred while checking for updates:")
+        traceback.print_exception(exc)
 
     # Start the program
     app = wx.App()
     controller = TonyController(app, log_level)
     controller.run(address, port)
+
 
 if __name__ == "__main__":
     cli_run()

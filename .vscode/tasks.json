@@ -8,11 +8,30 @@
             "problemMatcher": "$python"
         },
         {
-            "label": "Build",
+            "label": "Install",
             "type": "shell",
             "command": "pip install -e .",
             "problemMatcher": [],
             "group": "build"
+        },
+        {
+            "label": "Full install",
+            "type": "shell",
+            "command": "pip install -e .[tests,tools]",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Run pre-commit",
+            "type": "shell",
+            "command": "pre-commit run -a",
+            "problemMatcher": []
+        },
+        {
+            "label": "Update uv lock file",
+            "type": "shell",
+            "command": "uv lock --upgrade",
+            "problemMatcher": []
         }
     ]
 }
