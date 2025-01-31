@@ -431,20 +431,20 @@ class NeuroAPI:
 
 
 class StartupCommand:
-    """Startup command."""
+    """`startup` command."""
 
     __slots__ = ()
 
 
 class ContextCommand(NamedTuple):
-    """Context command."""
+    """`context` command."""
 
     message: str
     silent: bool
 
 
 class ActionsRegisterCommand:
-    """Actions register command."""
+    """`actions/register` command."""
     __slots__ = ("actions",)
 
     def __init__(self, actions: list[dict[str, Any]]) -> None:
@@ -461,13 +461,13 @@ class ActionsRegisterCommand:
 
 
 class ActionsUnregisterCommand(NamedTuple):
-    """Actions unregister command."""
+    """`actions/unregister` command."""
 
     action_names: list[str]
 
 
 class ActionsForceCommand(NamedTuple):
-    """Actions force command."""
+    """`actions/force` command."""
 
     state: str | None
     query: str
@@ -476,13 +476,13 @@ class ActionsForceCommand(NamedTuple):
 
 
 class ActionResultCommand(NamedTuple):
-    """Action result command."""
+    """`action/result` command."""
 
     success: bool
     message: str | None
 
 
 class ShutdownReadyCommand:
-    """Shutdown ready command."""
+    """`shutdown/ready` command."""
 
     __slots__ = ()

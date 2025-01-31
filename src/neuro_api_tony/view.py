@@ -299,7 +299,6 @@ class MainFrame(wx.Frame):  # type: ignore[misc]
         self.view = view
         self.panel = MainPanel(self)
 
-        self.panel.GetBestSize()
         self.SetSize((850, 600))
 
 
@@ -708,14 +707,14 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         wx.MessageBox(json.dumps(self.action.schema, indent=2), "Schema", wx.OK | wx.ICON_INFORMATION)
 
     def on_cancel(self, event: wx.CommandEvent) -> None:
-        """Handle skip command event."""
+        """Handle cancel command event."""
         event.Skip()
 
         self.EndModal(wx.ID_CANCEL)
 
 
 class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
-    """Actions Force Dialog."""
+    """Forced Action Dialog."""
 
     def __init__(
         self,
@@ -727,7 +726,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         actions: list[NeuroAction],
         retry: bool = False,
     ) -> None:
-        """Initialize Actions Force Dialog."""
+        """Initialize Forced Action Dialog."""
         title = "Forced Action" if not retry else "Retry Forced Action"
         super().__init__(parent, title=title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
