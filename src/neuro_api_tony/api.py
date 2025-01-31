@@ -79,24 +79,14 @@ class NeuroAPI:
         self.current_action_id: str | None = None
 
         # Dependency injection
+        # fmt: off
         self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
         self.on_context: Callable[[ContextCommand], None] = lambda cmd: None
-        self.on_actions_register: Callable[[ActionsRegisterCommand], None] = (
-            lambda cmd: None
-        )
-        self.on_actions_unregister: Callable[
-            [ActionsUnregisterCommand],
-            None,
-        ] = lambda cmd: None
-        self.on_actions_force: Callable[[ActionsForceCommand], None] = (
-            lambda cmd: None
-        )
-        self.on_action_result: Callable[[ActionResultCommand], None] = (
-            lambda cmd: None
-        )
-        self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = (
-            lambda cmd: None
-        )
+        self.on_actions_register: Callable[[ActionsRegisterCommand], None] = lambda cmd: None
+        self.on_actions_unregister: Callable[[ActionsUnregisterCommand], None] = lambda cmd: None
+        self.on_actions_force: Callable[[ActionsForceCommand], None] = lambda cmd: None
+        self.on_action_result: Callable[[ActionResultCommand], None] = lambda cmd: None
+        self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
         self.log_system: Callable[[str], None] = lambda message: None
         self.log_debug: Callable[[str], None] = lambda message: None
@@ -104,10 +94,9 @@ class NeuroAPI:
         self.log_warning: Callable[[str], None] = lambda message: None
         self.log_error: Callable[[str], None] = lambda message: None
         self.log_critical: Callable[[str], None] = lambda message: None
-        self.log_raw: Callable[[str, bool], None] = (
-            lambda message, incoming: None
-        )
+        self.log_raw: Callable[[str, bool], None] = lambda message, incoming: None
         self.get_delay: Callable[[], float] = lambda: 0.0
+        # fmt: on
 
         self.async_library_running = False
         self.async_library_root_cancel: trio.CancelScope

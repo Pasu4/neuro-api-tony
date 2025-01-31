@@ -96,9 +96,8 @@ def cli_run() -> None:
 
     # Check if there are updates available
     try:
-        remote_version = requests.get(PYPI_API_URL, timeout=10).json()["info"][
-            "version"
-        ]
+        response = requests.get(PYPI_API_URL, timeout=10).json()
+        remote_version = response["info"]["version"]
 
         if semver.compare(remote_version, VERSION) > 0:
             print(
