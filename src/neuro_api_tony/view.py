@@ -85,10 +85,10 @@ LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
 LOG_COLOR_CONTEXT_SILENT                = wx.Colour(128, 128, 128)
 LOG_COLOR_CONTEXT_EPHEMERAL             = wx.Colour(128, 192, 255)
 LOG_COLOR_CONTEXT_ACTION                = LOG_COLOR_DEFAULT
-LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(0, 128, 0)
-LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255, 0, 0)
-LOG_COLOR_RAW_INCOMING                  = wx.Colour(0, 0, 255)
-LOG_COLOR_RAW_OUTGOING                  = wx.Colour(255, 128, 192)
+LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
+LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
+LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
+LOG_COLOR_OUTGOING                      = wx.Colour(255, 128, 192)
 # fmt: on
 
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
@@ -152,15 +152,17 @@ class TonyView:
         """Show the main frame."""
         self.frame.Show()
 
-    def log_system(self, message: str) -> None:
+    def log_command(self, message: str, incoming: bool) -> None:
         """Log a command."""
-        if self.controls.get_log_level() <= LOG_LEVELS["SYSTEM"]:
-            self.frame.panel.log_notebook.log_panel.log(message)
+        tag = "Game --> Tony" if incoming else "Game <-- Tony"
+        color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
+
+        self.frame.panel.log_notebook.command_log_panel.log(message, tag, color)
 
     def log_debug(self, message: str) -> None:
         """Log a debug message."""
         if self.controls.get_log_level() <= LOG_LEVELS["DEBUG"]:
-            self.frame.panel.log_notebook.log_panel.log(
+            self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Debug",
                 LOG_COLOR_DEBUG,
@@ -169,7 +171,7 @@ class TonyView:
     def log_info(self, message: str) -> None:
         """Log an informational message."""
         if self.controls.get_log_level() <= LOG_LEVELS["INFO"]:
-            self.frame.panel.log_notebook.log_panel.log(
+            self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Info",
                 LOG_COLOR_INFO,
@@ -178,7 +180,7 @@ class TonyView:
     def log_warning(self, message: str) -> None:
         """Log a warning message."""
         if self.controls.get_log_level() <= LOG_LEVELS["WARNING"]:
-            self.frame.panel.log_notebook.log_panel.log(
+            self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Warning",
                 LOG_COLOR_WARNING,
@@ -187,7 +189,7 @@ class TonyView:
     def log_error(self, message: str) -> None:
         """Log an error message."""
         if self.controls.get_log_level() <= LOG_LEVELS["ERROR"]:
-            self.frame.panel.log_notebook.log_panel.log(
+            self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Error",
                 LOG_COLOR_ERROR,
@@ -196,7 +198,7 @@ class TonyView:
     def log_critical(self, message: str) -> None:
         """Log a critical error message."""
         if self.controls.get_log_level() <= LOG_LEVELS["CRITICAL"]:
-            self.frame.panel.log_notebook.log_panel.log(
+            self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Critical",
                 LOG_COLOR_CRITICAL,
@@ -265,14 +267,14 @@ class TonyView:
 
     def log_raw(self, message: str, incoming: bool) -> None:
         """Log raw data."""
-        tag = "Game --> Neuro" if incoming else "Game <-- Neuro"
-        color = LOG_COLOR_RAW_INCOMING if incoming else LOG_COLOR_RAW_OUTGOING
+        tag = "Game --> Tony" if incoming else "Game <-- Tony"
+        color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
 
         self.frame.panel.log_notebook.raw_log_panel.log(message, tag, color)
 
     def clear_logs(self) -> None:
         """Clear all logs."""
-        self.frame.panel.log_notebook.log_panel.text.Clear()
+        self.frame.panel.log_notebook.system_log_panel.text.Clear()
         self.frame.panel.log_notebook.context_log_panel.text.Clear()
         self.frame.panel.log_notebook.raw_log_panel.text.Clear()
 
@@ -343,7 +345,7 @@ class TonyView:
 
         # Executing the action has already been handled by the dialog
         if result != wx.ID_OK:
-            self.log_system("Manually ignored forced action.")
+            self.log_info("Manually ignored forced action.")
 
     def clear_actions(self) -> None:
         """Clear the list of actions."""
@@ -508,14 +510,16 @@ class LogNotebook(wx.Notebook):  # type: ignore[misc]
         """Initialize Log Notebook."""
         super().__init__(parent)
 
-        self.log_panel = LogPanel(self)
+        self.system_log_panel = LogPanel(self)
+        self.command_log_panel = LogPanel(self)
         self.context_log_panel = LogPanel(self)
         self.raw_log_panel = LogPanel(
             self,
             text_ctrl_style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.HSCROLL,
         )
 
-        self.AddPage(self.log_panel, "Log")
+        self.AddPage(self.system_log_panel, "System")
+        self.AddPage(self.command_log_panel, "Commands")
         self.AddPage(self.context_log_panel, "Context")
         self.AddPage(self.raw_log_panel, "Raw")
 

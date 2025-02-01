@@ -88,7 +88,7 @@ class NeuroAPI:
         self.on_action_result: Callable[[ActionResultCommand], None] = lambda cmd: None
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
-        self.log_system: Callable[[str], None] = lambda message: None
+        self.log_command: Callable[[str, bool], None] = lambda message, incoming: None
         self.log_debug: Callable[[str], None] = lambda message: None
         self.log_info: Callable[[str], None] = lambda message: None
         self.log_warning: Callable[[str], None] = lambda message: None
@@ -184,7 +184,7 @@ class NeuroAPI:
 
     async def _run(self, address: str, port: int) -> None:
         """Server run root function."""
-        self.log_system(f"Starting websocket server on ws://{address}:{port}.")
+        self.log_info(f"Starting websocket server on ws://{address}:{port}.")
         await serve_websocket(
             self._handle_websocket_request,
             address,
@@ -247,7 +247,7 @@ class NeuroAPI:
                     receive_channel,
                 )
         except trio.Cancelled:
-            self.log_system("Closing current websocket connection.")
+            self.log_info("Closing current websocket connection.")
 
     async def _handle_consumer(
         self,
@@ -260,7 +260,7 @@ class NeuroAPI:
                 # Read message from websocket
                 message = await websocket.get_message()
             except ConnectionClosed:
-                self.log_system("Websocket connection closed by client.")
+                self.log_info("Websocket connection closed by client.")
                 break
 
             try:
@@ -285,11 +285,11 @@ class NeuroAPI:
                 if self.current_action_id is not None and json_cmd["command"] == "actions/force":
                     self.log_warning("Received actions/force while waiting for action/result.")
 
-                self.log_system(f"Command received: {json_cmd['command']}")
-
                 # Handle the command
                 match json_cmd["command"]:
                     case "startup" | "game/startup":
+                        self.log_command(f"{json_cmd['command']}: {game}", True)
+
                         self.current_action_id = None
 
                         self.on_startup(StartupCommand())
@@ -298,11 +298,15 @@ class NeuroAPI:
                             self.log_warning('"game/startup" command is deprecated. Use "startup" instead.')
 
                     case "context":
+                        self.log_command("context", True)
                         self.on_context(
                             ContextCommand(data["message"], data["silent"]),
                         )
 
                     case "actions/register":
+                        names = [action["name"] for action in data["actions"]]
+                        self.log_command(f'actions/register: {", ".join(names)}', True)
+
                         # Check the actions
                         for action in data["actions"]:
                             # Check the schema
@@ -336,9 +340,11 @@ class NeuroAPI:
                         self.on_actions_register(ActionsRegisterCommand(data["actions"]))
 
                     case "actions/unregister":
+                        self.log_command(f'actions/unregister: {", ".join(data["action_names"])}', True)
                         self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
 
                     case "actions/force":
+                        self.log_command(f'actions/force: {", ".join(data["action_names"])}', True)
                         self.on_actions_force(
                             ActionsForceCommand(
                                 data.get("state"),
@@ -349,6 +355,8 @@ class NeuroAPI:
                         )
 
                     case "action/result":
+                        self.log_command(f"action/result: {'success' if data['success'] else 'failure'}", True)
+
                         # Check if an action/result was expected
                         if self.current_action_id is None:
                             self.log_warning("Unexpected action/result.")
@@ -367,11 +375,13 @@ class NeuroAPI:
                         )
 
                     case "shutdown/ready":
+                        self.log_command("shutdown/ready", True)
                         self.log_warning("This command is not officially supported.")
                         self.on_shutdown_ready(ShutdownReadyCommand())
 
                     case _:
-                        self.log_warning("Unknown command.")
+                        self.log_command(f"{json_cmd['command']}: Unknown command", True)
+                        self.log_warning("Unknown command: {json_cmd['command']}")
                         self.on_unknown_command(json_cmd)
 
             except Exception as exc:
@@ -435,7 +445,7 @@ class NeuroAPI:
             return False
 
         self.current_action_id = id_
-        self.log_system("Command sent: action")
+        self.log_command(f"action: {name}{' {...}' if data else ''}", False)
         self.log_debug(f"Action ID: {id_}")
 
         return True
@@ -451,7 +461,7 @@ class NeuroAPI:
         if not self._submit_message(message):
             return False
 
-        self.log_system("Command sent: actions/reregister_all")
+        self.log_command("actions/reregister_all", False)
         self.log_warning("This command is not officially supported.")
 
         return True
@@ -470,7 +480,7 @@ class NeuroAPI:
         if not self._submit_message(message):
             return False
 
-        self.log_system("Command sent: shutdown/graceful")
+        self.log_command(f"shutdown/graceful: wants_shutdown={wants_shutdown}", False)
         self.log_warning("This command is not officially supported.")
 
         return True
@@ -486,7 +496,7 @@ class NeuroAPI:
         if not self._submit_message(message):
             return False
 
-        self.log_system("Command sent: shutdown/immediate")
+        self.log_command("Command sent: shutdown/immediate", False)
         self.log_warning("This command is not officially supported.")
 
         return True

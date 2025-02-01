@@ -26,7 +26,7 @@ Options:
 
     -l, --log, --log-level <LOG_LEVEL>:
         The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
-        WARNING, ERROR, SYSTEM.
+        WARNING, ERROR, CRITICAL.
 
     -p, --port <PORT>:
         The port number to start the websocket server on. Default is 8000.
@@ -72,9 +72,9 @@ def cli_run() -> None:
                     "INFO",
                     "WARNING",
                     "ERROR",
-                    "SYSTEM",
+                    "CRITICAL",
                 ]:
-                    print("Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, SYSTEM.")
+                    print("Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL.")
                     sys.exit(1)
                 log_level = value.upper()
 
