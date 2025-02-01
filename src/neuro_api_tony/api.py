@@ -381,7 +381,7 @@ class NeuroAPI:
 
                     case _:
                         self.log_command(f"{json_cmd['command']}: Unknown command", True)
-                        self.log_warning("Unknown command: {json_cmd['command']}")
+                        self.log_warning(f"Unknown command: {json_cmd['command']}")
                         self.on_unknown_command(json_cmd)
 
             except Exception as exc:

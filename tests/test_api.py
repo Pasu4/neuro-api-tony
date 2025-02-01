@@ -425,7 +425,7 @@ async def test_handle_consumer_unexpected_command(api: NeuroAPI) -> None:
         cancel_scope.cancel()
         nursery.cancel_scope.cancel()
 
-    api.log_warning.assert_called_with("Unknown command.")
+    api.log_warning.assert_called_with("Unknown command: unknown_command")
 
 
 @pytest.mark.trio
