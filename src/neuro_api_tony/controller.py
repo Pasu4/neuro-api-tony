@@ -60,6 +60,7 @@ class TonyController:
 
     def inject(self) -> None:
         """Inject methods into the view and API."""
+        # fmt: off
         self.api.on_startup = self.on_startup
         self.api.on_context = self.on_context
         self.api.on_actions_register = self.on_actions_register
@@ -81,18 +82,11 @@ class TonyController:
         self.view.on_delete_action = self.on_view_delete_action
         self.view.on_unlock = self.on_view_unlock
         self.view.on_clear_logs = self.on_view_clear_logs
-        self.view.on_send_actions_reregister_all = (
-            self.on_view_send_actions_reregister_all
-        )
-        self.view.on_send_shutdown_graceful = (
-            self.on_view_send_shutdown_graceful
-        )
-        self.view.on_send_shutdown_graceful_cancel = (
-            self.on_view_send_shutdown_graceful_cancel
-        )
-        self.view.on_send_shutdown_immediate = (
-            self.on_view_send_shutdown_immediate
-        )
+        self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
+        self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
+        self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
+        self.view.on_send_shutdown_immediate = self.on_view_send_shutdown_immediate
+        # fmt: on
 
     def on_any_command(self, cmd: Any) -> None:
         """Handle any command received from the API."""

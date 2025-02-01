@@ -130,16 +130,16 @@ class TonyView:
         self.action_dialog: ActionDialog | None = None
 
         # Dependency injection
+        # fmt: off
         self.on_execute: Callable[[NeuroAction], bool] = lambda action: False
         self.on_delete_action: Callable[[str], None] = lambda name: None
         self.on_unlock: Callable[[], None] = lambda: None
         self.on_clear_logs: Callable[[], None] = lambda: None
         self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
         self.on_send_shutdown_graceful: Callable[[], None] = lambda: None
-        self.on_send_shutdown_graceful_cancel: Callable[[], None] = (
-            lambda: None
-        )
+        self.on_send_shutdown_graceful_cancel: Callable[[], None] = lambda: None
         self.on_send_shutdown_immediate: Callable[[], None] = lambda: None
+        # fmt: on
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """Handle application close event."""
