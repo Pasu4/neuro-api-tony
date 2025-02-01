@@ -341,13 +341,15 @@ class NeuroAPI:
 
     def send_action(self, id_: str, name: str, data: str | None) -> bool:
         """Send an action command. Return True if actually sent."""
+        payload = {
+            "id": id_,
+            "name": name,
+        }
+        if data is not None:
+            payload["data"] = data
         obj = {
             "command": "action",
-            "data": {
-                "id": id_,
-                "name": name,
-                "data": data,
-            },
+            "data": payload,
         }
 
         message = json.dumps(obj)
