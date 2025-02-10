@@ -144,7 +144,17 @@ def test_send_action(api: NeuroAPI) -> None:
     assert api.send_action("123", "test_action", None)
 
     assert api.current_action_id == "123"
-    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": null}}'  # fmt: skip
+    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action"}}'  # fmt: skip
+
+
+def test_send_action_with_data(api: NeuroAPI) -> None:
+    """Test sending an action command."""
+    send, receive = trio.open_memory_channel[str](1)
+    api.message_send_channel = send
+    assert api.send_action("123", "test_action", "data field")
+
+    assert api.current_action_id == "123"
+    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": "data field"}}'
 
 
 def test_send_actions_reregister_all(api: NeuroAPI) -> None:
