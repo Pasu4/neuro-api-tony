@@ -60,6 +60,7 @@ class TonyController:
 
     def inject(self) -> None:
         """Inject methods into the view and API."""
+        # fmt: off
         self.api.on_startup = self.on_startup
         self.api.on_context = self.on_context
         self.api.on_actions_register = self.on_actions_register
@@ -85,6 +86,7 @@ class TonyController:
         self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
         self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
         self.view.on_send_shutdown_immediate = self.on_view_send_shutdown_immediate
+        # fmt: on
 
     def on_any_command(self, cmd: Any) -> None:
         """Handle any command received from the API."""
@@ -101,7 +103,6 @@ class TonyController:
     def on_actions_register(self, cmd: ActionsRegisterCommand) -> None:
         """Handle the actions/register command."""
         for action in cmd.actions:
-
             # Check if an action with the same name already exists
             if self.model.has_action(action.name):
                 self.view.log_warning(f'Action "{action.name}" already exists. Ignoring.')
@@ -138,7 +139,10 @@ class TonyController:
 
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
-            self.view.log_warning("actions/force with invalid actions received. Discarding.\nInvalid actions: " + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)))
+            self.view.log_warning(
+                "actions/force with invalid actions received. Discarding.\nInvalid actions: "
+                + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)),
+            )
             self.active_actions_force = None
             return
 
@@ -191,13 +195,17 @@ class TonyController:
         Returns True if an action was sent, False if the action was cancelled.
         """
         if not action.schema:
-            self.send_action(next(self.id_generator), action.name, None) # No schema, so send the action immediately
+            self.send_action(
+                next(self.id_generator),
+                action.name,
+                None,
+            )  # No schema, so send the action immediately
             return True
 
         # If there is a schema, open a dialog to get the data
         result = self.view.show_action_dialog(action)
         if result is None:
-            return False # User cancelled the dialog
+            return False  # User cancelled the dialog
 
         self.send_action(next(self.id_generator), action.name, result)
         return True
@@ -237,7 +245,11 @@ class TonyController:
         """Handle a request to send a shutdown/immediate command from the view."""
         self.api.send_shutdown_immediate()
 
-    def execute_actions_force(self, cmd: ActionsForceCommand, retry: bool = False) -> None:
+    def execute_actions_force(
+        self,
+        cmd: ActionsForceCommand,
+        retry: bool = False,
+    ) -> None:
         """Handle a request from the game to execute a forced action."""
         self.active_actions_force = cmd
 
@@ -253,10 +265,21 @@ class TonyController:
             else:
                 faker = JSF(action.schema)
                 sample = faker.generate()
-                self.send_action(next(self.id_generator), action.name, json.dumps(sample))
+                self.send_action(
+                    next(self.id_generator),
+                    action.name,
+                    json.dumps(sample),
+                )
 
         else:
-            wx.CallAfter(self.view.force_actions, cmd.state, cmd.query, cmd.ephemeral_context, cmd.action_names, retry)
+            wx.CallAfter(
+                self.view.force_actions,
+                cmd.state,
+                cmd.query,
+                cmd.ephemeral_context,
+                cmd.action_names,
+                retry,
+            )
 
     def retry_actions_force(self, cmd: ActionsForceCommand) -> None:
         """Retry the actions/force command."""
@@ -267,7 +290,10 @@ class TonyController:
 
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
-            self.view.log_warning("Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: " + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)))
+            self.view.log_warning(
+                "Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: "
+                + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)),
+            )
             self.active_actions_force = None
             return
 

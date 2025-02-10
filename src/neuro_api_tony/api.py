@@ -31,7 +31,42 @@ from .model import NeuroAction
 ACTION_NAME_ALLOWED_CHARS: Final = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 # See https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action
-INVALID_SCHEMA_KEYS: Final = frozenset({"$anchor", "$comment", "$defs", "$dynamicAnchor", "$dynamicRef", "$id", "$ref", "$schema", "$vocabulary", "additionalProperties", "allOf", "anyOf", "contentEncoding", "contentMediaType", "contentSchema", "dependentRequired", "dependentSchemas", "deprecated", "description", "else", "if", "maxProperties", "minProperties", "not", "oneOf", "patternProperties", "readOnly", "then", "title", "unevaluatedItems", "unevaluatedProperties", "writeOnly"})
+INVALID_SCHEMA_KEYS: Final = frozenset(
+    {
+        "$anchor",
+        "$comment",
+        "$defs",
+        "$dynamicAnchor",
+        "$dynamicRef",
+        "$id",
+        "$ref",
+        "$schema",
+        "$vocabulary",
+        "additionalProperties",
+        "allOf",
+        "anyOf",
+        "contentEncoding",
+        "contentMediaType",
+        "contentSchema",
+        "dependentRequired",
+        "dependentSchemas",
+        "deprecated",
+        "description",
+        "else",
+        "if",
+        "maxProperties",
+        "minProperties",
+        "not",
+        "oneOf",
+        "patternProperties",
+        "readOnly",
+        "then",
+        "title",
+        "unevaluatedItems",
+        "unevaluatedProperties",
+        "writeOnly",
+    },
+)
 
 
 class NeuroAPI:
@@ -44,6 +79,7 @@ class NeuroAPI:
         self.current_action_id: str | None = None
 
         # Dependency injection
+        # fmt: off
         self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
         self.on_context: Callable[[ContextCommand], None] = lambda cmd: None
         self.on_actions_register: Callable[[ActionsRegisterCommand], None] = lambda cmd: None
@@ -60,6 +96,7 @@ class NeuroAPI:
         self.log_critical: Callable[[str], None] = lambda message: None
         self.log_raw: Callable[[str, bool], None] = lambda message, incoming: None
         self.get_delay: Callable[[], float] = lambda: 0.0
+        # fmt: on
 
         self.async_library_running = False
         self.async_library_root_cancel: trio.CancelScope
@@ -148,19 +185,30 @@ class NeuroAPI:
     async def _run(self, address: str, port: int) -> None:
         """Server run root function."""
         self.log_system(f"Starting websocket server on ws://{address}:{port}.")
-        await serve_websocket(self._handle_websocket_request, address, port, ssl_context=None)
+        await serve_websocket(
+            self._handle_websocket_request,
+            address,
+            port,
+            ssl_context=None,
+        )
 
     @property
     def client_connected(self) -> bool:
         """Is there a client connected."""
         return self.message_send_channel is not None
 
-    async def _handle_websocket_request(self, request: WebSocketRequest) -> None:
+    async def _handle_websocket_request(
+        self,
+        request: WebSocketRequest,
+    ) -> None:
         """Handle websocket connection request."""
         if self.client_connected:
             # 503 is "service unavailable"
-            await request.reject(503, body=b"Server does not support multiple connections at once currently")
-            self.log_error("Another client attempted to connect, rejecting, server does not support multiple connections at once currently")
+            await request.reject(
+                503,
+                body=b"Server does not support multiple connections at once currently",
+            )
+            self.log_error("Another client attempted to connect, rejecting, server does not support multiple connections at once currently")  # fmt: skip
             return
 
         try:
@@ -169,10 +217,13 @@ class NeuroAPI:
             # Zero here means no buffer, send not allowed to happen if receive channel has
             # not read prior message waiting yet.
             self.message_send_channel, receive_channel = trio.open_memory_channel[str](0)
-            with (self.message_send_channel, receive_channel):
+            with self.message_send_channel, receive_channel:
                 # Accept connection
                 async with await request.accept() as connection:
-                    await self._handle_client_connection(connection, receive_channel)
+                    await self._handle_client_connection(
+                        connection,
+                        receive_channel,
+                    )
         finally:
             self.message_send_channel = None
 
@@ -185,8 +236,16 @@ class NeuroAPI:
         try:
             async with trio.open_nursery() as nursery:
                 # Start running connection read and write tasks in the background
-                nursery.start_soon(self._handle_consumer, websocket, nursery.cancel_scope)
-                nursery.start_soon(self._handle_producer, websocket, receive_channel)
+                nursery.start_soon(
+                    self._handle_consumer,
+                    websocket,
+                    nursery.cancel_scope,
+                )
+                nursery.start_soon(
+                    self._handle_producer,
+                    websocket,
+                    receive_channel,
+                )
         except trio.Cancelled:
             self.log_system("Closing current websocket connection.")
 
@@ -226,7 +285,7 @@ class NeuroAPI:
                 if self.current_action_id is not None and json_cmd["command"] == "actions/force":
                     self.log_warning("Received actions/force while waiting for action/result.")
 
-                self.log_system(f'Command received: {json_cmd["command"]}')
+                self.log_system(f"Command received: {json_cmd['command']}")
 
                 # Handle the command
                 match json_cmd["command"]:
@@ -239,7 +298,9 @@ class NeuroAPI:
                             self.log_warning('"game/startup" command is deprecated. Use "startup" instead.')
 
                     case "context":
-                        self.on_context(ContextCommand(data["message"], data["silent"]))
+                        self.on_context(
+                            ContextCommand(data["message"], data["silent"]),
+                        )
 
                     case "actions/register":
                         # Check the actions
@@ -247,19 +308,23 @@ class NeuroAPI:
                             # Check the schema
                             if "schema" in action and action["schema"] != {}:
                                 try:
-                                    jsonschema.Draft7Validator.check_schema(action["schema"])
+                                    jsonschema.Draft7Validator.check_schema(
+                                        action["schema"],
+                                    )
                                 except jsonschema.exceptions.SchemaError as e:
-                                    self.log_error(f'Invalid schema for action "{action["name"]}": {e}')
+                                    self.log_error(
+                                        f'Invalid schema for action "{action["name"]}": {e}',
+                                    )
                                     continue
 
                                 invalid_keys = self.check_invalid_keys_recursive(action["schema"])
 
                                 if len(invalid_keys) > 0:
-                                    self.log_warning(f'Disallowed keys in schema: {", ".join(invalid_keys)}')
+                                    self.log_warning(f"Disallowed keys in schema: {', '.join(invalid_keys)}")
 
                             # Check the name
                             if not isinstance(action["name"], str):
-                                self.log_error(f'Action name is not a string: {action["name"]}')
+                                self.log_error(f"Action name is not a string: {action['name']}")
                                 continue
 
                             if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action["name"]):
@@ -274,7 +339,14 @@ class NeuroAPI:
                         self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
 
                     case "actions/force":
-                        self.on_actions_force(ActionsForceCommand(data.get("state"), data["query"], data.get("ephemeral_context", False), data["action_names"]))
+                        self.on_actions_force(
+                            ActionsForceCommand(
+                                data.get("state"),
+                                data["query"],
+                                data.get("ephemeral_context", False),
+                                data["action_names"],
+                            ),
+                        )
 
                     case "action/result":
                         # Check if an action/result was expected
@@ -282,12 +354,17 @@ class NeuroAPI:
                             self.log_warning("Unexpected action/result.")
                         # Check if the action ID matches
                         elif self.current_action_id != data["id"]:
-                            self.log_warning(f'Received action ID "{data["id"]}" does not match the expected action ID "{self.current_action_id}".')
+                            self.log_warning(f'Received action ID "{data["id"]}" does not match the expected action ID "{self.current_action_id}".')  # fmt: skip
 
-                        self.log_debug(f'Action ID: {data["id"]}')
+                        self.log_debug(f"Action ID: {data['id']}")
 
                         self.current_action_id = None
-                        self.on_action_result(ActionResultCommand(data["success"], data.get("message", None)))
+                        self.on_action_result(
+                            ActionResultCommand(
+                                data["success"],
+                                data.get("message", None),
+                            ),
+                        )
 
                     case "shutdown/ready":
                         self.log_warning("This command is not officially supported.")
@@ -365,9 +442,11 @@ class NeuroAPI:
 
     def send_actions_reregister_all(self) -> bool:
         """Send an actions/reregister_all command."""
-        message = json.dumps({
-            "command": "actions/reregister_all",
-        })
+        message = json.dumps(
+            {
+                "command": "actions/reregister_all",
+            },
+        )
 
         if not self._submit_message(message):
             return False
@@ -379,12 +458,14 @@ class NeuroAPI:
 
     def send_shutdown_graceful(self, wants_shutdown: bool) -> bool:
         """Send a shutdown/graceful command."""
-        message = json.dumps({
-            "command": "shutdown/graceful",
-            "data": {
-                "wants_shutdown": wants_shutdown,
+        message = json.dumps(
+            {
+                "command": "shutdown/graceful",
+                "data": {
+                    "wants_shutdown": wants_shutdown,
+                },
             },
-        })
+        )
 
         if not self._submit_message(message):
             return False
@@ -396,9 +477,11 @@ class NeuroAPI:
 
     def send_shutdown_immediate(self) -> bool:
         """Send a shutdown/immediate command."""
-        message = json.dumps({
-            "command": "shutdown/immediate",
-        })
+        message = json.dumps(
+            {
+                "command": "shutdown/immediate",
+            },
+        )
 
         if not self._submit_message(message):
             return False
@@ -408,7 +491,10 @@ class NeuroAPI:
 
         return True
 
-    def check_invalid_keys_recursive(self, sub_schema: dict[str, Any]) -> list[str]:
+    def check_invalid_keys_recursive(
+        self,
+        sub_schema: dict[str, Any],
+    ) -> list[str]:
         """Recursively checks for invalid keys in the schema.
 
         Returns a list of invalid keys that were found.
@@ -447,6 +533,7 @@ class ContextCommand(NamedTuple):
 
 class ActionsRegisterCommand:
     """`actions/register` command."""
+
     __slots__ = ("actions",)
 
     def __init__(self, actions: list[dict[str, Any]]) -> None:

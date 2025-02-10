@@ -12,6 +12,18 @@ if [ -z "${GITHUB_STEP_SUMMARY+x}" ]; then
     ON_GITHUB_CI=false
 fi
 
+# Autoformatter *first*, to avoid double-reporting errors
+echo "::group::Ruff format"
+if ! ruff format --check; then
+    echo "* Ruff formatting found issues" >> "$GITHUB_STEP_SUMMARY"
+    EXIT_STATUS=1
+    ruff format --diff
+    echo "::endgroup::"
+    echo "::error:: Ruff formatting found issues"
+else
+    echo "::endgroup::"
+fi
+
 # Run ruff, configured in pyproject.toml
 echo "::group::Ruff"
 if ! ruff check .; then

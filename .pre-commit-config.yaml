@@ -21,9 +21,8 @@ repos:
     rev: v0.9.3
     hooks:
       - id: ruff
-        types: [file]
-        types_or: [python, pyi, toml]
         args: ["--show-fixes"]
+      - id: ruff-format
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:

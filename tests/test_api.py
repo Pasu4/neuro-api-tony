@@ -29,6 +29,7 @@ def api() -> NeuroAPI:
 @pytest.fixture(autouse=True)
 def print_exception_to_raise() -> Generator[None, None, None]:
     """Make traceback.print_exception raise exception instead of printing it."""
+
     def raise_(exc: BaseException) -> None:
         raise exc from None
 
@@ -58,6 +59,7 @@ def test_start(api: NeuroAPI) -> None:
 def test_run_start_stop(api: NeuroAPI) -> None:
     """Test starting and stopping the WebSocket server."""
     tasks: list[Callable[[], None]] = []
+
     def run_sync_soon_threadsafe(func: Callable[[], None]) -> None:
         tasks.append(func)
 
@@ -106,6 +108,7 @@ def test_run_start_stop(api: NeuroAPI) -> None:
 
 def test_run_start_failure(api: NeuroAPI) -> None:
     """Test that async_library_running is handled even if guest run start fails."""
+
     def start_guest_run(*args: Any, **kwargs: Any) -> None:
         raise ValueError("jerald")
 
@@ -141,7 +144,7 @@ def test_send_action(api: NeuroAPI) -> None:
     assert api.send_action("123", "test_action", None)
 
     assert api.current_action_id == "123"
-    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action"}}'
+    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action"}}'  # fmt: skip
 
 
 def test_send_action_with_data(api: NeuroAPI) -> None:
@@ -151,7 +154,10 @@ def test_send_action_with_data(api: NeuroAPI) -> None:
     assert api.send_action("123", "test_action", "data field")
 
     assert api.current_action_id == "123"
-    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": "data field"}}'
+    assert (
+        receive.receive_nowait()
+        == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": "data field"}}'
+    )
 
 
 def test_send_actions_reregister_all(api: NeuroAPI) -> None:
@@ -189,6 +195,7 @@ def test_send_shutdown_immediate(api: NeuroAPI) -> None:
     assert api.send_shutdown_immediate()
 
     assert receive.receive_nowait() == '{"command": "shutdown/immediate"}'
+
 
 def test_send_shutdown_immediate_not_connected(api: NeuroAPI) -> None:
     """Test sending immediate shutdown command but not connected."""
@@ -233,9 +240,8 @@ def test_check_invalid_keys_recursive_unhandled(api: NeuroAPI) -> None:
 
     invalid = api.check_invalid_keys_recursive(schema)
     assert invalid == ["writeOnly"]
-    api.log_error.assert_called_once_with(
-        "Unhandled schema value type <class 'set'> (set())",
-    )
+    api.log_error.assert_called_once_with("Unhandled schema value type <class 'set'> (set())")
+
 
 def test_actions_register_command() -> None:
     actions: list[dict[str, Any]] = [
@@ -261,15 +267,19 @@ def test_actions_register_command() -> None:
 async def test_handle_websocket_request_accept(api: NeuroAPI) -> None:
     """Test handling a WebSocket connection request."""
     send, receive = trio.open_memory_channel[str](1)
+
     class Websocket:
         get_message = receive.receive
         send_message = send.send
+
     class Request:
         async def accept(self) -> AbstractAsyncContextManager[Websocket]:
             @asynccontextmanager
             async def manager() -> AsyncGenerator[Websocket, None]:
                 yield Websocket()
+
             return manager()
+
     request = Request()
 
     async with trio.open_nursery() as nursery:
@@ -293,7 +303,11 @@ async def test_handle_client_connection(api: NeuroAPI) -> None:
     await send.send('{"command": "startup", "game": "test_game"}')
 
     async with trio.open_nursery() as nursery:
-        nursery.start_soon(api._handle_client_connection, mock_websocket, receive)
+        nursery.start_soon(
+            api._handle_client_connection,
+            mock_websocket,
+            receive,
+        )
         await trio.sleep(0.05)
         nursery.cancel_scope.cancel()
 
@@ -330,19 +344,27 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     await send.send('{"command": "startup", "game": "test_game"')
 
     had_json_error = False
-    def handle_json_error(multi_exc: BaseExceptionGroup[JSONDecodeError]) -> None:
+
+    def handle_json_error(
+        multi_exc: BaseExceptionGroup[JSONDecodeError],
+    ) -> None:
         nonlocal had_json_error
         exc = multi_exc.args[1][0]
         assert exc.args[0] == "Expecting ',' delimiter: line 1 column 43 (char 42)"
         had_json_error = True
 
-
-    with catch({
-        JSONDecodeError: handle_json_error,
-    }):
+    with catch(
+        {
+            JSONDecodeError: handle_json_error,
+        },
+    ):
         async with trio.open_nursery() as nursery:
             cancel_scope = trio.CancelScope()
-            nursery.start_soon(api._handle_consumer, mock_websocket, cancel_scope)
+            nursery.start_soon(
+                api._handle_consumer,
+                mock_websocket,
+                cancel_scope,
+            )
             await trio.sleep(0.05)
             cancel_scope.cancel()
             nursery.cancel_scope.cancel()
@@ -368,7 +390,9 @@ async def test_handle_producer(api: NeuroAPI) -> None:
         await trio.sleep(0.05)
         nursery.cancel_scope.cancel()
 
-    mock_websocket.send_message.assert_called_once_with('{"command": "action", "data": {"id": "123", "name": "test_action"}}')
+    mock_websocket.send_message.assert_called_once_with(
+        '{"command": "action", "data": {"id": "123", "name": "test_action"}}',
+    )
 
 
 @pytest.mark.trio
