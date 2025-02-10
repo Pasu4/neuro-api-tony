@@ -95,8 +95,9 @@ warn_unreachable = true
 combine-as-imports = true
 
 [tool.ruff]
-line-length = 79
+line-length = 119
 fix = true
+exclude = ["tools/mypy_annotate.py"]
 
 include = ["*.py", "*.pyi", "**/pyproject.toml"]
 

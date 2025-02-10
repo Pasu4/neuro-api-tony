@@ -144,10 +144,7 @@ def test_send_action(api: NeuroAPI) -> None:
     assert api.send_action("123", "test_action", None)
 
     assert api.current_action_id == "123"
-    assert (
-        receive.receive_nowait()
-        == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": null}}'
-    )
+    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": null}}'  # fmt: skip
 
 
 def test_send_actions_reregister_all(api: NeuroAPI) -> None:
@@ -170,10 +167,7 @@ def test_send_shutdown_graceful(api: NeuroAPI) -> None:
     api.message_send_channel = send
     assert api.send_shutdown_graceful(True)
 
-    assert (
-        receive.receive_nowait()
-        == '{"command": "shutdown/graceful", "data": {"wants_shutdown": true}}'
-    )
+    assert receive.receive_nowait() == '{"command": "shutdown/graceful", "data": {"wants_shutdown": true}}'
 
 
 def test_send_shutdown_graceful_not_connected(api: NeuroAPI) -> None:
@@ -233,9 +227,7 @@ def test_check_invalid_keys_recursive_unhandled(api: NeuroAPI) -> None:
 
     invalid = api.check_invalid_keys_recursive(schema)
     assert invalid == ["writeOnly"]
-    api.log_error.assert_called_once_with(
-        "Unhandled schema value type <class 'set'> (set())",
-    )
+    api.log_error.assert_called_once_with("Unhandled schema value type <class 'set'> (set())")
 
 
 def test_actions_register_command() -> None:
@@ -345,10 +337,7 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     ) -> None:
         nonlocal had_json_error
         exc = multi_exc.args[1][0]
-        assert (
-            exc.args[0]
-            == "Expecting ',' delimiter: line 1 column 43 (char 42)"
-        )
+        assert exc.args[0] == "Expecting ',' delimiter: line 1 column 43 (char 42)"
         had_json_error = True
 
     with catch(
@@ -381,9 +370,7 @@ async def test_handle_producer(api: NeuroAPI) -> None:
     mock_websocket.send_message = AsyncMock(return_value=None)
     api.message_send_channel = send
 
-    send.send_nowait(
-        '{"command": "action", "data": {"id": "123", "name": "test_action"}}',
-    )
+    send.send_nowait('{"command": "action", "data": {"id": "123", "name": "test_action"}}')
 
     async with trio.open_nursery() as nursery:
         nursery.start_soon(api._handle_producer, mock_websocket, receive)
@@ -436,9 +423,7 @@ async def test_handle_consumer_action_result(api: NeuroAPI) -> None:
     mock_websocket.get_message = receive.receive
     api.message_send_channel = send
 
-    await send.send(
-        '{"command": "action/result", "data": {"id": "123", "success": true}}',
-    )
+    await send.send('{"command": "action/result", "data": {"id": "123", "success": true}}')
 
     async with trio.open_nursery() as nursery:
         cancel_scope = trio.CancelScope()

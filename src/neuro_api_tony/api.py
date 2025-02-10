@@ -106,23 +106,17 @@ class NeuroAPI:
         """Start hosting the websocket server with Trio in the background."""
         if self.received_loop_close_request:
             # Attempting to shut down
-            self.log_critical(
-                "Something attempted to start websocket server during shutdown, ignoring.",
-            )
+            self.log_critical("Something attempted to start websocket server during shutdown, ignoring.")
             return
 
         if self.async_library_running:
             # Already running, skip
-            self.log_critical(
-                "Something attempted to start websocket server a 2nd time, ignoring.",
-            )
+            self.log_critical("Something attempted to start websocket server a 2nd time, ignoring.")
             return
 
         def done_callback(run_outcome: Outcome[None]) -> None:
             """Handle when trio run completes."""
-            assert self.async_library_running, (
-                "How can stop running if not running?"
-            )
+            assert self.async_library_running, "How can stop running if not running?"
             self.async_library_running = False
             # Unwrap to make sure exceptions are printed
             run_outcome.unwrap()
@@ -214,9 +208,7 @@ class NeuroAPI:
                 503,
                 body=b"Server does not support multiple connections at once currently",
             )
-            self.log_error(
-                "Another client attempted to connect, rejecting, server does not support multiple connections at once currently",
-            )
+            self.log_error("Another client attempted to connect, rejecting, server does not support multiple connections at once currently")  # fmt: skip
             return
 
         try:
@@ -224,9 +216,7 @@ class NeuroAPI:
             # Using message_send_channel to send websocket messages synchronously
             # Zero here means no buffer, send not allowed to happen if receive channel has
             # not read prior message waiting yet.
-            self.message_send_channel, receive_channel = (
-                trio.open_memory_channel[str](0)
-            )
+            self.message_send_channel, receive_channel = trio.open_memory_channel[str](0)
             with self.message_send_channel, receive_channel:
                 # Accept connection
                 async with await request.accept() as connection:
@@ -284,26 +274,16 @@ class NeuroAPI:
                     self.log_warning("Game name is not set.")
                 else:
                     # Check game name
-                    if (
-                        json_cmd["command"] == "startup"
-                        or json_cmd["command"] == "game/startup"
-                    ):
+                    if json_cmd["command"] == "startup" or json_cmd["command"] == "game/startup":
                         self.current_game = game
                     elif self.current_game != game:
-                        self.log_warning(
-                            "Game name does not match the current game.",
-                        )
+                        self.log_warning("Game name does not match the current game.")
                     elif self.current_game == "":
                         self.log_warning("No startup command received.")
 
                 # Check action result when waiting for it
-                if (
-                    self.current_action_id is not None
-                    and json_cmd["command"] == "actions/force"
-                ):
-                    self.log_warning(
-                        "Received actions/force while waiting for action/result.",
-                    )
+                if self.current_action_id is not None and json_cmd["command"] == "actions/force":
+                    self.log_warning("Received actions/force while waiting for action/result.")
 
                 self.log_system(f"Command received: {json_cmd['command']}")
 
@@ -315,9 +295,7 @@ class NeuroAPI:
                         self.on_startup(StartupCommand())
 
                         if json_cmd["command"] == "game/startup":
-                            self.log_warning(
-                                '"game/startup" command is deprecated. Use "startup" instead.',
-                            )
+                            self.log_warning('"game/startup" command is deprecated. Use "startup" instead.')
 
                     case "context":
                         self.on_context(
@@ -339,43 +317,26 @@ class NeuroAPI:
                                     )
                                     continue
 
-                                invalid_keys = (
-                                    self.check_invalid_keys_recursive(
-                                        action["schema"],
-                                    )
-                                )
+                                invalid_keys = self.check_invalid_keys_recursive(action["schema"])
 
                                 if len(invalid_keys) > 0:
-                                    self.log_warning(
-                                        f"Disallowed keys in schema: {', '.join(invalid_keys)}",
-                                    )
+                                    self.log_warning(f"Disallowed keys in schema: {', '.join(invalid_keys)}")
 
                             # Check the name
                             if not isinstance(action["name"], str):
-                                self.log_error(
-                                    f"Action name is not a string: {action['name']}",
-                                )
+                                self.log_error(f"Action name is not a string: {action['name']}")
                                 continue
 
-                            if not all(
-                                c in ACTION_NAME_ALLOWED_CHARS
-                                for c in action["name"]
-                            ):
-                                self.log_warning(
-                                    "Action name is not a lowercase string.",
-                                )
+                            if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action["name"]):
+                                self.log_warning("Action name is not a lowercase string.")
 
                             if action["name"] == "":
                                 self.log_warning("Action name is empty.")
 
-                        self.on_actions_register(
-                            ActionsRegisterCommand(data["actions"]),
-                        )
+                        self.on_actions_register(ActionsRegisterCommand(data["actions"]))
 
                     case "actions/unregister":
-                        self.on_actions_unregister(
-                            ActionsUnregisterCommand(data["action_names"]),
-                        )
+                        self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
 
                     case "actions/force":
                         self.on_actions_force(
@@ -393,9 +354,7 @@ class NeuroAPI:
                             self.log_warning("Unexpected action/result.")
                         # Check if the action ID matches
                         elif self.current_action_id != data["id"]:
-                            self.log_warning(
-                                f'Received action ID "{data["id"]}" does not match the expected action ID "{self.current_action_id}".',
-                            )
+                            self.log_warning(f'Received action ID "{data["id"]}" does not match the expected action ID "{self.current_action_id}".')  # fmt: skip
 
                         self.log_debug(f"Action ID: {data['id']}")
 
@@ -408,9 +367,7 @@ class NeuroAPI:
                         )
 
                     case "shutdown/ready":
-                        self.log_warning(
-                            "This command is not officially supported.",
-                        )
+                        self.log_warning("This command is not officially supported.")
                         self.on_shutdown_ready(ShutdownReadyCommand())
 
                     case _:
@@ -552,13 +509,9 @@ class NeuroAPI:
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
-                        invalid_keys.extend(
-                            self.check_invalid_keys_recursive(item),
-                        )
+                        invalid_keys.extend(self.check_invalid_keys_recursive(item))
             else:
-                self.log_error(
-                    f"Unhandled schema value type {type(value)!r} ({value!r})",
-                )
+                self.log_error(f"Unhandled schema value type {type(value)!r} ({value!r})")
 
         return invalid_keys
 

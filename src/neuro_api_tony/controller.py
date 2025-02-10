@@ -105,9 +105,7 @@ class TonyController:
         for action in cmd.actions:
             # Check if an action with the same name already exists
             if self.model.has_action(action.name):
-                self.view.log_warning(
-                    f'Action "{action.name}" already exists. Ignoring.',
-                )
+                self.view.log_warning(f'Action "{action.name}" already exists. Ignoring.')
                 continue
 
             self.model.add_action(action)
@@ -143,11 +141,7 @@ class TonyController:
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning(
                 "actions/force with invalid actions received. Discarding.\nInvalid actions: "
-                + ", ".join(
-                    name
-                    for name in cmd.action_names
-                    if not self.model.has_action(name)
-                ),
+                + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)),
             )
             self.active_actions_force = None
             return
@@ -156,14 +150,9 @@ class TonyController:
 
     def on_action_result(self, cmd: ActionResultCommand) -> None:
         """Handle the action/result command."""
-        self.view.log_system(
-            "Action result indicates "
-            + ("success" if cmd.success else "failure"),
-        )
+        self.view.log_system("Action result indicates " + ("success" if cmd.success else "failure"))
 
-        self.view.log_debug(
-            f"cmd.success: {cmd.success}, active_actions_force: {self.active_actions_force}",
-        )
+        self.view.log_debug(f"cmd.success: {cmd.success}, active_actions_force: {self.active_actions_force}")
 
         if not cmd.success and self.active_actions_force is not None:
             self.retry_actions_force(self.active_actions_force)
@@ -266,11 +255,7 @@ class TonyController:
 
         if self.view.controls.auto_send:
             self.view.log_system("Automatically sending random action.")
-            actions = [
-                action
-                for action in self.model.actions
-                if action.name in cmd.action_names
-            ]
+            actions = [action for action in self.model.actions if action.name in cmd.action_names]
             # S311 - Standard pseudo-random generators are not suitable for cryptographic purposes
             # Not using for cryptographic purposes so we should be fine
             action = random.choice(actions)  # noqa: S311
@@ -307,11 +292,7 @@ class TonyController:
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning(
                 "Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: "
-                + ", ".join(
-                    name
-                    for name in cmd.action_names
-                    if not self.model.has_action(name)
-                ),
+                + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)),
             )
             self.active_actions_force = None
             return

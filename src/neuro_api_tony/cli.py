@@ -74,9 +74,7 @@ def cli_run() -> None:
                     "ERROR",
                     "SYSTEM",
                 ]:
-                    print(
-                        "Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, SYSTEM.",
-                    )
+                    print("Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, SYSTEM.")
                     sys.exit(1)
                 log_level = value.upper()
 
@@ -84,9 +82,7 @@ def cli_run() -> None:
                 port = int(value)
 
             case "--update":
-                print(
-                    "This option is deprecated. Please update the program using git or pip.",
-                )
+                print("This option is deprecated. Please update the program using git or pip.")
 
                 sys.exit(1)
 
@@ -107,9 +103,7 @@ def cli_run() -> None:
             )
 
     except ConnectionError:
-        print(
-            "Failed to check for updates. Please check your internet connection.",
-        )
+        print("Failed to check for updates. Please check your internet connection.")
 
     except Exception as exc:
         print("An error occurred while checking for updates:")
