@@ -154,7 +154,10 @@ def test_send_action_with_data(api: NeuroAPI) -> None:
     assert api.send_action("123", "test_action", "data field")
 
     assert api.current_action_id == "123"
-    assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": "data field"}}'
+    assert (
+        receive.receive_nowait()
+        == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": "data field"}}'
+    )
 
 
 def test_send_actions_reregister_all(api: NeuroAPI) -> None:
