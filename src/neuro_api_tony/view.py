@@ -65,7 +65,6 @@ class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
         super().__init__(EVT_TYPE_EXECUTE, id_)
         self.action = action
 
-
 # endregion
 
 # region Constants
@@ -433,6 +432,13 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.list.InsertColumn(1, "Description", width=240)
         self.list.InsertColumn(2, "Schema", width=60)
 
+        self.execute_button.SetToolTip("Execute the selected action.")
+        self.delete_button.SetToolTip(
+            "Delete the selected action. "
+            + "Should only be used for testing, this is not something Neuro would normally do."
+        )
+        self.unlock_button.SetToolTip("Stop waiting for the game to send an action result.")
+
         if not can_delete:
             self.delete_button.Disable()
 
@@ -587,7 +593,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         self.validate_schema_checkbox = wx.CheckBox(self, label="Validate JSON schema")
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
-        self.auto_send_checkbox = wx.CheckBox(self, label="Automatically answer forced actions")
+        self.auto_send_checkbox = wx.CheckBox(self, label="Auto-answer")
 
         latency_panel = wx.Panel(self)
         latency_text1 = wx.StaticText(latency_panel, label="L*tency:")
@@ -599,10 +605,10 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS])
 
         self.clear_logs_button = wx.Button(self, label="Clear logs")
-        self.send_actions_reregister_all_button = wx.Button(self, label="Clear all actions and request reregistration (experimental)")  # fmt: skip
-        self.send_shutdown_graceful_button = wx.Button(self, label="Request graceful shutdown (experimental)")
-        self.send_shutdown_graceful_cancel_button = wx.Button(self, label="Cancel graceful shutdown (experimental)")
-        self.send_shutdown_immediate_button = wx.Button(self, label="Request immediate shutdown (experimental)")
+        self.send_actions_reregister_all_button = wx.Button(self, label="Clear and reregister")
+        self.send_shutdown_graceful_button = wx.Button(self, label="Graceful shutdown")
+        self.send_shutdown_graceful_cancel_button = wx.Button(self, label="Cancel shutdown")
+        self.send_shutdown_immediate_button = wx.Button(self, label="Immediate shutdown")
 
         # Create sizers
 
@@ -654,7 +660,30 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         # self.latency_input.SetValue('0')
         self.log_level_choice.SetStringSelection(self.view.controls.get_log_level_str())
 
-        # Modify
+        # Add tooltips
+
+        self.validate_schema_checkbox.SetToolTip("Validate JSON schema of actions before sending.")
+        self.ignore_actions_force_checkbox.SetToolTip("Ignore forced actions.")
+        self.auto_send_checkbox.SetToolTip("Automatically answer forced actions with randomly generated data (like Randy).")
+        self.latency_input.SetToolTip("Latency in milliseconds to add to each outgoing command.")
+        self.log_level_choice.SetToolTip("Set the log level. Exported logs will still show all messages.")
+        self.clear_logs_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
+        self.send_actions_reregister_all_button.SetToolTip(
+            "Clear all actions and request reregistration from the game. "
+            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+        )
+        self.send_shutdown_graceful_button.SetToolTip(
+            "Request a graceful shutdown from the game. "
+            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+        )
+        self.send_shutdown_graceful_cancel_button.SetToolTip(
+            "Cancel a graceful shutdown request. "
+            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+        )
+        self.send_shutdown_immediate_button.SetToolTip(
+            "Request an immediate shutdown from the game. "
+            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+        )
 
     def on_clear_logs(self, event: wx.CommandEvent) -> None:
         """Handle clear_logs command event."""
