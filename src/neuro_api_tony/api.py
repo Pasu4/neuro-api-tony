@@ -305,7 +305,7 @@ class NeuroAPI:
 
                     case "actions/register":
                         names = [action["name"] for action in data["actions"]]
-                        self.log_command(f'actions/register: {", ".join(names)}', True)
+                        self.log_command(f"actions/register: {', '.join(names)}", True)
 
                         # Check the actions
                         for action in data["actions"]:
@@ -340,11 +340,11 @@ class NeuroAPI:
                         self.on_actions_register(ActionsRegisterCommand(data["actions"]))
 
                     case "actions/unregister":
-                        self.log_command(f'actions/unregister: {", ".join(data["action_names"])}', True)
+                        self.log_command(f"actions/unregister: {', '.join(data['action_names'])}", True)
                         self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
 
                     case "actions/force":
-                        self.log_command(f'actions/force: {", ".join(data["action_names"])}', True)
+                        self.log_command(f"actions/force: {', '.join(data['action_names'])}", True)
                         self.on_actions_force(
                             ActionsForceCommand(
                                 data.get("state"),

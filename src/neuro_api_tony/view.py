@@ -65,6 +65,7 @@ class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
         super().__init__(EVT_TYPE_EXECUTE, id_)
         self.action = action
 
+
 # endregion
 
 # region Constants
@@ -435,7 +436,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.execute_button.SetToolTip("Execute the selected action.")
         self.delete_button.SetToolTip(
             "Delete the selected action. "
-            + "Should only be used for testing, this is not something Neuro would normally do."
+            + "Should only be used for testing, this is not something Neuro would normally do.",
         )
         self.unlock_button.SetToolTip("Stop waiting for the game to send an action result.")
 
@@ -664,25 +665,27 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         self.validate_schema_checkbox.SetToolTip("Validate JSON schema of actions before sending.")
         self.ignore_actions_force_checkbox.SetToolTip("Ignore forced actions.")
-        self.auto_send_checkbox.SetToolTip("Automatically answer forced actions with randomly generated data (like Randy).")
+        self.auto_send_checkbox.SetToolTip(
+            "Automatically answer forced actions with randomly generated data (like Randy).",
+        )
         self.latency_input.SetToolTip("Latency in milliseconds to add to each outgoing command.")
         self.log_level_choice.SetToolTip("Set the log level. Exported logs will still show all messages.")
         self.clear_logs_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
         self.send_actions_reregister_all_button.SetToolTip(
             "Clear all actions and request reregistration from the game. "
-            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+            + "This is not officially part of the API specification and may not be supported by all SDKs.",
         )
         self.send_shutdown_graceful_button.SetToolTip(
             "Request a graceful shutdown from the game. "
-            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+            + "This is not officially part of the API specification and may not be supported by all SDKs.",
         )
         self.send_shutdown_graceful_cancel_button.SetToolTip(
             "Cancel a graceful shutdown request. "
-            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+            + "This is not officially part of the API specification and may not be supported by all SDKs.",
         )
         self.send_shutdown_immediate_button.SetToolTip(
             "Request an immediate shutdown from the game. "
-            + "This is not oficially part of the API specification and may not be supported by all SDKs."
+            + "This is not officially part of the API specification and may not be supported by all SDKs.",
         )
 
     def on_clear_logs(self, event: wx.CommandEvent) -> None:
