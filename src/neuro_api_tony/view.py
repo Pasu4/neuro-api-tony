@@ -102,6 +102,11 @@ LOG_LEVELS = {
     "SYSTEM": 60,
 }
 
+LATENCY_TOOLTIP = (
+    "Latency in milliseconds to add to each outgoing command."
+    " Must be non-negative and not exceed 10000 ms."
+)  # fmt: skip
+
 # endregion
 
 
@@ -433,10 +438,13 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.list.InsertColumn(1, "Description", width=240)
         self.list.InsertColumn(2, "Schema", width=60)
 
-        self.execute_button.SetToolTip("Execute the selected action.")
+        self.execute_button.SetToolTip(
+            "Execute the selected action."
+            " Opens a dialog to enter JSON data if the action has a schema.",
+        )  # fmt: skip
         self.delete_button.SetToolTip(
-            "Delete the selected action. "
-            + "Should only be used for testing, this is not something Neuro would normally do.",
+            "Delete the selected action."
+            " Should only be used for testing, this is not something Neuro would normally do.",
         )
         self.unlock_button.SetToolTip("Stop waiting for the game to send an action result.")
 
@@ -668,24 +676,24 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.auto_send_checkbox.SetToolTip(
             "Automatically answer forced actions with randomly generated data (like Randy).",
         )
-        self.latency_input.SetToolTip("Latency in milliseconds to add to each outgoing command.")
+        self.latency_input.SetToolTip(LATENCY_TOOLTIP)
         self.log_level_choice.SetToolTip("Set the log level. Exported logs will still show all messages.")
         self.clear_logs_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
         self.send_actions_reregister_all_button.SetToolTip(
-            "Clear all actions and request reregistration from the game. "
-            + "This is not officially part of the API specification and may not be supported by all SDKs.",
+            "Clear all actions and request reregistration from the game."
+            " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
         self.send_shutdown_graceful_button.SetToolTip(
-            "Request a graceful shutdown from the game. "
-            + "This is not officially part of the API specification and may not be supported by all SDKs.",
+            "Request a graceful shutdown from the game."
+            " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
         self.send_shutdown_graceful_cancel_button.SetToolTip(
-            "Cancel a graceful shutdown request. "
-            + "This is not officially part of the API specification and may not be supported by all SDKs.",
+            "Cancel a graceful shutdown request."
+            " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
         self.send_shutdown_immediate_button.SetToolTip(
-            "Request an immediate shutdown from the game. "
-            + "This is not officially part of the API specification and may not be supported by all SDKs.",
+            "Request an immediate shutdown from the game."
+            " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
 
     def on_clear_logs(self, event: wx.CommandEvent) -> None:
@@ -723,7 +731,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             if latency > 10000:
                 raise ValueError("Latency must not exceed 10000 ms.")
             self.view.controls.latency = latency
-            self.latency_input.UnsetToolTip()
+            self.latency_input.SetToolTip(LATENCY_TOOLTIP)
             self.latency_input.SetBackgroundColour(wx.NullColour)  # Default color
         except ValueError as exc:
             self.latency_input.SetToolTip(str(exc))
