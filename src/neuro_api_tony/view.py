@@ -72,13 +72,13 @@ class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
 
 # Colors
 # fmt: off
-LOG_COLOR_DEFAULT                       = wx.Colour(0, 0, 0)
-LOG_COLOR_TIMESTAMP                     = wx.Colour(0, 128, 0)
+LOG_COLOR_DEFAULT                       = wx.Colour(  0,   0,   0)
+LOG_COLOR_TIMESTAMP                     = wx.Colour(  0, 128,   0)
 LOG_COLOR_DEBUG                         = wx.Colour(128, 128, 128)
 LOG_COLOR_INFO                          = wx.Colour(128, 192, 255)
-LOG_COLOR_WARNING                       = wx.Colour(255, 192, 0)
-LOG_COLOR_ERROR                         = wx.Colour(255, 0, 0)
-LOG_COLOR_CRITICAL                      = wx.Colour(192, 0, 0)
+LOG_COLOR_WARNING                       = wx.Colour(255, 192,   0)
+LOG_COLOR_ERROR                         = wx.Colour(255,   0,   0)
+LOG_COLOR_CRITICAL                      = wx.Colour(192,   0,   0)
 LOG_COLOR_CONTEXT                       = LOG_COLOR_DEFAULT
 LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255, 128, 255)
 LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
@@ -88,7 +88,7 @@ LOG_COLOR_CONTEXT_ACTION                = LOG_COLOR_DEFAULT
 LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
 LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
 LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
-LOG_COLOR_OUTGOING                      = wx.Colour(255, 128, 192)
+LOG_COLOR_OUTGOING                      = wx.Colour(255,   0, 128)
 # fmt: on
 
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
