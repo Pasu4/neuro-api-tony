@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import sys
-import traceback
 from getopt import getopt
-from typing import Final
+from typing import Any, Final
 
 import requests
 import semver
@@ -15,11 +14,13 @@ from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
 from .controller import TonyController
 
 HELP_MESSAGE: Final = """
+Before you ask, no, I can't print this to the console.
+
 Usage: neuro-api-tony [OPTIONS]
 
 Options:
     -h, --help:
-        Show this help message and exit.
+        Show this help message.
 
     -a, --addr, --address <ADDRESS>:
         The address to start the websocket server on. Default is localhost.
@@ -32,7 +33,7 @@ Options:
         The port number to start the websocket server on. Default is 8000.
 
     -v, --version:
-        Show the version of the program and exit.
+        Show the version of the program.
 """
 
 
@@ -56,11 +57,16 @@ def cli_run() -> None:
     address = "localhost"
     port = 8000
     log_level = "INFO"
+    init_message = ""
 
     for option, value in options:
         match option:
             case "-h" | "--help":
-                print(HELP_MESSAGE)
+                message(
+                    message=HELP_MESSAGE,
+                    caption="Help",
+                    style=wx.OK | wx.ICON_INFORMATION,
+                )
                 sys.exit(0)
 
             case "-a" | "--addr" | "--address":
@@ -74,7 +80,11 @@ def cli_run() -> None:
                     "ERROR",
                     "CRITICAL",
                 ]:
-                    print("Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL.")
+                    message(
+                        message="Invalid log level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
+                        caption="Invalid Log Level",
+                        style=wx.OK | wx.ICON_ERROR,
+                    )
                     sys.exit(1)
                 log_level = value.upper()
 
@@ -82,12 +92,19 @@ def cli_run() -> None:
                 port = int(value)
 
             case "--update":
-                print("This option is deprecated. Please update the program using git or pip.")
-
+                message(
+                    message="This option is deprecated. Please update the program using git or pip.",
+                    caption="Deprecated Option",
+                    style=wx.OK | wx.ICON_ERROR,
+                )
                 sys.exit(1)
 
             case "-v" | "--version":
-                print(f"{APP_NAME} v{VERSION}")
+                message(
+                    message=f"{APP_NAME} v{VERSION}",
+                    caption="Version Information",
+                    style=wx.OK | wx.ICON_INFORMATION,
+                )
                 sys.exit(0)
 
     # Check if there are updates available
@@ -96,23 +113,29 @@ def cli_run() -> None:
         remote_version = response["info"]["version"]
 
         if semver.compare(remote_version, VERSION) > 0:
-            print(
+            init_message = (
                 f"An update is available. ({VERSION} -> {remote_version})\n"
-                f"Depending on your installation method, pull the latest changes from GitHub or\n"
-                f'run "pip install --upgrade {PACKAGE_NAME}" to update.',
+                f"Depending on your installation method, pull the latest changes from GitHub or "
+                f'run "pip install --upgrade {PACKAGE_NAME}" to update.'
             )
 
     except ConnectionError:
-        print("Failed to check for updates. Please check your internet connection.")
+        init_message = "Failed to check for updates. Please check your internet connection."
 
     except Exception as exc:
-        print("An error occurred while checking for updates:")
-        traceback.print_exception(exc)
+        init_message = f"An error occurred while checking for updates:\n{exc}"
 
     # Start the program
     app = wx.App()
     controller = TonyController(app, log_level)
-    controller.run(address, port)
+    controller.run(address, port, init_message=init_message)
+
+
+def message(*args: Any, **kwargs: Any) -> None:
+    """Show a message dialog."""
+    app = wx.App()
+    wx.MessageBox(*args, **kwargs)
+    app.MainLoop()
 
 
 if __name__ == "__main__":

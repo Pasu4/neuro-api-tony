@@ -19,6 +19,7 @@ from .api import (
     ShutdownReadyCommand,
     StartupCommand,
 )
+from .constants import VERSION
 from .model import NeuroAction, TonyModel
 from .view import TonyView
 
@@ -50,10 +51,13 @@ class TonyController:
 
         self.inject()
 
-    def run(self, address: str, port: int) -> None:
+    def run(self, address: str, port: int, init_message: str) -> None:
         """Start websocket server on given address and run GUI main event loop."""
         # Schedule the API start to run after the main loop starts
         wx.CallAfter(self.api.start, address, port)
+        wx.CallAfter(self.view.log_info, f"Running version {VERSION}")
+        if init_message:
+            wx.CallAfter(self.view.log_info, init_message)
 
         self.view.show()
         self.app.MainLoop()
