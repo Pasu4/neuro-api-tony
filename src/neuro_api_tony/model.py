@@ -16,11 +16,12 @@ class NeuroAction(NamedTuple):
 class TonyModel:
     """Tony Model."""
 
-    __slots__ = ("actions",)
+    __slots__ = ("actions", "logs")
 
     def __init__(self) -> None:
         """Initialize Tony Model."""
         self.actions: list[NeuroAction] = []
+        self.logs: dict[str, str] = {}
 
     def __repr__(self) -> str:
         """Return representation of this model."""
@@ -56,3 +57,18 @@ class TonyModel:
             if action.name == name:
                 return action
         return None
+
+    def add_log(self, tag: str, msg: str) -> None:
+        """Add a log message."""
+        if tag not in self.logs:
+            self.logs[tag] = msg
+        else:
+            self.logs[tag] += f"\n{msg}"
+
+    def clear_logs(self) -> None:
+        """Clear all logs."""
+        self.logs.clear()
+
+    def get_logs_formatted(self) -> str:
+        """Return formatted log messages."""
+        return "\n\n".join(f"--- {tag} ---\n\n{log}" for tag, log in self.logs.items())

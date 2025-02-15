@@ -162,11 +162,13 @@ class TonyView:
         tag = "Game --> Tony" if incoming else "Game <-- Tony"
         color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
 
+        self.add_export_log(message, tag, "Commands")
         self.frame.panel.log_notebook.command_log_panel.log(message, tag, color)
 
     def log_debug(self, message: str) -> None:
         """Log a debug message."""
         if self.controls.get_log_level() <= LOG_LEVELS["DEBUG"]:
+            self.add_export_log(message, "Debug", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Debug",
@@ -176,6 +178,7 @@ class TonyView:
     def log_info(self, message: str) -> None:
         """Log an informational message."""
         if self.controls.get_log_level() <= LOG_LEVELS["INFO"]:
+            self.add_export_log(message, "Info", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Info",
@@ -185,6 +188,7 @@ class TonyView:
     def log_warning(self, message: str) -> None:
         """Log a warning message."""
         if self.controls.get_log_level() <= LOG_LEVELS["WARNING"]:
+            self.add_export_log(message, "Warning", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Warning",
@@ -194,6 +198,7 @@ class TonyView:
     def log_error(self, message: str) -> None:
         """Log an error message."""
         if self.controls.get_log_level() <= LOG_LEVELS["ERROR"]:
+            self.add_export_log(message, "Error", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Error",
@@ -203,6 +208,7 @@ class TonyView:
     def log_critical(self, message: str) -> None:
         """Log a critical error message."""
         if self.controls.get_log_level() <= LOG_LEVELS["CRITICAL"]:
+            self.add_export_log(message, "Critical", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Critical",
@@ -211,13 +217,14 @@ class TonyView:
 
     def log_context(self, message: str, silent: bool = False) -> None:
         """Log a context message."""
-        tags = ["Context"]
-        colors = [LOG_COLOR_CONTEXT]
+        tags = []
+        colors = []
 
         if silent:
             tags.append("silent")
             colors.append(LOG_COLOR_CONTEXT_SILENT)
 
+        self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             tags,
@@ -226,6 +233,7 @@ class TonyView:
 
     def log_description(self, message: str) -> None:
         """Log an action description."""
+        self.add_export_log(message, "Action", "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             "Action",
@@ -241,6 +249,7 @@ class TonyView:
             tags.append("ephemeral")
             colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
 
+        self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             tags,
@@ -256,6 +265,7 @@ class TonyView:
             tags.append("Ephemeral")
             colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
 
+        self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             tags,
@@ -264,6 +274,7 @@ class TonyView:
 
     def log_action_result(self, success: bool, message: str) -> None:
         """Log an action result message."""
+        self.add_export_log(message, ["Result", "Success" if success else "Failure"], "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             "Result",
@@ -275,6 +286,7 @@ class TonyView:
         tag = "Game --> Tony" if incoming else "Game <-- Tony"
         color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
 
+        self.add_export_log(message, tag, "Raw")
         self.frame.panel.log_notebook.raw_log_panel.log(message, tag, color)
 
     def clear_logs(self) -> None:
@@ -282,6 +294,15 @@ class TonyView:
         self.frame.panel.log_notebook.system_log_panel.text.Clear()
         self.frame.panel.log_notebook.context_log_panel.text.Clear()
         self.frame.panel.log_notebook.raw_log_panel.text.Clear()
+        self.model.clear_logs()
+
+    def add_export_log(self, message: str, tags: str | list[str] | None, export_tag: str) -> None:
+        """Add a log message to the export log."""
+        if isinstance(tags, str):
+            tags = [tags]
+        tags = [dt.now().strftime("%X")] + (tags or [])
+
+        self.model.add_log(export_tag, f"{' '.join(f'[{tag}]' for tag in tags)} {message}")
 
     def show_action_dialog(self, action: NeuroAction) -> str | None:
         """Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None."""
@@ -614,6 +635,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS])
 
         self.clear_logs_button = wx.Button(self, label="Clear logs")
+        self.export_logs_button = wx.Button(self, label="Export logs")
         self.send_actions_reregister_all_button = wx.Button(self, label="Clear and reregister")
         self.send_shutdown_graceful_button = wx.Button(self, label="Graceful shutdown")
         self.send_shutdown_graceful_cancel_button = wx.Button(self, label="Cancel shutdown")
@@ -639,6 +661,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(self.clear_logs_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.export_logs_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
@@ -656,6 +679,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_CHOICE, self.on_log_level, self.log_level_choice)
 
         self.Bind(wx.EVT_BUTTON, self.on_clear_logs, self.clear_logs_button)
+        self.Bind(wx.EVT_BUTTON, self.on_export_logs, self.export_logs_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
@@ -679,6 +703,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.latency_input.SetToolTip(LATENCY_TOOLTIP)
         self.log_level_choice.SetToolTip("Set the log level. Exported logs will still show all messages.")
         self.clear_logs_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
+        self.export_logs_button.SetToolTip("Export logs to a file.")
         self.send_actions_reregister_all_button.SetToolTip(
             "Clear all actions and request reregistration from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
@@ -701,6 +726,27 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         event.Skip()
 
         self.view.on_clear_logs()
+
+    def on_export_logs(self, event: wx.CommandEvent) -> None:
+        """Handle export_logs command event."""
+        event.Skip()
+
+        with wx.FileDialog(
+            self,
+            "Export logs",
+            wildcard="Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        ) as file_dialog:
+            assert isinstance(file_dialog, wx.FileDialog)
+
+            file_dialog.SetFilename(f"tony-{dt.now().strftime('%Y-%m-%d-%H%M%S')}.log")
+
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            path = file_dialog.GetPath()
+            with open(path, "w") as file:
+                file.write(self.view.model.get_logs_formatted())
 
     def on_validate_schema(self, event: wx.CommandEvent) -> None:
         """Handle validate_schema command event."""
