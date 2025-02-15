@@ -185,12 +185,16 @@ class NeuroAPI:
     async def _run(self, address: str, port: int) -> None:
         """Server run root function."""
         self.log_info(f"Starting websocket server on ws://{address}:{port}.")
-        await serve_websocket(
-            self._handle_websocket_request,
-            address,
-            port,
-            ssl_context=None,
-        )
+        try:
+            await serve_websocket(
+                self._handle_websocket_request,
+                address,
+                port,
+                ssl_context=None,
+            )
+        except Exception as exc:
+            self.log_critical(f"Failed to start websocket server:\n{exc}")
+            raise
 
     @property
     def client_connected(self) -> bool:
