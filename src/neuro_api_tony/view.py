@@ -828,7 +828,8 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         event.Skip()
 
         sel = self.log_level_choice.GetSelection()
-        self.view.controls.set_log_level(self.log_level_choice.GetString(sel))
+        log_level: str = self.log_level_choice.GetString(sel)
+        self.view.controls.set_log_level(log_level.upper())
 
     def on_send_actions_reregister_all(self, event: wx.CommandEvent) -> None:
         """Handle send_actions_reregister_all command event."""
