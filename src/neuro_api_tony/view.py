@@ -701,7 +701,14 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             "Automatically answer forced actions with randomly generated data (like Randy).",
         )
         self.latency_input.SetToolTip(LATENCY_TOOLTIP)
-        self.log_level_choice.SetToolTip("Set the log level. Exported logs will still show all messages.")
+        self.log_level_choice.SetToolTip(
+            "Set the log level. Exported logs will still show all messages."
+            "\nDebug: Usually not relevant for normal operation."
+            "\nInfo: Might be useful to diagnose issues."
+            "\nWarning: A command sent or received does not comply with the API specification."
+            "\nError: A command sent or received is invalid and cannot be processed."
+            "\nCritical: Tony will likely not be able to recover from this error.",
+        )
         self.clear_logs_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
         self.export_logs_button.SetToolTip("Export logs to a file.")
         self.send_actions_reregister_all_button.SetToolTip(

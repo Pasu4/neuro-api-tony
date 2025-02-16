@@ -500,7 +500,7 @@ class NeuroAPI:
         if not self._submit_message(message):
             return False
 
-        self.log_command("Command sent: shutdown/immediate", False)
+        self.log_command("shutdown/immediate", False)
         self.log_warning("This command is not officially supported.")
 
         return True

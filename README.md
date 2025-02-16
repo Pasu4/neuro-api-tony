@@ -186,20 +186,20 @@ Copy-pasted from the help message:
 
 ```
 -h, --help:
-    Show this help message and exit.
+    Show this help message.
 
 -a, --addr, --address <ADDRESS>:
     The address to start the websocket server on. Default is localhost.
 
 -l, --log, --log-level <LOG_LEVEL>:
     The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
-    WARNING, ERROR, SYSTEM.
+    WARNING, ERROR, CRITICAL.
 
 -p, --port <PORT>:
     The port number to start the websocket server on. Default is 8000.
 
 -v, --version:
-    Show the version of the program and exit.
+    Show the version of the program.
 ```
 
 ### Actions panel
@@ -224,12 +224,13 @@ You can also close the window manually, this will ignore the forced action and a
 
 The log panel on the top right has three different tabs:
 
-- The **log tab** logs all commands that are received and sent, without showing their content. It also shows messages with color-coded tags:
+- The **system tab** logs miscellaneous messages with color-coded tags:
     - **Debug (gray):** Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.
     - **Info (blue):** Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).
     - **Warning (yellow):** Things that do not comply with the API specification, but which Tony can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.
     - **Error (red):** Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.
-    - **Critical (dark red):** Something went wrong and it is not your fault. If you see such a message, please [submit a bug report](https://github.com/Pasu4/neuro-api-tony/issues).
+    - **Critical (dark red):** Something went wrong and Tony will likely have to be restarted.
+- The **commands** tab logs incoming and outgoing commands in a more condensed format than the raw tab.
 - The **context tab** shows everything that Neuro would get to read directly, which is the content of `context` commands, the description of actions, the state and query of `actions/force` commands, and the message of `action/result` commands. Silent contexts are displayed in gray and ephemeral contexts in light blue. It has the following tags:
     - **Context:** Message is from a `context` command.
     - **Silent:** Message is from a silent `context` command.
@@ -251,15 +252,17 @@ The control panel has some checkboxes and buttons that change the behavior of th
 - **Automatically answer forced actions**: If checked, will immediately send the pre-generated JSON of a random valid action instead of opening the "Forced action" window when an `actions/force` command arrives. This behavior is similar to what Randy does.
 - **L\*tency:** Will delay sending commands by the specified time. Must be non-negative and not greater than 10000ms.
 - **Log level:** Will show only messages with an equal of higher log level than the selection. For example, selecting "Warning" will not show Debug or Info messages, but still show Warning, Error and System messages.
+- **Clear logs:** Clears all log tabs and the export log.
+- **Export logs:** Opens a dialog to save the logs to a file. If you submit a bug report, consider attaching this file. All messages will be included, regardless of configured log level.
 
 #### Experimental controls
 
 These controls are [proposed features](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md) in the Neuro API that will likely not work unless specifically implemented. Use at your own risk!
 
-- **Clear all actions and request reregistration (experimental):** Will unregister all currently registered actions and send an [`actions/reregister_all`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#reregister-all-actions) command to the game.
-- **Request graceful shutdown (experimental):** Will send a [`shutdown/graceful`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command to the game, indicating it should save the game and return to the main menu at the next opportunity.
-- **Cancel graceful shutdown (experimental):** Will send a [`shutdown/graceful`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command with its `wants_shutdown` field set to `false` to the game, indicating to cancel a previous shutdown request.
-- **Request immediate shutdown (experimental):** Will send a [`shutdown/immediate`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown) command to the game, indication that the game *will* (not *should*!) be shut down within the next few seconds.
+- **Clear and reregister:** Will unregister all currently registered actions and send an [`actions/reregister_all`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#reregister-all-actions) command to the game.
+- **Graceful shutdown:** Will send a [`shutdown/graceful`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command to the game, indicating it should save the game and return to the main menu at the next opportunity.
+- **Cancel shutdown:** Will send a [`shutdown/graceful`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command with its `wants_shutdown` field set to `false` to the game, signaling to cancel a previous shutdown request.
+- **Immediate shutdown:** Will send a [`shutdown/immediate`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown) command to the game, indicating that the game *will* (not *should*!) be shut down within the next few seconds.
 
 ## Screenshots
 
