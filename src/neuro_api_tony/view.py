@@ -423,7 +423,7 @@ class MainPanel(wx.Panel):  # type: ignore[misc]
         self.right_panel_sizer.Layout()
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.action_list, 2, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Add(right_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
 
@@ -482,15 +482,9 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_BUTTON, self.on_delete, self.delete_button)
         self.Bind(wx.EVT_BUTTON, self.on_unlock, self.unlock_button)
 
-        self.list.InsertColumn(0, "Name", width=150)
-        self.list.InsertColumn(1, "Description", width=240)
+        self.list.InsertColumn(0, "Name", width=80)
+        self.list.InsertColumn(1, "Description", width=200)
         self.list.InsertColumn(2, "Schema", width=60)
-
-        min_size: tuple[int, int] = self.sizer.GetMinSize()
-        max_size: tuple[int, int] = self.GetMaxClientSize()
-
-        self.SetMinClientSize((10, 10))
-        self.SetMaxClientSize((min_size[0], max_size[1]))
 
         self.execute_button.SetToolTip(
             "Execute the selected action."
@@ -1081,6 +1075,10 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
+        # Layout
+        self.info.SetMinSize((200, 120))
+
+        self.sizer.Layout()
         self.sizer.Fit(self)
 
         # Set tooltips
