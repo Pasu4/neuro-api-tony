@@ -170,7 +170,7 @@ Skip step 1 if you haven't, or if your virtual environment is already activated.
 
 The application window should now open.
 The left panel will display the actions once they have been registered.
-They can be executed by clicking the "execute" below the list.
+They can be executed by clicking the "execute" button below the list.
 The right panel shows an event log, below that is a smaller panel with some controls.
 After sending an `action` command to the game, the next action can only be sent after the `action/result` command has been received.
 When the game sends an `actions/force` command, a window will open that only shows the applicable actions, and will only close once the `action/result` command indicates success.

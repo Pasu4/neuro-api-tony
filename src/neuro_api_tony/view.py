@@ -938,14 +938,14 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         button_panel = wx.Panel(self)
         self.send_button = wx.Button(button_panel, label="Send")
         self.show_schema_button = wx.Button(button_panel, label="Show Schema")
-        self.cancel_button = wx.Button(button_panel, label="Cancel")
         self.regenerate_button = wx.Button(button_panel, label="Regenerate")
+        self.cancel_button = wx.Button(button_panel, label="Cancel")
 
         button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_panel_sizer.Add(self.send_button, 0, wx.ALL, 2)
         button_panel_sizer.Add(self.show_schema_button, 0, wx.ALL, 2)
-        button_panel_sizer.Add(self.cancel_button, 0, wx.ALL, 2)
         button_panel_sizer.Add(self.regenerate_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.cancel_button, 0, wx.ALL, 2)
         button_panel.SetSizer(button_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -961,6 +961,11 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         self.faker = JSF(action.schema)
         self.regenerate()
+
+        # Set tooltips
+        self.send_button.SetToolTip("Send the JSON data to the client.")
+        self.show_schema_button.SetToolTip("Show the JSON schema of the action.")
+        self.regenerate_button.SetToolTip("Generate a new random sample.")
 
         # Setup
         self.content_splitter.Initialize(self.text)
@@ -1064,17 +1069,22 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.ephemeral_context = ephemeral_context
         self.actions = actions
 
-        self.state_label = wx.StaticText(self, label=f"State: {state}")
-        self.query_label = wx.StaticText(self, label=f"Query: {query}")
-        self.ephemeral_context_label = wx.StaticText(self, label=f"Ephemeral Context: {ephemeral_context}")
+        self.info = wx.TextCtrl(
+            self,
+            value=f"State:\n{state}\n\nQuery:\n{query}\n\nEphemeral Context: {ephemeral_context}",
+            style=wx.TE_MULTILINE | wx.TE_READONLY,
+        )
         self.action_list = ActionList(self, False)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.state_label, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.query_label, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.ephemeral_context_label, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.info, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
+
+        self.sizer.Fit(self)
+
+        # Set tooltips
+        self.info.SetToolTip("With ephemeral context, Neuro will not remember the state and query after this action.")
 
         for action in actions:
             self.action_list.add_action(action)
