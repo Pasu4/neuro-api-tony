@@ -1,8 +1,5 @@
 # TODO
 
-- Movable separator
-- Warning on multiple actions force
-- Fix long state & query
 - Millisecond precision
 - New message highlight
 

@@ -77,6 +77,7 @@ class NeuroAPI:
         self.message_send_channel: trio.MemorySendChannel[str] | None = None
         self.current_game = ""
         self.current_action_id: str | None = None
+        self.action_forced = False
 
         # Dependency injection
         # fmt: off
@@ -289,6 +290,10 @@ class NeuroAPI:
                 if self.current_action_id is not None and json_cmd["command"] == "actions/force":
                     self.log_warning("Received actions/force while waiting for action/result.")
 
+                # Check if an action is already forced
+                if self.action_forced and json_cmd["command"] == "actions/force":
+                    self.log_warning("Received actions/force while an action is already forced.")
+
                 # Handle the command
                 match json_cmd["command"]:
                     case "startup" | "game/startup":
@@ -348,6 +353,7 @@ class NeuroAPI:
                         self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
 
                     case "actions/force":
+                        self.action_forced = True
                         self.log_command(f"actions/force: {', '.join(data['action_names'])}", True)
                         self.on_actions_force(
                             ActionsForceCommand(
@@ -432,6 +438,8 @@ class NeuroAPI:
 
     def send_action(self, id_: str, name: str, data: str | None) -> bool:
         """Send an action command. Return True if actually sent."""
+        self.action_forced = False
+
         payload = {
             "id": id_,
             "name": name,
