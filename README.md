@@ -254,6 +254,7 @@ The control panel has some checkboxes and buttons that change the behavior of th
 - **Log level:** Will show only messages with an equal of higher log level than the selection. For example, selecting "Warning" will not show Debug or Info messages, but still show Warning, Error and System messages.
 - **Clear logs:** Clears all log tabs and the export log.
 - **Export logs:** Opens a dialog to save the logs to a file. If you submit a bug report, consider attaching this file. All messages will be included, regardless of configured log level.
+- **Maximize log panel:** Maximizes the log panel to fill the entire window. Can be restored using the **restore size** button.
 
 #### Experimental controls
 

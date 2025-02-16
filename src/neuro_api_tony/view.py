@@ -403,7 +403,7 @@ class MainFrame(wx.Frame):  # type: ignore[misc]
 
 
 class MainPanel(wx.Panel):  # type: ignore[misc]
-    """The main panel for Tony."""
+    """The main window for Tony."""
 
     def __init__(self, parent: MainFrame) -> None:
         """Initialize MainPanel."""
@@ -414,15 +414,38 @@ class MainPanel(wx.Panel):  # type: ignore[misc]
         self.log_notebook = LogNotebook(right_panel)
         self.control_panel = ControlPanel(right_panel)
 
-        right_panel_sizer = wx.BoxSizer(wx.VERTICAL)
-        right_panel_sizer.Add(self.log_notebook, 1, wx.EXPAND | wx.ALL, 5)
-        right_panel_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.ALL, 5)
-        right_panel.SetSizer(right_panel_sizer)
+        self.right_panel_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.right_panel_sizer.Add(self.log_notebook, 1, wx.EXPAND | wx.ALL, 5)
+        self.right_panel_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.ALL, 5)
+        right_panel.SetSizer(self.right_panel_sizer)
+
+        right_panel.SetMinClientSize(self.right_panel_sizer.GetMinSize())
+        self.right_panel_sizer.Layout()
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(self.action_list, 2, wx.EXPAND | wx.ALL, 5)
         self.sizer.Add(right_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
+
+        # Splitter settings
+
+    def maximize_log(self) -> None:
+        """Handle maximize event."""
+        self.log_notebook.restore_button.Show()
+        self.control_panel.Hide()
+        self.right_panel_sizer.Layout()
+
+        self.action_list.Hide()
+        self.sizer.Layout()
+
+    def restore_log(self) -> None:
+        """Handle restore event."""
+        self.log_notebook.restore_button.Hide()
+        self.control_panel.Show()
+        self.right_panel_sizer.Layout()
+
+        self.action_list.Show()
+        self.sizer.Layout()
 
 
 class ActionList(wx.Panel):  # type: ignore[misc]
@@ -462,6 +485,12 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.list.InsertColumn(0, "Name", width=150)
         self.list.InsertColumn(1, "Description", width=240)
         self.list.InsertColumn(2, "Schema", width=60)
+
+        min_size: tuple[int, int] = self.sizer.GetMinSize()
+        max_size: tuple[int, int] = self.GetMaxClientSize()
+
+        self.SetMinClientSize((10, 10))
+        self.SetMaxClientSize((min_size[0], max_size[1]))
 
         self.execute_button.SetToolTip(
             "Execute the selected action."
@@ -543,25 +572,37 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         top.view.on_unlock()
 
 
-class LogNotebook(wx.Notebook):  # type: ignore[misc]
+class LogNotebook(wx.Panel):  # type: ignore[misc]
     """The notebook for logging messages."""
 
     def __init__(self, parent: MainPanel) -> None:
         """Initialize Log Notebook."""
         super().__init__(parent)
 
-        self.system_log_panel = LogPanel(self)
-        self.command_log_panel = LogPanel(self)
-        self.context_log_panel = LogPanel(self)
+        self.notebook = wx.Notebook(self)
+
+        self.system_log_panel = LogPanel(self.notebook)
+        self.command_log_panel = LogPanel(self.notebook)
+        self.context_log_panel = LogPanel(self.notebook)
         self.raw_log_panel = LogPanel(
-            self,
+            self.notebook,
             text_ctrl_style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.HSCROLL,
         )
 
-        self.AddPage(self.system_log_panel, "System")
-        self.AddPage(self.command_log_panel, "Commands")
-        self.AddPage(self.context_log_panel, "Context")
-        self.AddPage(self.raw_log_panel, "Raw")
+        self.restore_button = wx.Button(self, label="Restore size")
+        self.restore_button.Hide()
+
+        self.notebook.AddPage(self.system_log_panel, "System")
+        self.notebook.AddPage(self.command_log_panel, "Commands")
+        self.notebook.AddPage(self.context_log_panel, "Context")
+        self.notebook.AddPage(self.raw_log_panel, "Raw")
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.notebook, 1, wx.EXPAND)
+        self.sizer.Add(self.restore_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.SetSizer(self.sizer)
+
+        self.Bind(wx.EVT_BUTTON, self.on_restore, self.restore_button)
 
     #     self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_page_changed)
 
@@ -575,6 +616,13 @@ class LogNotebook(wx.Notebook):  # type: ignore[misc]
     #     if isinstance(panel, LogPanel):
     #         panel.reset_highlight()
     #         print(f"Reset highlight for {panel}")
+
+    def on_restore(self, event: wx.CommandEvent) -> None:
+        """Handle restore button event."""
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.panel.restore_log()
 
 
 class LogPanel(wx.Panel):  # type: ignore[misc]
@@ -668,6 +716,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         self.clear_logs_button = wx.Button(self, label="Clear logs")
         self.export_logs_button = wx.Button(self, label="Export logs")
+        self.maximize_log_button = wx.Button(self, label="Maximize log panel")
         self.send_actions_reregister_all_button = wx.Button(self, label="Clear and reregister")
         self.send_shutdown_graceful_button = wx.Button(self, label="Graceful shutdown")
         self.send_shutdown_graceful_cancel_button = wx.Button(self, label="Cancel shutdown")
@@ -694,11 +743,14 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(self.clear_logs_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.export_logs_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.maximize_log_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.send_shutdown_immediate_button, 0, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
+
+        self.SetMinClientSize(self.sizer.GetMinSize())
 
         # Bind events
 
@@ -712,6 +764,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         self.Bind(wx.EVT_BUTTON, self.on_clear_logs, self.clear_logs_button)
         self.Bind(wx.EVT_BUTTON, self.on_export_logs, self.export_logs_button)
+        self.Bind(wx.EVT_BUTTON, self.on_maximize_log, self.maximize_log_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
@@ -743,6 +796,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         )
         self.clear_logs_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
         self.export_logs_button.SetToolTip("Export logs to a file.")
+        self.maximize_log_button.SetToolTip("Maximize the log panel to fill the entire window.")
         self.send_actions_reregister_all_button.SetToolTip(
             "Clear all actions and request reregistration from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
@@ -786,6 +840,13 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             path = file_dialog.GetPath()
             with open(path, "w") as file:
                 file.write(self.view.model.get_logs_formatted())
+
+    def on_maximize_log(self, event: wx.CommandEvent) -> None:
+        """Handle maximize_log command event."""
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.panel.maximize_log()
 
     def on_validate_schema(self, event: wx.CommandEvent) -> None:
         """Handle validate_schema command event."""
