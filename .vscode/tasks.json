@@ -2,13 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Start detached",
+            "label": "Start (Detached)",
             "type": "shell",
             "command": "neuro-api-tony",
             "problemMatcher": "$python"
         },
         {
-            "label": "Start with logging",
+            "label": "Start (Attached)",
             "type": "shell",
             "command": "python -m src.neuro_api_tony",
             "problemMatcher": "$python"

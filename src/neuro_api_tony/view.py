@@ -91,6 +91,7 @@ LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
 LOG_COLOR_OUTGOING                      = wx.Colour(255,   0, 128)
 # fmt: on
 
+UI_COLOR_WARNING = wx.Colour(255, 255, 128)
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
 
 LOG_LEVELS = {
@@ -194,6 +195,7 @@ class TonyView:
                 "Warning",
                 LOG_COLOR_WARNING,
             )
+            # self.frame.panel.log_notebook.system_log_panel.highlight(UI_COLOR_WARNING, LOG_LEVELS["WARNING"])
 
     def log_error(self, message: str) -> None:
         """Log an error message."""
@@ -204,6 +206,7 @@ class TonyView:
                 "Error",
                 LOG_COLOR_ERROR,
             )
+            # self.frame.panel.log_notebook.system_log_panel.highlight(UI_COLOR_ERROR, LOG_LEVELS["ERROR"])
 
     def log_critical(self, message: str) -> None:
         """Log a critical error message."""
@@ -214,6 +217,7 @@ class TonyView:
                 "Critical",
                 LOG_COLOR_CRITICAL,
             )
+            self.frame.panel.log_notebook.system_log_panel.highlight(UI_COLOR_ERROR, LOG_LEVELS["CRITICAL"])
 
     def log_context(self, message: str, silent: bool = False) -> None:
         """Log a context message."""
@@ -559,6 +563,19 @@ class LogNotebook(wx.Notebook):  # type: ignore[misc]
         self.AddPage(self.context_log_panel, "Context")
         self.AddPage(self.raw_log_panel, "Raw")
 
+    #     self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_page_changed)
+
+    # def on_page_changed(self, event: wx.BookCtrlEvent) -> None:
+    #     """Handle page changed event."""
+    #     event.Skip()
+
+    #     index = event.GetSelection()
+    #     panel = self.GetPage(index)
+
+    #     if isinstance(panel, LogPanel):
+    #         panel.reset_highlight()
+    #         print(f"Reset highlight for {panel}")
+
 
 class LogPanel(wx.Panel):  # type: ignore[misc]
     """The panel for logging messages."""
@@ -570,6 +587,8 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
     ) -> None:
         """Initialize Log Panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
+
+        # self.highlight_level = 0
 
         self.text = wx.TextCtrl(self, style=text_ctrl_style)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -608,6 +627,19 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         # Log message
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
         self.text.AppendText(f"{message}\n")
+
+    # def highlight(self, color: wx.Colour, level: int) -> None:
+    #     """Highlight the log panel with a color."""
+    #     if self.highlight_level > level:
+    #         return
+
+    #     self.highlight_level = level
+    #     self.SetBackgroundColour(color)
+
+    # def reset_highlight(self) -> None:
+    #     """Reset the highlight of the log panel."""
+    #     self.highlight_level = 0
+    #     self.SetBackgroundColour(wx.NullColour)
 
 
 class ControlPanel(wx.Panel):  # type: ignore[misc]
@@ -833,41 +865,70 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         do_validate: bool,
     ) -> None:
         """Initialize Action Dialog."""
-        super().__init__(parent, title=action.name)
+        super().__init__(parent, title=action.name, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         self.action = action
         self.do_validate = do_validate
 
-        self.text = wx.TextCtrl(self, style=wx.TE_MULTILINE)
-        self.error_label = wx.StaticText(self, label="")
+        self.content_splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
+        self.text = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL)
+        self.info = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL | wx.TE_READONLY)
         button_panel = wx.Panel(self)
         self.send_button = wx.Button(button_panel, label="Send")
         self.show_schema_button = wx.Button(button_panel, label="Show Schema")
         self.cancel_button = wx.Button(button_panel, label="Cancel")
+        self.regenerate_button = wx.Button(button_panel, label="Regenerate")
 
         button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_panel_sizer.Add(self.send_button, 0, wx.ALL, 2)
         button_panel_sizer.Add(self.show_schema_button, 0, wx.ALL, 2)
         button_panel_sizer.Add(self.cancel_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.regenerate_button, 0, wx.ALL, 2)
         button_panel.SetSizer(button_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.text, 1, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.error_label, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.content_splitter, 1, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(button_panel, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
+        self.Bind(wx.EVT_TEXT, self.on_value_change, self.text)
         self.Bind(wx.EVT_BUTTON, self.on_send, self.send_button)
         self.Bind(wx.EVT_BUTTON, self.on_show_schema, self.show_schema_button)
+        self.Bind(wx.EVT_BUTTON, self.on_regenerate, self.regenerate_button)
         self.Bind(wx.EVT_BUTTON, self.on_cancel, self.cancel_button)
 
-        faker = JSF(action.schema)
-        sample = faker.generate()
+        self.faker = JSF(action.schema)
+        self.regenerate()
 
+        # Setup
+        self.content_splitter.Initialize(self.text)
+        self.info.Show(False)
+
+        self.info.SetValue(json.dumps(self.action.schema, indent=2))
+
+    def regenerate(self) -> None:
+        """Regenerate the JSON data."""
+        sample = self.faker.generate()
         self.text.SetValue(json.dumps(sample, indent=2))
 
+    def on_value_change(self, event: wx.CommandEvent) -> None:
+        """Handle text change."""
+        event.Skip()
+
+        try:
+            json_str = self.text.GetValue()
+            json_cmd = json.loads(json_str)
+            jsonschema.validate(json_cmd, self.action.schema)
+            self.text.SetToolTip("")
+            self.text.SetBackgroundColour(wx.NullColour)
+            self.Refresh()
+        except Exception as exc:
+            self.text.SetToolTip(str(exc))
+            self.text.SetBackgroundColour(UI_COLOR_ERROR)
+            self.Refresh()
+
     def on_send(self, event: wx.CommandEvent) -> None:
-        """Handle send command event."""
+        """Handle send button."""
         event.Skip()
 
         try:
@@ -896,20 +957,22 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
                 raise exc
 
     def on_show_schema(self, event: wx.CommandEvent) -> None:
-        """Handle show_schema command event."""
+        """Handle show schema button."""
         event.Skip()
 
-        wx.MessageBox(
-            json.dumps(self.action.schema, indent=2),
-            "Schema",
-            wx.OK | wx.ICON_INFORMATION,
-        )
+        self.content_splitter.SplitVertically(self.text, self.info)
 
     def on_cancel(self, event: wx.CommandEvent) -> None:
-        """Handle cancel command event."""
+        """Handle cancel button."""
         event.Skip()
 
         self.EndModal(wx.ID_CANCEL)
+
+    def on_regenerate(self, event: wx.CommandEvent) -> None:
+        """Handle regenerate command event."""
+        event.Skip()
+
+        self.regenerate()
 
 
 class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
