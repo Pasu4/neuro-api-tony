@@ -688,8 +688,10 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         tag_colors += [LOG_COLOR_DEFAULT] * (len(tags) - len(tag_colors))
 
         # Log timestamp
+        top: MainFrame = self.GetTopLevelParent()
+        fmt = "%H:%M:%S.%f" if top.view.controls.millisecond_precision else "%H:%M:%S"
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
-        self.text.AppendText(f"[{dt.now().strftime('%X')}] ")
+        self.text.AppendText(f"[{dt.now().strftime(fmt)}] ")
 
         # Log tags
         for tag, tag_color in zip(tags, tag_colors, strict=True):
@@ -715,6 +717,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.validate_schema_checkbox = wx.CheckBox(self, label="Validate JSON schema")
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
         self.auto_send_checkbox = wx.CheckBox(self, label="Auto-answer")
+        self.microsecond_precision_checkbox = wx.CheckBox(self, label="Millisecond precision")
 
         latency_panel = wx.Panel(self)
         latency_text1 = wx.StaticText(latency_panel, label="L*tency:")
@@ -761,6 +764,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.microsecond_precision_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(button_panel, 0, wx.EXPAND, 0)
@@ -773,6 +777,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_CHECKBOX, self.on_validate_schema, self.validate_schema_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_ignore_actions_force, self.ignore_actions_force_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_auto_send, self.auto_send_checkbox)
+        self.Bind(wx.EVT_CHECKBOX, self.on_microsecond_precision, self.microsecond_precision_checkbox)
 
         self.Bind(wx.EVT_TEXT, self.on_latency, self.latency_input)
 
@@ -791,7 +796,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.validate_schema_checkbox.SetValue(True)
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
-        # self.latency_input.SetValue('0')
+        self.microsecond_precision_checkbox.SetValue(False)
         self.log_level_choice.SetStringSelection(self.view.controls.get_log_level_str())
 
         # Add tooltips
@@ -801,6 +806,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.auto_send_checkbox.SetToolTip(
             "Automatically answer forced actions with randomly generated data (like Randy).",
         )
+        self.microsecond_precision_checkbox.SetToolTip("Use microsecond precision for timestamps.")
         self.latency_input.SetToolTip(LATENCY_TOOLTIP)
         self.log_level_choice.SetToolTip(
             "Set the log level. Exported logs will still show all messages."
@@ -881,6 +887,12 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         event.Skip()
 
         self.view.controls.auto_send = event.IsChecked()
+
+    def on_microsecond_precision(self, event: wx.CommandEvent) -> None:
+        """Handle millisecond_precision command event."""
+        event.Skip()
+
+        self.view.controls.millisecond_precision = event.IsChecked()
 
     def on_latency(self, event: wx.CommandEvent) -> None:
         """Handle latency command event."""
@@ -1145,6 +1157,7 @@ class Controls:
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
         self.latency: int = 0
+        self.millisecond_precision: bool = False
 
         self.__log_level_str: str = "INFO"
         self.__log_level: int = LOG_LEVELS["INFO"]
