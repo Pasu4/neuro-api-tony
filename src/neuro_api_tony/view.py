@@ -689,7 +689,7 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
 
         # Log timestamp
         top: MainFrame = self.GetTopLevelParent()
-        fmt = "%H:%M:%S.%f" if top.view.controls.millisecond_precision else "%H:%M:%S"
+        fmt = "%H:%M:%S.%f" if top.view.controls.microsecond_precision else "%H:%M:%S"
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
         self.text.AppendText(f"[{dt.now().strftime(fmt)}] ")
 
@@ -717,7 +717,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.validate_schema_checkbox = wx.CheckBox(self, label="Validate JSON schema")
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
         self.auto_send_checkbox = wx.CheckBox(self, label="Auto-answer")
-        self.microsecond_precision_checkbox = wx.CheckBox(self, label="Millisecond precision")
+        self.microsecond_precision_checkbox = wx.CheckBox(self, label="Microsecond precision")
 
         latency_panel = wx.Panel(self)
         latency_text1 = wx.StaticText(latency_panel, label="L*tency:")
@@ -889,10 +889,10 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.view.controls.auto_send = event.IsChecked()
 
     def on_microsecond_precision(self, event: wx.CommandEvent) -> None:
-        """Handle millisecond_precision command event."""
+        """Handle microsecond_precision command event."""
         event.Skip()
 
-        self.view.controls.millisecond_precision = event.IsChecked()
+        self.view.controls.microsecond_precision = event.IsChecked()
 
     def on_latency(self, event: wx.CommandEvent) -> None:
         """Handle latency command event."""
@@ -1157,7 +1157,7 @@ class Controls:
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
         self.latency: int = 0
-        self.millisecond_precision: bool = False
+        self.microsecond_precision: bool = False
 
         self.__log_level_str: str = "INFO"
         self.__log_level: int = LOG_LEVELS["INFO"]
