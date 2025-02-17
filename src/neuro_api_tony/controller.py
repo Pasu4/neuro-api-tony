@@ -84,6 +84,7 @@ class TonyController:
 
         self.view.on_execute = self.on_view_execute
         self.view.on_delete_action = self.on_view_delete_action
+        self.view.on_delete_all_actions = self.on_view_delete_all_actions
         self.view.on_unlock = self.on_view_unlock
         self.view.on_clear_logs = self.on_view_clear_logs
         self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
@@ -220,6 +221,12 @@ class TonyController:
         self.view.remove_action_by_name(name)
 
         self.view.log_info(f"Action deleted: {name}")
+
+    def on_view_delete_all_actions(self) -> None:
+        """Handle a request to delete all actions from the view."""
+        self.model.clear_actions()
+        self.view.clear_actions()
+        self.view.log_info("All actions deleted.")
 
     def on_view_unlock(self) -> None:
         """Handle a request to unlock the view."""

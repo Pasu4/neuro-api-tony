@@ -139,6 +139,7 @@ class TonyView:
         # fmt: off
         self.on_execute: Callable[[NeuroAction], bool] = lambda action: False
         self.on_delete_action: Callable[[str], None] = lambda name: None
+        self.on_delete_all_actions: Callable[[], None] = lambda: None
         self.on_unlock: Callable[[], None] = lambda: None
         self.on_clear_logs: Callable[[], None] = lambda: None
         self.on_send_actions_reregister_all: Callable[[], None] = lambda: None
@@ -465,11 +466,13 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         button_panel = wx.Panel(self)
         self.execute_button = wx.Button(button_panel, label="Execute")
         self.delete_button = wx.Button(button_panel, label="Delete")
+        self.delete_all_button = wx.Button(button_panel, label="Delete all")
         self.unlock_button = wx.Button(button_panel, label="Unlock")
 
         button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_panel_sizer.Add(self.execute_button, 0, wx.EXPAND | wx.ALL, 5)
         button_panel_sizer.Add(self.delete_button, 0, wx.EXPAND | wx.ALL, 5)
+        button_panel_sizer.Add(self.delete_all_button, 0, wx.EXPAND | wx.ALL, 5)
         button_panel_sizer.Add(self.unlock_button, 0, wx.EXPAND | wx.ALL, 5)
         button_panel.SetSizer(button_panel_sizer)
 
@@ -480,6 +483,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         self.Bind(wx.EVT_BUTTON, self.on_execute, self.execute_button)
         self.Bind(wx.EVT_BUTTON, self.on_delete, self.delete_button)
+        self.Bind(wx.EVT_BUTTON, self.on_delete_all, self.delete_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_unlock, self.unlock_button)
 
         self.list.InsertColumn(0, "Name", width=80)
@@ -494,6 +498,10 @@ class ActionList(wx.Panel):  # type: ignore[misc]
             "Delete the selected action."
             " Should only be used for testing, this is not something Neuro would normally do.",
         )
+        self.delete_all_button.SetToolTip(
+            "Delete all actions."
+            " Should only be used for testing, this is not something Neuro would normally do.",
+        )  # fmt: skip
         self.unlock_button.SetToolTip("Stop waiting for the game to send an action result.")
 
         if not can_delete:
@@ -557,6 +565,13 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top: MainFrame = self.GetTopLevelParent()
         top.view.on_delete_action(action.name)
+
+    def on_delete_all(self, event: wx.CommandEvent) -> None:
+        """Handle delete all command event."""
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_delete_all_actions()
 
     def on_unlock(self, event: wx.CommandEvent) -> None:
         """Handle unlock command event."""
