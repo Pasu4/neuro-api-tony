@@ -80,11 +80,11 @@ LOG_COLOR_WARNING                       = wx.Colour(255, 192,   0)
 LOG_COLOR_ERROR                         = wx.Colour(255,   0,   0)
 LOG_COLOR_CRITICAL                      = wx.Colour(192,   0,   0)
 LOG_COLOR_CONTEXT                       = LOG_COLOR_DEFAULT
-LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255, 128, 255)
+LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255,   0, 255)
 LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
 LOG_COLOR_CONTEXT_SILENT                = wx.Colour(128, 128, 128)
 LOG_COLOR_CONTEXT_EPHEMERAL             = wx.Colour(128, 192, 255)
-LOG_COLOR_CONTEXT_ACTION                = LOG_COLOR_DEFAULT
+LOG_COLOR_CONTEXT_ACTION                = wx.Colour(  0,   0, 255)
 LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
 LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
 LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
@@ -241,7 +241,7 @@ class TonyView:
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             "Action",
-            LOG_COLOR_CONTEXT,
+            LOG_COLOR_CONTEXT_ACTION,
         )
 
     def log_query(self, message: str, ephemeral: bool = False) -> None:
