@@ -708,13 +708,14 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         log_level_text = wx.StaticText(log_level_panel, label="Log level:")
         self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS])
 
-        self.clear_logs_button = wx.Button(self, label="Clear logs")
-        self.export_logs_button = wx.Button(self, label="Export logs")
-        self.maximize_log_button = wx.Button(self, label="Maximize log panel")
-        self.send_actions_reregister_all_button = wx.Button(self, label="Clear and reregister")
-        self.send_shutdown_graceful_button = wx.Button(self, label="Graceful shutdown")
-        self.send_shutdown_graceful_cancel_button = wx.Button(self, label="Cancel shutdown")
-        self.send_shutdown_immediate_button = wx.Button(self, label="Immediate shutdown")
+        button_panel = wx.Panel(self)
+        self.clear_logs_button = wx.Button(button_panel, label="Clear logs")
+        self.export_logs_button = wx.Button(button_panel, label="Export logs")
+        self.maximize_log_button = wx.Button(button_panel, label="Maximize log panel")
+        self.send_actions_reregister_all_button = wx.Button(button_panel, label="Clear and reregister")
+        self.send_shutdown_graceful_button = wx.Button(button_panel, label="Graceful shutdown")
+        self.send_shutdown_graceful_cancel_button = wx.Button(button_panel, label="Cancel shutdown")
+        self.send_shutdown_immediate_button = wx.Button(button_panel, label="Immediate shutdown")
 
         # Create sizers
 
@@ -729,22 +730,26 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         log_lever_panel_sizer.Add(self.log_level_choice, 0, wx.ALL | wx.ALIGN_CENTER, 2)
         log_level_panel.SetSizer(log_lever_panel_sizer)
 
+        button_panel_sizer = wx.WrapSizer(wx.HORIZONTAL, wx.WRAPSIZER_DEFAULT_FLAGS)
+        button_panel_sizer.Add(self.clear_logs_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.export_logs_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.maximize_log_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.send_actions_reregister_all_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.send_shutdown_graceful_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(self.send_shutdown_immediate_button, 0, wx.ALL, 2)
+        button_panel.SetSizer(button_panel_sizer)
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
         self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
-        self.sizer.Add(self.clear_logs_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.export_logs_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.maximize_log_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_actions_reregister_all_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_shutdown_graceful_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.send_shutdown_immediate_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(button_panel, 0, wx.EXPAND, 0)
         self.SetSizer(self.sizer)
 
-        self.SetMinClientSize(self.sizer.GetMinSize())
+        wx.CallAfter(self.SendSizeEventToParent)  # For some reason the WrapSizer isn't updated unless this is called
 
         # Bind events
 
