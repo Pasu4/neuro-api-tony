@@ -1068,26 +1068,42 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.ephemeral_context = ephemeral_context
         self.actions = actions
 
-        self.info = wx.TextCtrl(
-            self,
-            value=f"State:\n{state}\n\nQuery:\n{query}\n\nEphemeral Context: {ephemeral_context}",
-            style=wx.TE_MULTILINE | wx.TE_READONLY,
-        )
+        state_panel = wx.Panel(self)
+        self.state_label = wx.StaticText(state_panel, label="State")
+        self.state_text = wx.TextCtrl(state_panel, value=state or "", style=wx.TE_READONLY)
+
+        query_panel = wx.Panel(self)
+        self.query_label = wx.StaticText(query_panel, label="Query")
+        self.query_text = wx.TextCtrl(query_panel, value=query or "", style=wx.TE_READONLY)
+
+        self.ephemeral_label = wx.StaticText(self, label=f"Ephemeral context: {ephemeral_context}")
         self.action_list = ActionList(self, False)
 
+        state_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        state_sizer.Add(self.state_label, 0, wx.CENTER | wx.ALL, 2)
+        state_sizer.Add(self.state_text, 1, wx.EXPAND | wx.ALL, 2)
+        state_panel.SetSizer(state_sizer)
+
+        query_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        query_sizer.Add(self.query_label, 0, wx.CENTER | wx.ALL, 2)
+        query_sizer.Add(self.query_text, 1, wx.EXPAND | wx.ALL, 2)
+        query_panel.SetSizer(query_sizer)
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.info, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(state_panel, 0, wx.EXPAND | wx.ALL, 0)
+        self.sizer.Add(query_panel, 0, wx.EXPAND | wx.ALL, 0)
+        self.sizer.Add(self.ephemeral_label, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
-        # Layout
-        self.info.SetMinSize((200, 120))
-
-        self.sizer.Layout()
         self.sizer.Fit(self)
 
         # Set tooltips
-        self.info.SetToolTip("With ephemeral context, Neuro will not remember the state and query after this action.")
+        self.state_text.SetToolTip(state)  # In case it's too long
+        self.query_text.SetToolTip(query)
+        self.ephemeral_label.SetToolTip(
+            "With ephemeral context, Neuro will not remember the state and query after this action.",
+        )
 
         for action in actions:
             self.action_list.add_action(action)
