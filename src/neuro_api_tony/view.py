@@ -195,7 +195,7 @@ class TonyView:
                 "Warning",
                 LOG_COLOR_WARNING,
             )
-            # self.frame.panel.log_notebook.system_log_panel.highlight(UI_COLOR_WARNING, LOG_LEVELS["WARNING"])
+            self.frame.panel.log_notebook.highlight(LOG_LEVELS["WARNING"])
 
     def log_error(self, message: str) -> None:
         """Log an error message."""
@@ -206,7 +206,7 @@ class TonyView:
                 "Error",
                 LOG_COLOR_ERROR,
             )
-            # self.frame.panel.log_notebook.system_log_panel.highlight(UI_COLOR_ERROR, LOG_LEVELS["ERROR"])
+            self.frame.panel.log_notebook.highlight(LOG_LEVELS["ERROR"])
 
     def log_critical(self, message: str) -> None:
         """Log a critical error message."""
@@ -573,8 +573,10 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
         """Initialize Log Notebook."""
         super().__init__(parent)
 
-        self.notebook = wx.Notebook(self)
+        self.highlight_level = 0
 
+        # Create controls
+        self.notebook = wx.Notebook(self)
         self.system_log_panel = LogPanel(self.notebook)
         self.command_log_panel = LogPanel(self.notebook)
         self.context_log_panel = LogPanel(self.notebook)
@@ -591,25 +593,55 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
         self.notebook.AddPage(self.context_log_panel, "Context")
         self.notebook.AddPage(self.raw_log_panel, "Raw")
 
+        # Create sizer
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.notebook, 1, wx.EXPAND)
         self.sizer.Add(self.restore_button, 0, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
+        # Tab icons
+        image_list = wx.ImageList(16, 16)
+        self.img_warning = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_OTHER, (16, 16)))
+        self.img_error = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+        self.notebook.AssignImageList(image_list)
+
+        # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_restore, self.restore_button)
 
-    #     self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_page_changed)
+        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_page_changed, self.notebook)
 
-    # def on_page_changed(self, event: wx.BookCtrlEvent) -> None:
-    #     """Handle page changed event."""
-    #     event.Skip()
+    def highlight(self, level: int) -> None:
+        """Highlight the log panel with a color."""
+        if self.notebook.GetSelection() == 0:
+            return  # Don't highlight when already on the system log
 
-    #     index = event.GetSelection()
-    #     panel = self.GetPage(index)
+        if self.highlight_level > level:
+            return  # Don't replace a highlight of higher level
 
-    #     if isinstance(panel, LogPanel):
-    #         panel.reset_highlight()
-    #         print(f"Reset highlight for {panel}")
+        image = -1
+
+        if LOG_LEVELS["WARNING"] <= level < LOG_LEVELS["ERROR"]:
+            image = self.img_warning
+
+        elif level >= LOG_LEVELS["ERROR"]:
+            image = self.img_error
+
+        self.highlight_level = level
+        self.notebook.SetPageImage(0, image)
+
+    def reset_highlight(self) -> None:
+        """Reset the highlight of the log panel."""
+        self.highlight_level = 0
+        self.notebook.SetPageImage(0, -1)
+
+    def on_page_changed(self, event: wx.BookCtrlEvent) -> None:
+        """Handle page changed event."""
+        event.Skip()
+
+        index = event.GetSelection()
+
+        if index == 0:
+            self.reset_highlight()
 
     def on_restore(self, event: wx.CommandEvent) -> None:
         """Handle restore button event."""
@@ -629,8 +661,6 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
     ) -> None:
         """Initialize Log Panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
-
-        # self.highlight_level = 0
 
         self.text = wx.TextCtrl(self, style=text_ctrl_style)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -669,19 +699,6 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         # Log message
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
         self.text.AppendText(f"{message}\n")
-
-    # def highlight(self, color: wx.Colour, level: int) -> None:
-    #     """Highlight the log panel with a color."""
-    #     if self.highlight_level > level:
-    #         return
-
-    #     self.highlight_level = level
-    #     self.SetBackgroundColour(color)
-
-    # def reset_highlight(self) -> None:
-    #     """Reset the highlight of the log panel."""
-    #     self.highlight_level = 0
-    #     self.SetBackgroundColour(wx.NullColour)
 
 
 class ControlPanel(wx.Panel):  # type: ignore[misc]
