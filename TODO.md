@@ -1,10 +1,8 @@
 # TODO
 
 - Close connection manually
-- Double click to execute action
-- Update README
-    - New screenshots
 - Log client connection
+- Right click menu
 - Action result timeout warning
 - Detect colors / names in schema
 

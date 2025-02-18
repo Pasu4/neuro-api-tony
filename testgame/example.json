@@ -1,0 +1,21 @@
+{
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "integer"},
+        "hobbies": {
+            "type": "array",
+            "items": {"type": "string"}
+        },
+        "address": {
+            "type": "object",
+            "properties": {
+                "street": {"type": "string"},
+                "city": {"type": "string"},
+                "country": {"type": "string"}
+            },
+            "required": ["street", "city", "country"]
+        }
+    },
+    "required": ["name", "age", "hobbies", "address"]
+}

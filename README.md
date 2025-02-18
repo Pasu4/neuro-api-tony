@@ -245,16 +245,16 @@ The log panel on the top right has three different tabs:
 
 #### Normal controls
 
-The control panel has some checkboxes and buttons that change the behavior of the application.
+The control panel has some checkboxes and buttons that change the behavior of the application (Some of these controls have been moved elsewhere).
 
-- **Validate JSON schema:** If checked, will not allow you to send a message that does not validate against the schema.
 - **Ignore forced actions:** If checked, will not open the "Forced action" dialog when an `actions/force` command is received. You have to execute the action yourself from the left panel. Since the forced action is ignored, you can execute any registered action.
-- **Automatically answer forced actions**: If checked, will immediately send the pre-generated JSON of a random valid action instead of opening the "Forced action" window when an `actions/force` command arrives. This behavior is similar to what Randy does.
+- **Auto-answer**: If checked, will immediately send the pre-generated JSON of a random valid action instead of opening the "Forced action" window when an `actions/force` command arrives. This behavior is similar to what Randy does.
 - **L\*tency:** Will delay sending commands by the specified time. Must be non-negative and not greater than 10000ms.
 - **Log level:** Will show only messages with an equal of higher log level than the selection. For example, selecting "Warning" will not show Debug or Info messages, but still show Warning, Error and System messages.
-- **Clear logs:** Clears all log tabs and the export log.
-- **Export logs:** Opens a dialog to save the logs to a file. If you submit a bug report, consider attaching this file. All messages will be included, regardless of configured log level.
-- **Maximize log panel:** Maximizes the log panel to fill the entire window. Can be restored using the **restore size** button.
+- **Clear:** Clears all log tabs and the export log.
+- **Export:** Opens a dialog to save the logs to a file. If you submit a bug report, consider attaching this file. All messages will be included, regardless of configured log level.
+- **Maximize:** Maximizes the log panel to fill the entire window. Can be restored using the **restore size** button.
+- **Don't validate:** If checked, will allow you to send a message that does not validate against the schema or contains invalid JSON.
 
 #### Experimental controls
 
