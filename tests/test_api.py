@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 import trio
 from exceptiongroup import catch
+from trio_websocket import WebSocketRequest
 
 if sys.version_info < (3, 11):
     from exceptiongroup import BaseExceptionGroup
@@ -272,8 +273,16 @@ async def test_handle_websocket_request_accept(api: NeuroAPI) -> None:
         get_message = receive.receive
         send_message = send.send
 
-    class Request:
-        async def accept(self) -> AbstractAsyncContextManager[Websocket]:
+    class Request(WebSocketRequest):
+        def __init__(self) -> None:
+            pass
+
+        async def accept(  # type: ignore[override]
+            self,
+            *,
+            subprotocol: str | None = None,
+            extra_headers: list[tuple[bytes, bytes]] | None = None,
+        ) -> AbstractAsyncContextManager[Websocket]:
             @asynccontextmanager
             async def manager() -> AsyncGenerator[Websocket, None]:
                 yield Websocket()
