@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from json import JSONDecodeError
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -8,7 +9,6 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 import trio
 from exceptiongroup import catch
-from trio_websocket import WebSocketRequest
 
 if sys.version_info < (3, 11):
     from exceptiongroup import BaseExceptionGroup
@@ -17,7 +17,7 @@ from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import AsyncGenerator, Callable, Generator
 
 
 @pytest.fixture
@@ -272,17 +272,13 @@ async def test_handle_websocket_request_accept(api: NeuroAPI) -> None:
         get_message = receive.receive
         send_message = send.send
 
-    class Request(WebSocketRequest):
-        def __init__(self) -> None:
-            pass
+    class Request:
+        async def accept(self) -> AbstractAsyncContextManager[Websocket]:
+            @asynccontextmanager
+            async def manager() -> AsyncGenerator[Websocket, None]:
+                yield Websocket()
 
-        async def accept(  # type: ignore[override]
-            self,
-            *,
-            subprotocol: str | None = None,
-            extra_headers: list[tuple[bytes, bytes]] | None = None,
-        ) -> Websocket:
-            return Websocket()
+            return manager()
 
     request = Request()
 
