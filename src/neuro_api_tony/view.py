@@ -974,6 +974,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         self.action = action
         self.do_validate = do_validate
+        self.target_sash_ratio = 2 / 3
 
         self.content_splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         self.text = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL)
@@ -1015,6 +1016,11 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.info.Show(False)
 
         self.info.SetValue(json.dumps(self.action.schema, indent=2))
+
+        self.SetSize((600, 400))
+
+        self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.on_sash_pos_changed)
+        self.Bind(wx.EVT_SIZE, self.on_size)
 
     def regenerate(self) -> None:
         """Regenerate the JSON data."""
@@ -1070,7 +1076,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         """Handle show schema button."""
         event.Skip()
 
-        self.content_splitter.SplitVertically(self.text, self.info)
+        self.content_splitter.SplitVertically(self.text, self.info, int(self.GetSize()[0] * self.target_sash_ratio))
 
     def on_cancel(self, event: wx.CommandEvent) -> None:
         """Handle cancel button."""
@@ -1083,6 +1089,19 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         event.Skip()
 
         self.regenerate()
+
+    def on_sash_pos_changed(self, event: wx.SplitterEvent) -> None:
+        """Handle sash position changed event."""
+        event.Skip()
+
+        if self.content_splitter.IsSplit():
+            self.target_sash_ratio = self.content_splitter.GetSashPosition() / self.GetSize()[0]
+
+    def on_size(self, event: wx.SizeEvent) -> None:
+        """Handle size event."""
+        event.Skip()
+
+        self.content_splitter.SetSashPosition(int(self.target_sash_ratio * self.GetSize()[0]))
 
 
 class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]

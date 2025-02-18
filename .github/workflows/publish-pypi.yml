@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allows manual triggering
       inputs:
         do-publish:
-          description: 'Publish to PyPI'
+          description: 'Actually publish to PyPI'
           required: true
           type: boolean
           default: false
