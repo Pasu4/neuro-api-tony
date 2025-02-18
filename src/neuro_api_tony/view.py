@@ -346,12 +346,12 @@ class TonyView:
         self.frame.panel.action_list.remove_action_by_name(name)
 
     def enable_actions(self) -> None:
-        """Enable all action buttons."""
-        wx.CallAfter(self.frame.panel.action_list.execute_button.Enable)
+        """Enable executing actions."""
+        self.frame.panel.action_list.enable_actions(True)
 
     def disable_actions(self) -> None:
-        """Disable all action buttons."""
-        self.frame.panel.action_list.execute_button.Disable()
+        """Disable executing actions."""
+        self.frame.panel.action_list.enable_actions(False)
 
     def force_actions(
         self,
@@ -465,6 +465,9 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         """Initialize ActionList panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
+        self.can_delete = can_delete
+        self.actions_enabled = True
+
         self.actions: list[NeuroAction] = []
 
         self.list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
@@ -472,7 +475,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.execute_button = wx.Button(button_panel, label="Execute")
         self.delete_button = wx.Button(button_panel, label="Delete")
         self.delete_all_button = wx.Button(button_panel, label="Delete all")
-        self.unlock_button = wx.Button(button_panel, label="Unlock")
+        self.unlock_button = wx.Button(button_panel, label="Stop waiting")
 
         button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_panel_sizer.Add(self.execute_button, 0, wx.EXPAND | wx.ALL, 5)
@@ -490,6 +493,10 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_BUTTON, self.on_delete, self.delete_button)
         self.Bind(wx.EVT_BUTTON, self.on_delete_all, self.delete_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_unlock, self.unlock_button)
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.on_execute, self.list)  # ListEvent is a subclass of CommandEvent
+        self.Bind(wx.EVT_LIST_KEY_DOWN, self.on_key_down, self.list)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected, self.list)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_item_deselected, self.list)
 
         self.list.InsertColumn(0, "Name", width=80)
         self.list.InsertColumn(1, "Description", width=200)
@@ -509,8 +516,13 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         )  # fmt: skip
         self.unlock_button.SetToolTip("Stop waiting for the game to send an action result.")
 
-        if not can_delete:
-            self.delete_button.Disable()
+        # Setup
+        self.execute_button.Disable()
+        self.delete_button.Disable()
+        self.unlock_button.Disable()
+
+        if not self.can_delete:
+            self.delete_all_button.Disable()
 
     def add_action(self, action: NeuroAction) -> None:
         """Add an action panel to the list."""
@@ -538,6 +550,12 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         """Clear the list of actions."""
         self.actions.clear()
         self.list.DeleteAllItems()
+
+    def enable_actions(self, enable: bool) -> None:
+        """Enable or disable executing actions."""
+        self.actions_enabled = enable
+        self.execute_button.Enable(enable and self.list.GetFirstSelected() != -1)
+        self.unlock_button.Enable(not enable)
 
     def on_execute(self, event: wx.CommandEvent) -> None:
         """Handle execute command event."""
@@ -584,6 +602,27 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top: MainFrame = self.GetTopLevelParent()
         top.view.on_unlock()
+
+    def on_key_down(self, event: wx.ListEvent) -> None:
+        """Handle key down event."""
+        event.Skip()
+
+        if event.GetKeyCode() == wx.WXK_DELETE and self.can_delete:
+            self.on_delete(event)
+
+    def on_item_selected(self, event: wx.ListEvent) -> None:
+        """Handle item selected event."""
+        event.Skip()
+
+        self.execute_button.Enable(self.actions_enabled)
+        self.delete_button.Enable(self.can_delete)
+
+    def on_item_deselected(self, event: wx.ListEvent) -> None:
+        """Handle item deselected event."""
+        event.Skip()
+
+        self.execute_button.Disable()
+        self.delete_button.Disable()
 
 
 class LogNotebook(wx.Panel):  # type: ignore[misc]

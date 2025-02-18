@@ -230,7 +230,7 @@ class TonyController:
 
     def on_view_unlock(self) -> None:
         """Handle a request to unlock the view."""
-        self.view.log_warning("Unlocking actions.")
+        self.view.log_warning("Stopped waiting for action result.")
         self.view.enable_actions()
 
     def on_view_clear_logs(self) -> None:
