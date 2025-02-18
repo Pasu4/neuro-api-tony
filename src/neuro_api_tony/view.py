@@ -733,6 +733,8 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
         """Handle clear command event."""
         event.Skip()
 
+        self.reset_highlight()
+
         top: MainFrame = self.GetTopLevelParent()
         top.view.on_clear_logs()
 

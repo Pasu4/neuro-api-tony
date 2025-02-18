@@ -5,7 +5,7 @@ Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), he can 
 
 > [!Note]
 > I cannot guarantee that this implementation perfectly emulates what Neuro could/would do, or that it is error-free.
-> There might be some things that I have overlooked.
+> There might be [some things](https://github.com/VedalAI/neuro-game-sdk/issues/51) that I have overlooked.
 
 ## Installation
 
