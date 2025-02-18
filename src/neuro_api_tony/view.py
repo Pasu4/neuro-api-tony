@@ -297,6 +297,7 @@ class TonyView:
     def clear_logs(self) -> None:
         """Clear all logs."""
         self.frame.panel.log_notebook.system_log_panel.text.Clear()
+        self.frame.panel.log_notebook.command_log_panel.text.Clear()
         self.frame.panel.log_notebook.context_log_panel.text.Clear()
         self.frame.panel.log_notebook.raw_log_panel.text.Clear()
         self.model.clear_logs()
