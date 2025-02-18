@@ -433,6 +433,8 @@ class MainPanel(wx.Panel):  # type: ignore[misc]
     def maximize_log(self) -> None:
         """Handle maximize event."""
         self.log_notebook.restore_button.Show()
+        self.log_notebook.maximize_button.Hide()
+
         self.control_panel.Hide()
         self.right_panel_sizer.Layout()
 
@@ -442,6 +444,8 @@ class MainPanel(wx.Panel):  # type: ignore[misc]
     def restore_log(self) -> None:
         """Handle restore event."""
         self.log_notebook.restore_button.Hide()
+        self.log_notebook.maximize_button.Show()
+
         self.control_panel.Show()
         self.right_panel_sizer.Layout()
 
@@ -600,7 +604,11 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
             text_ctrl_style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.HSCROLL,
         )
 
-        self.restore_button = wx.Button(self, label="Restore size")
+        button_panel = wx.Panel(self)
+        self.restore_button = wx.Button(button_panel, label="Restore")
+        self.maximize_button = wx.Button(button_panel, label="Maximize")
+        self.clear_button = wx.Button(button_panel, label="Clear")
+        self.export_button = wx.Button(button_panel, label="Export")
         self.restore_button.Hide()
 
         self.notebook.AddPage(self.system_log_panel, "System")
@@ -608,10 +616,17 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
         self.notebook.AddPage(self.context_log_panel, "Context")
         self.notebook.AddPage(self.raw_log_panel, "Raw")
 
+        button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_panel_sizer.Add(self.restore_button, 1, wx.EXPAND | wx.ALL, 2)
+        button_panel_sizer.Add(self.maximize_button, 1, wx.EXPAND | wx.ALL, 2)
+        button_panel_sizer.Add(self.clear_button, 1, wx.EXPAND | wx.ALL, 2)
+        button_panel_sizer.Add(self.export_button, 1, wx.EXPAND | wx.ALL, 2)
+        button_panel.SetSizer(button_panel_sizer)
+
         # Create sizer
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.notebook, 1, wx.EXPAND)
-        self.sizer.Add(self.restore_button, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(button_panel, 0, wx.EXPAND | wx.ALL, 0)
         self.SetSizer(self.sizer)
 
         # Tab icons
@@ -622,8 +637,17 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
 
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_restore, self.restore_button)
+        self.Bind(wx.EVT_BUTTON, self.on_maximize, self.maximize_button)
+        self.Bind(wx.EVT_BUTTON, self.on_clear, self.clear_button)
+        self.Bind(wx.EVT_BUTTON, self.on_export, self.export_button)
 
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_page_changed, self.notebook)
+
+        # Tooltips
+        self.restore_button.SetToolTip("Restore the log panel to its original size.")
+        self.maximize_button.SetToolTip("Maximize the log panel to fill the entire window.")
+        self.clear_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
+        self.export_button.SetToolTip("Export logs to a file.")
 
     def highlight(self, level: int) -> None:
         """Highlight the log panel with a color."""
@@ -664,6 +688,42 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
 
         top: MainFrame = self.GetTopLevelParent()
         top.panel.restore_log()
+
+    def on_clear(self, event: wx.CommandEvent) -> None:
+        """Handle clear command event."""
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.view.on_clear_logs()
+
+    def on_export(self, event: wx.CommandEvent) -> None:
+        """Handle export command event."""
+        event.Skip()
+
+        with wx.FileDialog(
+            self,
+            "Export logs",
+            wildcard="Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        ) as file_dialog:
+            assert isinstance(file_dialog, wx.FileDialog)
+
+            file_dialog.SetFilename(f"tony-{dt.now().strftime('%Y-%m-%d-%H%M%S')}.log")
+
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            top: MainFrame = self.GetTopLevelParent()
+            path = file_dialog.GetPath()
+            with open(path, "w") as file:
+                file.write(top.view.model.get_logs_formatted())
+
+    def on_maximize(self, event: wx.CommandEvent) -> None:
+        """Handle maximize command event."""
+        event.Skip()
+
+        top: MainFrame = self.GetTopLevelParent()
+        top.panel.maximize_log()
 
 
 class LogPanel(wx.Panel):  # type: ignore[misc]
@@ -732,7 +792,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.validate_schema_checkbox = wx.CheckBox(self, label="Validate JSON schema")
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
         self.auto_send_checkbox = wx.CheckBox(self, label="Auto-answer")
-        self.microsecond_precision_checkbox = wx.CheckBox(self, label="Microsecond precision")
+        self.microsecond_precision_checkbox = wx.CheckBox(self, label="Log microseconds")
 
         latency_panel = wx.Panel(self)
         latency_text1 = wx.StaticText(latency_panel, label="L*tency:")
@@ -744,9 +804,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS])
 
         button_panel = wx.Panel(self)
-        self.clear_logs_button = wx.Button(button_panel, label="Clear logs")
-        self.export_logs_button = wx.Button(button_panel, label="Export logs")
-        self.maximize_log_button = wx.Button(button_panel, label="Maximize log panel")
         self.send_actions_reregister_all_button = wx.Button(button_panel, label="Clear and reregister")
         self.send_shutdown_graceful_button = wx.Button(button_panel, label="Graceful shutdown")
         self.send_shutdown_graceful_cancel_button = wx.Button(button_panel, label="Cancel shutdown")
@@ -766,9 +823,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         log_level_panel.SetSizer(log_lever_panel_sizer)
 
         button_panel_sizer = wx.WrapSizer(wx.HORIZONTAL, wx.WRAPSIZER_DEFAULT_FLAGS)
-        button_panel_sizer.Add(self.clear_logs_button, 0, wx.ALL, 2)
-        button_panel_sizer.Add(self.export_logs_button, 0, wx.ALL, 2)
-        button_panel_sizer.Add(self.maximize_log_button, 0, wx.ALL, 2)
         button_panel_sizer.Add(self.send_actions_reregister_all_button, 0, wx.ALL, 2)
         button_panel_sizer.Add(self.send_shutdown_graceful_button, 0, wx.ALL, 2)
         button_panel_sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.ALL, 2)
@@ -798,9 +852,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         self.Bind(wx.EVT_CHOICE, self.on_log_level, self.log_level_choice)
 
-        self.Bind(wx.EVT_BUTTON, self.on_clear_logs, self.clear_logs_button)
-        self.Bind(wx.EVT_BUTTON, self.on_export_logs, self.export_logs_button)
-        self.Bind(wx.EVT_BUTTON, self.on_maximize_log, self.maximize_log_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
@@ -831,9 +882,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             "\nError: A command sent or received is invalid and cannot be processed."
             "\nCritical: Tony will likely not be able to recover from this error.",
         )
-        self.clear_logs_button.SetToolTip("Clear all logs. Exported logs will also be cleared.")
-        self.export_logs_button.SetToolTip("Export logs to a file.")
-        self.maximize_log_button.SetToolTip("Maximize the log panel to fill the entire window.")
         self.send_actions_reregister_all_button.SetToolTip(
             "Clear all actions and request reregistration from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
@@ -850,40 +898,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             "Request an immediate shutdown from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
-
-    def on_clear_logs(self, event: wx.CommandEvent) -> None:
-        """Handle clear_logs command event."""
-        event.Skip()
-
-        self.view.on_clear_logs()
-
-    def on_export_logs(self, event: wx.CommandEvent) -> None:
-        """Handle export_logs command event."""
-        event.Skip()
-
-        with wx.FileDialog(
-            self,
-            "Export logs",
-            wildcard="Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*",
-            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-        ) as file_dialog:
-            assert isinstance(file_dialog, wx.FileDialog)
-
-            file_dialog.SetFilename(f"tony-{dt.now().strftime('%Y-%m-%d-%H%M%S')}.log")
-
-            if file_dialog.ShowModal() == wx.ID_CANCEL:
-                return
-
-            path = file_dialog.GetPath()
-            with open(path, "w") as file:
-                file.write(self.view.model.get_logs_formatted())
-
-    def on_maximize_log(self, event: wx.CommandEvent) -> None:
-        """Handle maximize_log command event."""
-        event.Skip()
-
-        top: MainFrame = self.GetTopLevelParent()
-        top.panel.maximize_log()
 
     def on_validate_schema(self, event: wx.CommandEvent) -> None:
         """Handle validate_schema command event."""
