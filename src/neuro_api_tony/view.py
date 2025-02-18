@@ -313,8 +313,9 @@ class TonyView:
         """Show a dialog for an action. Returns the JSON string the user entered if "Send" was clicked, otherwise None."""
         self.action_dialog = ActionDialog(
             self.frame,
+            self,
             action,
-            self.controls.validate_schema,
+            self.controls.allow_invalid,
         )
         result = self.action_dialog.ShowModal()
         text = self.action_dialog.text.GetValue()
@@ -789,7 +790,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Create controls
 
-        self.validate_schema_checkbox = wx.CheckBox(self, label="Validate JSON schema")
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
         self.auto_send_checkbox = wx.CheckBox(self, label="Auto-answer")
         self.microsecond_precision_checkbox = wx.CheckBox(self, label="Log microseconds")
@@ -830,7 +830,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         button_panel.SetSizer(button_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.validate_schema_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.microsecond_precision_checkbox, 0, wx.EXPAND | wx.ALL, 2)
@@ -843,7 +842,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Bind events
 
-        self.Bind(wx.EVT_CHECKBOX, self.on_validate_schema, self.validate_schema_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_ignore_actions_force, self.ignore_actions_force_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_auto_send, self.auto_send_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_microsecond_precision, self.microsecond_precision_checkbox)
@@ -859,7 +857,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Set default values
 
-        self.validate_schema_checkbox.SetValue(True)
         self.ignore_actions_force_checkbox.SetValue(False)
         self.auto_send_checkbox.SetValue(False)
         self.microsecond_precision_checkbox.SetValue(False)
@@ -867,7 +864,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Add tooltips
 
-        self.validate_schema_checkbox.SetToolTip("Validate JSON schema of actions before sending.")
         self.ignore_actions_force_checkbox.SetToolTip("Ignore forced actions.")
         self.auto_send_checkbox.SetToolTip(
             "Automatically answer forced actions with randomly generated data (like Randy).",
@@ -898,12 +894,6 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             "Request an immediate shutdown from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
-
-    def on_validate_schema(self, event: wx.CommandEvent) -> None:
-        """Handle validate_schema command event."""
-        event.Skip()
-
-        self.view.controls.validate_schema = event.IsChecked()
 
     def on_ignore_actions_force(self, event: wx.CommandEvent) -> None:
         """Handle ignore_actions_force command event."""
@@ -980,19 +970,23 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
     def __init__(
         self,
         parent: MainFrame,
+        view: TonyView,
         action: NeuroAction,
-        do_validate: bool,
+        allow_invalid: bool,
     ) -> None:
         """Initialize Action Dialog."""
         super().__init__(parent, title=action.name, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
+        self.view = view
         self.action = action
-        self.do_validate = do_validate
+
         self.target_sash_ratio = 2 / 3
+        self.is_error = False
 
         self.content_splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         self.text = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL)
         self.info = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL | wx.TE_READONLY)
+        self.allow_invalid_checkbox = wx.CheckBox(self, label="Don't validate")
         button_panel = wx.Panel(self)
         self.send_button = wx.Button(button_panel, label="Send")
         self.show_schema_button = wx.Button(button_panel, label="Show Schema")
@@ -1008,19 +1002,22 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.content_splitter, 1, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.allow_invalid_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(button_panel, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
+        # Bind events
         self.Bind(wx.EVT_TEXT, self.on_value_change, self.text)
+        self.Bind(wx.EVT_CHECKBOX, self.on_allow_invalid, self.allow_invalid_checkbox)
         self.Bind(wx.EVT_BUTTON, self.on_send, self.send_button)
         self.Bind(wx.EVT_BUTTON, self.on_show_schema, self.show_schema_button)
         self.Bind(wx.EVT_BUTTON, self.on_regenerate, self.regenerate_button)
         self.Bind(wx.EVT_BUTTON, self.on_cancel, self.cancel_button)
-
-        self.faker = JSF(action.schema)
-        self.regenerate()
+        self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.on_sash_pos_changed)
+        self.Bind(wx.EVT_SIZE, self.on_size)
 
         # Set tooltips
+        self.allow_invalid_checkbox.SetToolTip("Allow sending invalid JSON data.")
         self.send_button.SetToolTip("Send the JSON data to the client.")
         self.show_schema_button.SetToolTip("Show the JSON schema of the action.")
         self.regenerate_button.SetToolTip("Generate a new random sample.")
@@ -1030,11 +1027,12 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.info.Show(False)
 
         self.info.SetValue(json.dumps(self.action.schema, indent=2))
+        self.allow_invalid_checkbox.SetValue(self.view.controls.allow_invalid)
+
+        self.faker = JSF(action.schema)
+        self.regenerate()
 
         self.SetSize((600, 400))
-
-        self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.on_sash_pos_changed)
-        self.Bind(wx.EVT_SIZE, self.on_size)
 
     def regenerate(self) -> None:
         """Regenerate the JSON data."""
@@ -1049,13 +1047,25 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             json_str = self.text.GetValue()
             json_cmd = json.loads(json_str)
             jsonschema.validate(json_cmd, self.action.schema)
+
+            self.is_error = False
             self.text.SetToolTip("")
             self.text.SetBackgroundColour(wx.NullColour)
             self.Refresh()
         except Exception as exc:
+            self.is_error = True
             self.text.SetToolTip(str(exc))
             self.text.SetBackgroundColour(UI_COLOR_ERROR)
             self.Refresh()
+
+        self.send_button.Enable(self.view.controls.allow_invalid or not self.is_error)
+
+    def on_allow_invalid(self, event: wx.CommandEvent) -> None:
+        """Handle allow_invalid command event."""
+        event.Skip()
+
+        self.view.controls.allow_invalid = event.IsChecked()
+        self.send_button.Enable(self.view.controls.allow_invalid or not self.is_error)
 
     def on_send(self, event: wx.CommandEvent) -> None:
         """Handle send button."""
@@ -1064,7 +1074,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         try:
             json_str = self.text.GetValue()
             json_cmd = json.loads(json_str)
-            if self.do_validate:
+            if self.view.controls.allow_invalid:
                 jsonschema.validate(json_cmd, self.action.schema)
 
             self.EndModal(wx.ID_OK)
@@ -1201,7 +1211,7 @@ class Controls:
 
     def __init__(self) -> None:
         """Initialize control panel."""
-        self.validate_schema: bool = True
+        self.allow_invalid: bool = False
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
         self.latency: int = 0
