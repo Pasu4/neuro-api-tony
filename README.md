@@ -265,6 +265,10 @@ These controls are [proposed features](https://github.com/VedalAI/neuro-game-sdk
 - **Cancel shutdown:** Will send a [`shutdown/graceful`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command with its `wants_shutdown` field set to `false` to the game, signaling to cancel a previous shutdown request.
 - **Immediate shutdown:** Will send a [`shutdown/immediate`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown) command to the game, indicating that the game *will* (not *should*!) be shut down within the next few seconds.
 
+## Known issues
+
+- The last button on the control panel sometimes does not appear when the app is started. Resizing the window should make it appear.
+
 ## Screenshots
 
 ![Image of the application](image.png)

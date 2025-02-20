@@ -1198,23 +1198,23 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.actions = actions
 
         state_panel = wx.Panel(self)
-        self.state_label = wx.StaticText(state_panel, label="State")
-        self.state_text = wx.TextCtrl(state_panel, value=state or "", style=wx.TE_READONLY)
+        self.state_label = wx.StaticText(state_panel, label="State:")
+        self.state_text = wx.StaticText(state_panel, label="")
 
         query_panel = wx.Panel(self)
-        self.query_label = wx.StaticText(query_panel, label="Query")
-        self.query_text = wx.TextCtrl(query_panel, value=query or "", style=wx.TE_READONLY)
+        self.query_label = wx.StaticText(query_panel, label="Query:")
+        self.query_text = wx.StaticText(query_panel, label="")
 
         self.ephemeral_label = wx.StaticText(self, label=f"Ephemeral context: {ephemeral_context}")
         self.action_list = ActionList(self, False)
 
         state_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        state_sizer.Add(self.state_label, 0, wx.CENTER | wx.ALL, 2)
+        state_sizer.Add(self.state_label, 0, wx.TOP | wx.ALL, 2)
         state_sizer.Add(self.state_text, 1, wx.EXPAND | wx.ALL, 2)
         state_panel.SetSizer(state_sizer)
 
         query_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        query_sizer.Add(self.query_label, 0, wx.CENTER | wx.ALL, 2)
+        query_sizer.Add(self.query_label, 0, wx.TOP | wx.ALL, 2)
         query_sizer.Add(self.query_text, 1, wx.EXPAND | wx.ALL, 2)
         query_panel.SetSizer(query_sizer)
 
@@ -1234,12 +1234,25 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
             "With ephemeral context, Neuro will not remember the state and query after this action.",
         )
 
+        # Bind events
+        self.Bind(EVT_EXECUTE, self.on_execute, self.action_list)
+
+        # Setup
         for action in actions:
             self.action_list.add_action(action)
 
         self.action_list.list.Select(0)
 
-        self.Bind(EVT_EXECUTE, self.on_execute, self.action_list)
+        # self.state_text.SetBackgroundColour(wx.Colour(255, 255, 255))
+        # self.query_text.SetBackgroundColour(wx.Colour(255, 255, 255))
+
+        state_width = self.state_text.GetSize()[0]
+        query_width = self.query_text.GetSize()[0]
+        self.state_text.SetLabel(state or "<None>")
+        self.query_text.SetLabel(query or "<None>")
+        self.state_text.Wrap(state_width)
+        self.query_text.Wrap(query_width)
+        self.Layout()
 
     def on_execute(self, event: ExecuteEvent) -> None:
         """Handle execute command event."""

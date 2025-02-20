@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         if (connected) {
             actionName = actionForm.elements['action-name'].value;
-            actionForm.elements['action-name'].value = '';
+            // actionForm.elements['action-name'].value = '';
             addChatMessage('System', '#ff0000', 'Registering action: ' + actionName);
 
             neuroClient.registerActions([{
