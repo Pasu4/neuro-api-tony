@@ -472,6 +472,8 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.actions: list[NeuroAction] = []
 
         self.list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+        self.description_text = wx.StaticText(self)
+        self.description_text.Hide()
         button_panel = wx.Panel(self)
         self.execute_button = wx.Button(button_panel, label="Execute")
         self.delete_button = wx.Button(button_panel, label="Delete")
@@ -487,6 +489,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.list, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(self.description_text, 0, wx.EXPAND | wx.ALL, 5)
         self.sizer.Add(button_panel, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
@@ -499,7 +502,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected, self.list)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_item_deselected, self.list)
 
-        self.list.InsertColumn(0, "Name", width=80)
+        self.list.InsertColumn(0, "Name", width=150)
         self.list.InsertColumn(1, "Description", width=200)
         self.list.InsertColumn(2, "Schema", width=60)
 
@@ -618,12 +621,20 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.execute_button.Enable(self.actions_enabled)
         self.delete_button.Enable(self.can_delete)
 
+        self.description_text.Show()
+        self.description_text.SetLabel(self.actions[event.GetIndex()].description)
+        self.description_text.Wrap(self.GetClientSize().width - 10)
+        self.Layout()
+
     def on_item_deselected(self, event: wx.ListEvent) -> None:
         """Handle item deselected event."""
         event.Skip()
 
         self.execute_button.Disable()
         self.delete_button.Disable()
+
+        self.description_text.Hide()
+        self.Layout()
 
 
 class LogNotebook(wx.Panel):  # type: ignore[misc]
