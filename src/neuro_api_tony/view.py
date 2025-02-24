@@ -218,7 +218,7 @@ class TonyView:
                 "Critical",
                 LOG_COLOR_CRITICAL,
             )
-            self.frame.panel.log_notebook.system_log_panel.highlight(UI_COLOR_ERROR, LOG_LEVELS["CRITICAL"])
+            self.frame.panel.log_notebook.highlight(LOG_LEVELS["CRITICAL"])
 
     def log_context(self, message: str, silent: bool = False) -> None:
         """Log a context message."""
