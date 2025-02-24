@@ -1207,10 +1207,17 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.query = query
         self.ephemeral_context = ephemeral_context
         self.actions = actions
+        self.formatted_state: str
+        try:
+            self.formatted_state = json.dumps(json.loads(state), indent=2)
+        except json.JSONDecodeError:
+            self.formatted_state = state
 
         state_panel = wx.Panel(self)
         self.state_label = wx.StaticText(state_panel, label="State:")
         self.state_text = wx.StaticText(state_panel, label="")
+        self.state_textctrl = wx.TextCtrl(state_panel, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 100))
+        self.state_textctrl.Hide()
 
         query_panel = wx.Panel(self)
         self.query_label = wx.StaticText(query_panel, label="Query:")
@@ -1222,6 +1229,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         state_sizer = wx.BoxSizer(wx.HORIZONTAL)
         state_sizer.Add(self.state_label, 0, wx.TOP | wx.ALL, 2)
         state_sizer.Add(self.state_text, 1, wx.EXPAND | wx.ALL, 2)
+        state_sizer.Add(self.state_textctrl, 1, wx.EXPAND | wx.ALL, 2)
         state_panel.SetSizer(state_sizer)
 
         query_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1239,8 +1247,6 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.sizer.Fit(self)
 
         # Set tooltips
-        self.state_text.SetToolTip(state)  # In case it's too long
-        self.query_text.SetToolTip(query)
         self.ephemeral_label.SetToolTip(
             "With ephemeral context, Neuro will not remember the state and query after this action.",
         )
@@ -1259,11 +1265,19 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
 
         state_width = self.state_text.GetSize()[0]
         query_width = self.query_text.GetSize()[0]
-        self.state_text.SetLabel(state or "<None>")
+        self.state_text.SetLabel(self.formatted_state or "<None>")
         self.query_text.SetLabel(query or "<None>")
         self.state_text.Wrap(state_width)
         self.query_text.Wrap(query_width)
+
+        # If state is too large, switch to textctrl
+        if self.state_text.GetSize()[1] > 100:
+            self.state_text.Hide()
+            self.state_textctrl.Show()
+            self.state_textctrl.SetValue(self.formatted_state)
+
         self.Layout()
+        self.sizer.Fit(self)
 
     def on_execute(self, event: ExecuteEvent) -> None:
         """Handle execute command event."""
