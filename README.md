@@ -213,6 +213,9 @@ There are some buttons at the bottom of the panel:
 - **Delete:** Manually unregisters the selected action. This is not something Neuro would normally do.
 - **Unlock:** Unlocks the execute button while waiting for an `action/result` command. This is probably not something Neuro would normally do.
 
+> [!Important]
+> Depending on your OS, you may need to turn off smart quotes in your system's settings, since they are not valid as quotations in JSON and will cause the parsing to fail.
+
 ### Forced actions
 
 If an `actions/force` command is received, a "Forced action" window will open, showing all applicable actions and the query and state of the command.
