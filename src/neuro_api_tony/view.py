@@ -1210,7 +1210,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.formatted_state: str
         try:
             self.formatted_state = json.dumps(json.loads(state), indent=2)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             self.formatted_state = state
 
         state_panel = wx.Panel(self)
