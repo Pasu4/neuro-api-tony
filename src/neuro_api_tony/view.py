@@ -316,7 +316,6 @@ class TonyView:
             self.frame,
             self,
             action,
-            self.controls.allow_invalid,
         )
         result = self.action_dialog.ShowModal()
         text = self.action_dialog.text.GetValue()
@@ -1025,13 +1024,13 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         parent: MainFrame,
         view: TonyView,
         action: NeuroAction,
-        allow_invalid: bool,
     ) -> None:
         """Initialize Action Dialog."""
         super().__init__(parent, title=action.name, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         self.view = view
         self.action = action
+        self.allow_invalid = False
 
         self.target_sash_ratio = 2 / 3
         self.is_error = False
@@ -1080,7 +1079,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.info.Show(False)
 
         self.info.SetValue(json.dumps(self.action.schema, indent=2))
-        self.allow_invalid_checkbox.SetValue(self.view.controls.allow_invalid)
+        self.allow_invalid_checkbox.SetValue(self.allow_invalid)
 
         self.faker = JSF(action.schema)
         self.regenerate()
@@ -1111,14 +1110,14 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             self.text.SetBackgroundColour(UI_COLOR_ERROR)
             self.Refresh()
 
-        self.send_button.Enable(self.view.controls.allow_invalid or not self.is_error)
+        self.send_button.Enable(self.allow_invalid or not self.is_error)
 
     def on_allow_invalid(self, event: wx.CommandEvent) -> None:
         """Handle allow_invalid command event."""
         event.Skip()
 
-        self.view.controls.allow_invalid = event.IsChecked()
-        self.send_button.Enable(self.view.controls.allow_invalid or not self.is_error)
+        self.allow_invalid = event.IsChecked()
+        self.send_button.Enable(self.allow_invalid or not self.is_error)
 
     def on_send(self, event: wx.CommandEvent) -> None:
         """Handle send button."""
@@ -1127,7 +1126,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         try:
             json_str = self.text.GetValue()
             json_cmd = json.loads(json_str)
-            if self.view.controls.allow_invalid:
+            if not self.allow_invalid:
                 jsonschema.validate(json_cmd, self.action.schema)
 
             self.EndModal(wx.ID_OK)
@@ -1291,7 +1290,6 @@ class Controls:
 
     def __init__(self) -> None:
         """Initialize control panel."""
-        self.allow_invalid: bool = False
         self.ignore_actions_force: bool = False
         self.auto_send: bool = False
         self.latency: int = 0

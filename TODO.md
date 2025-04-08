@@ -1,5 +1,7 @@
 # TODO
 
+- Remember last action content
+- Spoof actions
 - Close connection manually
 - Log client connection
 - Right click menu
