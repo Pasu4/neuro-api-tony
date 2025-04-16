@@ -55,7 +55,7 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     UBUNTU_VERSION=$(lsb_release -rs)
     PYTHON_VERSION=$(python -c 'import sys; print("".join(map(str, sys.version_info[:2])))')
     # Install wxPython from binaries
-    uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxPython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
+    uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
     # Make sure installation was successful
     python -c "import wx; print(wx.__version__)"
     echo "::endgroup::"
