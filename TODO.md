@@ -7,7 +7,7 @@
 ## Features
 
 - Spoof actions
-- Batch action register info messages
+- Make API work without view
 - Close connection manually
 - Log client connection
 - Right click menu

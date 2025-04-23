@@ -115,18 +115,25 @@ class TonyController:
 
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
-            self.view.log_info(f"Action registered: {action.name}")
             self.view.log_description(f"{action.name}: {action.description}")
+        s = "s" if len(cmd.actions) != 1 else ""
+        self.view.log_info(f"Action{s} registered: {', '.join(action.name for action in cmd.actions)}")
 
     def on_actions_unregister(self, cmd: ActionsUnregisterCommand) -> None:
         """Handle the actions/unregister command."""
-        for name in cmd.action_names:
-            if not self.model.has_action(name):
-                self.view.log_info(f'Action "{name}" does not exist.')
-
+        known_actions = [name for name in cmd.action_names if self.model.has_action(name)]
+        unknown_actions = [name for name in cmd.action_names if not self.model.has_action(name)]
+        for name in known_actions:
             self.model.remove_action_by_name(name)
             self.view.remove_action_by_name(name)
-            self.view.log_info(f"Action unregistered: {name}")
+        s1 = "s" if len(cmd.action_names) != 1 else ""
+        s2 = "s" if len(unknown_actions) != 1 else ""
+        if known_actions:
+            self.view.log_info(f"Action{s1} unregistered: {', '.join(known_actions)}")
+        if unknown_actions:
+            self.view.log_info(f"Ignoring unregistration of unknown action{s2}: {', '.join(unknown_actions)}")
+        if not known_actions and not unknown_actions:
+            self.view.log_warning("No actions to unregister specified.")
 
     def on_actions_force(self, cmd: ActionsForceCommand) -> None:
         """Handle the actions/force command."""
