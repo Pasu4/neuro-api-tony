@@ -1,7 +1,13 @@
 # TODO
 
-- Remember last action content
+## Fixes
+
+- Startup might be slower without internet?
+
+## Features
+
 - Spoof actions
+- Batch action register info messages
 - Close connection manually
 - Log client connection
 - Right click menu

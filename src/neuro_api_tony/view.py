@@ -1082,7 +1082,10 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.allow_invalid_checkbox.SetValue(self.allow_invalid)
 
         self.faker = JSF(action.schema)
-        self.regenerate()
+        if action.name in view.model.last_action_data:
+            self.text.SetValue(view.model.last_action_data[action.name])
+        else:
+            self.regenerate()
 
         self.SetSize((600, 400))
 

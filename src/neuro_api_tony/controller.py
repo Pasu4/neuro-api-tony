@@ -212,6 +212,7 @@ class TonyController:
         if result is None:
             return False  # User cancelled the dialog
 
+        self.model.last_action_data[action.name] = result  # Store the last data in the action object
         self.send_action(next(self.id_generator), action.name, result)
         return True
 

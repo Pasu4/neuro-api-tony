@@ -16,12 +16,13 @@ class NeuroAction(NamedTuple):
 class TonyModel:
     """Tony Model."""
 
-    __slots__ = ("actions", "logs")
+    __slots__ = ("actions", "last_action_data", "logs")
 
     def __init__(self) -> None:
         """Initialize Tony Model."""
         self.actions: list[NeuroAction] = []
         self.logs: dict[str, str] = {}
+        self.last_action_data: dict[str, str] = {}
 
     def __repr__(self) -> str:
         """Return representation of this model."""
