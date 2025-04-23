@@ -386,7 +386,7 @@ class NeuroAPI:
 
                     case "shutdown/ready":
                         self.log_command("shutdown/ready", True)
-                        self.log_warning("This command is not officially supported.")
+                        self.log_info("shutdown/ready is not officially supported.")
                         self.on_shutdown_ready(ShutdownReadyCommand())
 
                     case _:
@@ -474,7 +474,7 @@ class NeuroAPI:
             return False
 
         self.log_command("actions/reregister_all", False)
-        self.log_warning("This command is not officially supported.")
+        self.log_info("actions/reregister_all is not officially supported.")
 
         return True
 
@@ -493,7 +493,7 @@ class NeuroAPI:
             return False
 
         self.log_command(f"shutdown/graceful: wants_shutdown={wants_shutdown}", False)
-        self.log_warning("This command is not officially supported.")
+        self.log_info("shutdown/graceful is not officially supported.")
 
         return True
 
@@ -509,7 +509,7 @@ class NeuroAPI:
             return False
 
         self.log_command("shutdown/immediate", False)
-        self.log_warning("This command is not officially supported.")
+        self.log_info("shutdown/immediate is not officially supported.")
 
         return True
 

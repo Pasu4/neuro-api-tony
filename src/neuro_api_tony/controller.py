@@ -182,7 +182,7 @@ class TonyController:
 
     def on_shutdown_ready(self, cmd: ShutdownReadyCommand) -> None:
         """Handle the shutdown/ready command."""
-        self.view.log_warning("This command is not officially supported.")
+        self.view.log_info("shutdown/ready is not officially supported.")
 
     def on_unknown_command(self, json_cmd: Any) -> None:
         """Handle an unknown command."""
