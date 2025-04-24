@@ -98,6 +98,9 @@ class TonyController:
 
     def on_startup(self, cmd: StartupCommand) -> None:
         """Handle the startup command."""
+        # TODO: Change to trigger on client connection instead of startup message
+        self.view.log_info(f'Started game "{cmd.game}"')
+
         self.model.clear_actions()
         self.view.clear_actions()
 

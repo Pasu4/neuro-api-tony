@@ -301,7 +301,7 @@ class NeuroAPI:
 
                         self.current_action_id = None
 
-                        self.on_startup(StartupCommand())
+                        self.on_startup(StartupCommand(game))
 
                         if json_cmd["command"] == "game/startup":
                             self.log_warning('"game/startup" command is deprecated. Use "startup" instead.')
@@ -540,10 +540,10 @@ class NeuroAPI:
         return invalid_keys
 
 
-class StartupCommand:
+class StartupCommand(NamedTuple):
     """`startup` command."""
 
-    __slots__ = ()
+    game: str
 
 
 class ContextCommand(NamedTuple):
