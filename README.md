@@ -271,6 +271,7 @@ These controls are [proposed features](https://github.com/VedalAI/neuro-game-sdk
 ## Known issues
 
 - The last button on the control panel sometimes does not appear when the app is started. Resizing the window should make it appear.
+- Tony may not generate valid strings if `minLength` or `maxLength` is specified together with `pattern`. This is a bug in the JSF library, which calls the rstr library to generate text from a regex, which doesn't have a way of setting a global min/max length.
 
 ## Screenshots
 
