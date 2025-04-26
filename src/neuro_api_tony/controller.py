@@ -148,7 +148,7 @@ class TonyController:
         self.view.log_query(cmd.query, cmd.ephemeral_context)
 
         if self.view.controls.ignore_actions_force:
-            self.view.log_warning("Forced action ignored.")
+            self.view.log_info("Forced action ignored.")  # TODO: Make this configurable as warning?
             self.active_actions_force = None
             return
 
@@ -241,7 +241,7 @@ class TonyController:
 
     def on_view_unlock(self) -> None:
         """Handle a request to unlock the view."""
-        self.view.log_warning("Stopped waiting for action result.")
+        self.view.log_info("Stopped waiting for action result.")  # TODO: Make this configurable as warning?
         self.view.enable_actions()
 
     def on_view_clear_logs(self) -> None:
