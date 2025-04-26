@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 @pytest.fixture
 def api() -> NeuroAPI:
     """Create a NeuroAPI instance for testing."""
-    return NeuroAPI()
+    return NeuroAPI(Mock())
 
 
 @pytest.fixture(autouse=True)
@@ -71,8 +71,9 @@ def test_run_start_stop(api: NeuroAPI) -> None:
                 break
             tasks.pop(0)()
 
-    with patch(
-        "wx.CallAfter",
+    with patch.object(
+        api,
+        "run_sync_soon_threadsafe",
         run_sync_soon_threadsafe,
     ):
         api.start("localhost", 8080)
@@ -86,8 +87,9 @@ def test_run_start_stop(api: NeuroAPI) -> None:
     assert api.async_library_running
 
     close_mock = Mock()
-    with patch(
-        "wx.CallAfter",
+    with patch.object(
+        api,
+        "run_sync_soon_threadsafe",
         run_sync_soon_threadsafe,
     ):
         api.on_close(close_mock)
