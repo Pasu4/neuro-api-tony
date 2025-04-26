@@ -464,7 +464,7 @@ class NeuroAPI:
             return False
 
         self.current_action_id = id_
-        self.log_command(f"action: {name}{' {...}' if data else ''}", False)
+        self.log_command("action", False, name + (" {...}" if data else ""))
         self.log_debug(f"Action ID: {id_}")
 
         return True

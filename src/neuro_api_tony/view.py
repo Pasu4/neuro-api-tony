@@ -89,7 +89,7 @@ LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
 LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
 LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
 LOG_COLOR_OUTGOING                      = wx.Colour(255,   0, 128)
-LOG_COLOR_COMMAND_ADDITION             = wx.Colour(128, 128, 128)
+LOG_COLOR_COMMAND_ADDITION              = wx.Colour(128, 128, 128)
 # fmt: on
 
 UI_COLOR_WARNING = wx.Colour(255, 255, 128)
