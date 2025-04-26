@@ -89,6 +89,7 @@ LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
 LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
 LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
 LOG_COLOR_OUTGOING                      = wx.Colour(255,   0, 128)
+LOG_COLOR_COMMAND_ADDITION             = wx.Colour(128, 128, 128)
 # fmt: on
 
 UI_COLOR_WARNING = wx.Colour(255, 255, 128)
@@ -159,13 +160,21 @@ class TonyView:
         """Show the main frame."""
         self.frame.Show()
 
-    def log_command(self, message: str, incoming: bool) -> None:
+    def log_command(self, command: str, incoming: bool, addition: str | None = None) -> None:
         """Log a command."""
         tag = "Game --> Tony" if incoming else "Game <-- Tony"
         color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
 
-        self.add_export_log(message, tag, "Commands")
-        self.frame.panel.log_notebook.command_log_panel.log(message, tag, color)
+        if addition is None:
+            self.add_export_log(command, tag, "Commands")
+            self.frame.panel.log_notebook.command_log_panel.log(command, tag, color)
+        else:
+            self.add_export_log(f"{command}: {addition}", tag, "Commands")
+            self.frame.panel.log_notebook.command_log_panel.log(
+                [(command + ": ", LOG_COLOR_DEFAULT), (addition, LOG_COLOR_COMMAND_ADDITION)],
+                tag,
+                color,
+            )
 
     def log_debug(self, message: str) -> None:
         """Log a debug message."""
@@ -797,7 +806,7 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
 
     def log(
         self,
-        message: str,
+        message: str | list[tuple[str, wx.Colour]],
         tags: str | list[str] | None = None,
         tag_colors: wx.Colour | list[wx.Colour] | None = None,
     ) -> None:
@@ -827,8 +836,14 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
             self.text.AppendText(f"[{tag}] ")
 
         # Log message
-        self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
-        self.text.AppendText(f"{message}\n")
+        if isinstance(message, str):
+            self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
+            self.text.AppendText(f"{message}\n")
+        else:
+            for msg, color in message:
+                self.text.SetDefaultStyle(wx.TextAttr(color))
+                self.text.AppendText(f"{msg}")
+            self.text.AppendText("\n")
 
 
 class ControlPanel(wx.Panel):  # type: ignore[misc]

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import traceback
-from typing import TYPE_CHECKING, Any, Final, NamedTuple
+from typing import TYPE_CHECKING, Any, Final, NamedTuple, Protocol
 
 import jsonschema
 import jsonschema.exceptions
@@ -69,6 +69,13 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
 )
 
 
+class LogCommandProtocol(Protocol):
+    """Protocol for log command."""
+
+    def __call__(self, message: str, incoming: bool, addition: str | None = None) -> None:
+        """Log command."""
+
+
 class NeuroAPI:
     """NeuroAPI class."""
 
@@ -89,7 +96,7 @@ class NeuroAPI:
         self.on_action_result: Callable[[ActionResultCommand], None] = lambda cmd: None
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
-        self.log_command: Callable[[str, bool], None] = lambda message, incoming: None
+        self.log_command: LogCommandProtocol = lambda message, incoming, addition=None: None
         self.log_debug: Callable[[str], None] = lambda message: None
         self.log_info: Callable[[str], None] = lambda message: None
         self.log_warning: Callable[[str], None] = lambda message: None
@@ -297,7 +304,7 @@ class NeuroAPI:
                 # Handle the command
                 match json_cmd["command"]:
                     case "startup" | "game/startup":
-                        self.log_command(f"{json_cmd['command']}: {game}", True)
+                        self.log_command(json_cmd["command"], True, game)
 
                         self.current_action_id = None
 
@@ -314,7 +321,7 @@ class NeuroAPI:
 
                     case "actions/register":
                         names = [action["name"] for action in data["actions"]]
-                        self.log_command(f"actions/register: {', '.join(names)}", True)
+                        self.log_command("actions/register", True, ", ".join(names))
 
                         # Check the actions
                         for action in data["actions"]:
@@ -349,12 +356,12 @@ class NeuroAPI:
                         self.on_actions_register(ActionsRegisterCommand(data["actions"]))
 
                     case "actions/unregister":
-                        self.log_command(f"actions/unregister: {', '.join(data['action_names'])}", True)
+                        self.log_command("actions/unregister", True, ", ".join(data["action_names"]))
                         self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
 
                     case "actions/force":
                         self.action_forced = True
-                        self.log_command(f"actions/force: {', '.join(data['action_names'])}", True)
+                        self.log_command("actions/force", True, ", ".join(data["action_names"]))
                         self.on_actions_force(
                             ActionsForceCommand(
                                 data.get("state"),
@@ -365,7 +372,7 @@ class NeuroAPI:
                         )
 
                     case "action/result":
-                        self.log_command(f"action/result: {'success' if data['success'] else 'failure'}", True)
+                        self.log_command("action/result", True, "success" if data["success"] else "failure")
 
                         # Check if an action/result was expected
                         if self.current_action_id is None:
@@ -390,7 +397,7 @@ class NeuroAPI:
                         self.on_shutdown_ready(ShutdownReadyCommand())
 
                     case _:
-                        self.log_command(f"{json_cmd['command']}: Unknown command", True)
+                        self.log_command(json_cmd["command"], True, "Unknown command")
                         self.log_warning(f"Unknown command: {json_cmd['command']}")
                         self.on_unknown_command(json_cmd)
 
@@ -492,7 +499,7 @@ class NeuroAPI:
         if not self._submit_message(message):
             return False
 
-        self.log_command(f"shutdown/graceful: wants_shutdown={wants_shutdown}", False)
+        self.log_command("shutdown/graceful", False, f"{wants_shutdown=}")
         self.log_info("shutdown/graceful is not officially supported.")
 
         return True
