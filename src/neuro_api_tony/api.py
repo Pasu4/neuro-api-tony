@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple, Protocol
 import jsonschema
 import jsonschema.exceptions
 import trio
-import wx
 from trio_websocket import (
     ConnectionClosed,
     WebSocketConnection,
@@ -79,12 +78,13 @@ class LogCommandProtocol(Protocol):
 class NeuroAPI:
     """NeuroAPI class."""
 
-    def __init__(self) -> None:
+    def __init__(self, run_sync_soon_threadsafe: Callable[[Callable[[], object]], object]) -> None:
         """Initialize NeuroAPI."""
         self.message_send_channel: trio.MemorySendChannel[str] | None = None
         self.current_game = ""
         self.current_action_id: str | None = None
         self.action_forced = False
+        self.run_sync_soon_threadsafe = run_sync_soon_threadsafe
 
         # Dependency injection
         # fmt: off
@@ -142,7 +142,7 @@ class NeuroAPI:
             trio.lowlevel.start_guest_run(
                 root_run,
                 done_callback=done_callback,
-                run_sync_soon_threadsafe=wx.CallAfter,
+                run_sync_soon_threadsafe=self.run_sync_soon_threadsafe,
                 host_uses_signal_set_wakeup_fd=False,
                 restrict_keyboard_interrupt_to_checkpoints=True,
                 strict_exception_groups=True,
@@ -182,13 +182,13 @@ class NeuroAPI:
         def shutdown_then_call() -> None:
             # If still running, reschedule this function to run again
             if self.async_library_running:
-                wx.CallAfter(shutdown_then_call)
+                self.run_sync_soon_threadsafe(shutdown_then_call)
             else:
                 # Finally shut down, call shutdown function
                 shutdown_function()
 
         # Schedule `shutdown_function` to be called once trio run closes
-        wx.CallAfter(shutdown_then_call)
+        self.run_sync_soon_threadsafe(shutdown_then_call)
 
     async def _run(self, address: str, port: int) -> None:
         """Server run root function."""

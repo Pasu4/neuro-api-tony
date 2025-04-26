@@ -42,7 +42,7 @@ class TonyController:
         """Initialize Tony Controller."""
         self.app = app
         self.model = TonyModel()
-        self.api = NeuroAPI()
+        self.api = NeuroAPI(wx.CallAfter)
         self.view = TonyView(app, self.model, log_level, self.api.on_close)
 
         self.active_actions_force: ActionsForceCommand | None = None
