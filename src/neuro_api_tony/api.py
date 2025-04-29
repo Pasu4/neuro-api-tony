@@ -69,72 +69,237 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
 
 
 class LogCommandProtocol(Protocol):
-    """Protocol for log command."""
+    """Protocol for `log_command`."""
 
     def __call__(self, message: str, incoming: bool, addition: str | None = None) -> None:
-        """Log command."""
+        """Signature for `log_command`.
+
+        Parameters
+        ----------
+        message : str
+            The command name.
+        incoming : bool
+            If `True`, the command was received from the client. If `False`, the command was sent to the client.
+        addition : str | None
+            An optional additional message. This is used to log additional information about the command, such as the
+            game name for the `startup` command.
+
+        """
 
 
 class NeuroAPI:
     """NeuroAPI class."""
 
     def __init__(self, run_sync_soon_threadsafe: Callable[[Callable[[], object]], object]) -> None:
-        """Initialize NeuroAPI."""
-        self.message_send_channel: trio.MemorySendChannel[str] | None = None
-        self.current_game = ""
-        self.current_action_id: str | None = None
-        self.action_forced = False
+        """Initialize NeuroAPI.
+
+        Parameters
+        ----------
+        run_sync_soon_threadsafe : Callable[[Callable[[], object]], object]
+            A function that is passed to [`trio.lowlevel.start_guest_run`](https://trio.readthedocs.io/en/stable/reference-lowlevel.html#trio.lowlevel.start_guest_run) to run a function in the main thread.
+            See the Trio documentation for more information.
+
+        """
+        self._message_send_channel: trio.MemorySendChannel[str] | None = None
+        self._current_game = ""
+        self._current_action_id: str | None = None
+        self._action_forced = False
+        # Tests fail if I rename this to `_run_sync_soon_threadsafe`
         self.run_sync_soon_threadsafe = run_sync_soon_threadsafe
 
         # Dependency injection
         # fmt: off
         self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
+        """Callback that is called when a [startup](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#startup) command is received.
+
+        Parameters
+        ----------
+        cmd : StartupCommand
+            The received command.
+        """
         self.on_context: Callable[[ContextCommand], None] = lambda cmd: None
+        """Callback that is called when a [context](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#context) command is received.
+
+        Parameters
+        ----------
+        cmd : ContextCommand
+            The received command.
+        """
         self.on_actions_register: Callable[[ActionsRegisterCommand], None] = lambda cmd: None
+        """Callback that is called when an [actions/register](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#register-actions) command is received.
+
+        Parameters
+        ----------
+        cmd : ActionsRegisterCommand
+            The received command.
+        """
         self.on_actions_unregister: Callable[[ActionsUnregisterCommand], None] = lambda cmd: None
+        """Callback that is called when an [actions/unregister](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#unregister-actions) command is received.
+
+        Parameters
+        ----------
+        cmd : ActionsUnregisterCommand
+            The received command.
+        """
         self.on_actions_force: Callable[[ActionsForceCommand], None] = lambda cmd: None
+        """Callback that is called when an [actions/force](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#force-actions) command is received.
+
+        Parameters
+        ----------
+        cmd : ActionsForceCommand
+            The received command.
+        """
         self.on_action_result: Callable[[ActionResultCommand], None] = lambda cmd: None
+        """Callback that is called when an [action/result](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action-result) command is received.
+
+        Parameters
+        ----------
+        cmd : ActionResultCommand
+            The received command.
+        """
         self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
+        """Callback that is called when a [shutdown/ready](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#shutdown-ready) command is received.
+
+        Parameters
+        ----------
+        cmd : ShutdownReadyCommand
+            The received command.
+        """
         self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
-        self.log_command: LogCommandProtocol = lambda message, incoming, addition=None: None
+        """Callback that is called when an unknown command is received.
+
+        Parameters
+        ----------
+        cmd : Any
+            The received command.
+        """
+        self.log_command: LogCommandProtocol = lambda command, incoming, addition=None: None
+        """
+        log_command(command, incoming, addition)
+
+        Logging callback that is called when a command is received.
+
+        Parameters
+        ----------
+        command : str
+            The command name.
+        incoming : bool
+            If `True`, the command was received from the client. If `False`, the command was sent to the client.
+        addition : str, optional
+            An optional additional message. This is used to log additional information about the command, such as the
+            game name for the `startup` command.
+        """
         self.log_debug: Callable[[str], None] = lambda message: None
+        """Logging callback that is called when a debug message should be logged.
+
+        Parameters
+        ----------
+        message : str
+            The message to log.
+
+        """
         self.log_info: Callable[[str], None] = lambda message: None
+        """Logging callback that is called when an info message should be logged.
+
+        Parameters
+        ----------
+        message : str
+            The message to log.
+
+        """
         self.log_warning: Callable[[str], None] = lambda message: None
+        """Logging callback that is called when a warning message should be logged.
+
+        Parameters
+        ----------
+        message : str
+            The message to log.
+
+        """
         self.log_error: Callable[[str], None] = lambda message: None
+        """Logging callback that is called when an error message should be logged.
+
+        Parameters
+        ----------
+        message : str
+            The message to log.
+
+        """
         self.log_critical: Callable[[str], None] = lambda message: None
+        """Logging callback that is called when a critical error message should be logged.
+
+        If a critical error occurs, the API instance is in an invalid state and should not be used anymore.
+
+        Parameters
+        ----------
+        message : str
+            The message to log.
+
+        """
         self.log_raw: Callable[[str, bool], None] = lambda message, incoming: None
+        """Logging callback that is called when any message is received or sent.
+
+        Parameters
+        ----------
+        message : str
+            The raw JSON data received or sent.
+        incoming : bool
+            If `True`, the message was received from the client. If `False`, the message was sent to the client.
+
+        """
         self.get_delay: Callable[[], float] = lambda: 0.0
+        """A function that should return the delay in seconds to wait before sending a message.
+
+        Returns
+        -------
+        float
+            The delay in seconds to wait before sending a message.
+        """
         # fmt: on
 
-        self.async_library_running = False
-        self.async_library_root_cancel: trio.CancelScope
-        self.received_loop_close_request = False
+        self._async_library_running = False
+        self._async_library_root_cancel: trio.CancelScope
+        self._received_loop_close_request = False
 
     def start(self, address: str, port: int) -> None:
-        """Start hosting the websocket server with Trio in the background."""
-        if self.received_loop_close_request:
+        """Start hosting the websocket server with Trio in the background.
+
+        Parameters
+        ----------
+        address : str
+            The address to run the websocket server on.
+        port : int
+            The port to run the websocket server on. No other process should be using this port.
+
+        Raises
+        ------
+        OSError
+            If the specified port is already in use.
+
+        """
+        if self._received_loop_close_request:
             # Attempting to shut down
             self.log_critical("Something attempted to start websocket server during shutdown, ignoring.")
             return
 
-        if self.async_library_running:
+        if self._async_library_running:
             # Already running, skip
             self.log_critical("Something attempted to start websocket server a 2nd time, ignoring.")
             return
 
         def done_callback(run_outcome: Outcome[None]) -> None:
             """Handle when trio run completes."""
-            assert self.async_library_running, "How can stop running if not running?"
-            self.async_library_running = False
+            assert self._async_library_running, "How can stop running if not running?"
+            self._async_library_running = False
             # Unwrap to make sure exceptions are printed
             run_outcome.unwrap()
 
-        self.async_library_running = True
-        self.async_library_root_cancel = trio.CancelScope()
+        self._async_library_running = True
+        self._async_library_root_cancel = trio.CancelScope()
 
         async def root_run() -> None:
             """Root async run, wrapped with async_library_root_cancel so it's able to be stopped remotely."""
-            with self.async_library_root_cancel:
+            with self._async_library_root_cancel:
                 await self._run(address, port)
 
         try:
@@ -150,25 +315,34 @@ class NeuroAPI:
         except Exception:
             # Make sure async_library_running can never be in invalid state
             # even if trio fails to launch for some reason (shouldn't happen but still)
-            self.async_library_running = False
+            self._async_library_running = False
             raise
 
     def stop(self) -> None:
         """Stop hosting background websocket server."""
-        if not self.async_library_running:
+        if not self._async_library_running:
             return
-        self.async_library_root_cancel.cancel()
+        self._async_library_root_cancel.cancel()
 
     def on_close(self, shutdown_function: Callable[[], None]) -> None:
-        """Gracefully handle application quit, cancel async run properly then call shutdown_function."""
-        if self.received_loop_close_request:
+        """Gracefully handle application quit, cancel async run properly then call shutdown_function.
+
+        This will stop the websocket server and then call `shutdown_function`.
+
+        Parameters
+        ----------
+        shutdown_function : Callable[[], None]
+            A function that will be called when the websocket server is stopped.
+
+        """
+        if self._received_loop_close_request:
             self.log_critical("Already closing, ignoring 2nd close request.")
             return
 
-        self.received_loop_close_request = True
+        self._received_loop_close_request = True
 
         # Already shut down, close
-        if not self.async_library_running:
+        if not self._async_library_running:
             shutdown_function()
             return
 
@@ -181,7 +355,7 @@ class NeuroAPI:
 
         def shutdown_then_call() -> None:
             # If still running, reschedule this function to run again
-            if self.async_library_running:
+            if self._async_library_running:
                 self.run_sync_soon_threadsafe(shutdown_then_call)
             else:
                 # Finally shut down, call shutdown function
@@ -207,7 +381,7 @@ class NeuroAPI:
     @property
     def client_connected(self) -> bool:
         """Is there a client connected."""
-        return self.message_send_channel is not None
+        return self._message_send_channel is not None
 
     async def _handle_websocket_request(
         self,
@@ -228,8 +402,8 @@ class NeuroAPI:
             # Using message_send_channel to send websocket messages synchronously
             # Zero here means no buffer, send not allowed to happen if receive channel has
             # not read prior message waiting yet.
-            self.message_send_channel, receive_channel = trio.open_memory_channel[str](0)
-            with self.message_send_channel, receive_channel:
+            self._message_send_channel, receive_channel = trio.open_memory_channel[str](0)
+            with self._message_send_channel, receive_channel:
                 # Accept connection
                 async with await request.accept() as connection:
                     await self._handle_client_connection(
@@ -237,7 +411,7 @@ class NeuroAPI:
                         receive_channel,
                     )
         finally:
-            self.message_send_channel = None
+            self._message_send_channel = None
 
     async def _handle_client_connection(
         self,
@@ -287,18 +461,18 @@ class NeuroAPI:
                 else:
                     # Check game name
                     if json_cmd["command"] == "startup" or json_cmd["command"] == "game/startup":
-                        self.current_game = game
-                    elif self.current_game != game:
+                        self._current_game = game
+                    elif self._current_game != game:
                         self.log_warning("Game name does not match the current game.")
-                    elif self.current_game == "":
+                    elif self._current_game == "":
                         self.log_warning("No startup command received.")
 
                 # Check action result when waiting for it
-                if self.current_action_id is not None and json_cmd["command"] == "actions/force":
+                if self._current_action_id is not None and json_cmd["command"] == "actions/force":
                     self.log_warning("Received actions/force while waiting for action/result.")
 
                 # Check if an action is already forced
-                if self.action_forced and json_cmd["command"] == "actions/force":
+                if self._action_forced and json_cmd["command"] == "actions/force":
                     self.log_warning("Received actions/force while an action is already forced.")
 
                 # Handle the command
@@ -306,7 +480,7 @@ class NeuroAPI:
                     case "startup" | "game/startup":
                         self.log_command(json_cmd["command"], True, game)
 
-                        self.current_action_id = None
+                        self._current_action_id = None
 
                         self.on_startup(StartupCommand(game))
 
@@ -360,7 +534,7 @@ class NeuroAPI:
                         self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
 
                     case "actions/force":
-                        self.action_forced = True
+                        self._action_forced = True
                         self.log_command("actions/force", True, ", ".join(data["action_names"]))
                         self.on_actions_force(
                             ActionsForceCommand(
@@ -375,15 +549,15 @@ class NeuroAPI:
                         self.log_command("action/result", True, "success" if data["success"] else "failure")
 
                         # Check if an action/result was expected
-                        if self.current_action_id is None:
+                        if self._current_action_id is None:
                             self.log_warning("Unexpected action/result.")
                         # Check if the action ID matches
-                        elif self.current_action_id != data["id"]:
-                            self.log_warning(f'Received action ID "{data["id"]}" does not match the expected action ID "{self.current_action_id}".')  # fmt: skip
+                        elif self._current_action_id != data["id"]:
+                            self.log_warning(f'Received action ID "{data["id"]}" does not match the expected action ID "{self._current_action_id}".')  # fmt: skip
 
                         self.log_debug(f"Action ID: {data['id']}")
 
-                        self.current_action_id = None
+                        self._current_action_id = None
                         self.on_action_result(
                             ActionResultCommand(
                                 data["success"],
@@ -439,13 +613,20 @@ class NeuroAPI:
             return False
         # Otherwise send channel should exist
         # type checkers need help understanding `self.client_connected`
-        assert self.message_send_channel is not None
-        self.message_send_channel.send_nowait(message)
+        assert self._message_send_channel is not None
+        self._message_send_channel.send_nowait(message)
         return True
 
     def send_action(self, id_: str, name: str, data: str | None) -> bool:
-        """Send an action command. Return True if actually sent."""
-        self.action_forced = False
+        """Send an action command.
+
+        Parameters
+        ----------
+        id_ : str
+            An arbitrary unique string that identifies the action. This is used to match the action with the result returned by the game.
+
+        """
+        self._action_forced = False
 
         payload = {
             "id": id_,
@@ -463,14 +644,28 @@ class NeuroAPI:
         if not self._submit_message(message):
             return False
 
-        self.current_action_id = id_
+        self._current_action_id = id_
         self.log_command("action", False, name + (" {...}" if data else ""))
         self.log_debug(f"Action ID: {id_}")
 
         return True
 
     def send_actions_reregister_all(self) -> bool:
-        """Send an actions/reregister_all command."""
+        """Send an [actions/reregister_all](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#reregister-all-actions) command.
+
+        This signals to the game to unregister all actions and reregister them.
+
+        Returns:
+        -------
+        bool
+            `True` if the command was sent successfully, `False` otherwise.
+
+        Warnings:
+        --------
+        This command is part of the proposed API and is not officially supported yet.
+        Some SDKs may not support it.
+
+        """
         message = json.dumps(
             {
                 "command": "actions/reregister_all",
@@ -486,7 +681,27 @@ class NeuroAPI:
         return True
 
     def send_shutdown_graceful(self, wants_shutdown: bool) -> bool:
-        """Send a shutdown/graceful command."""
+        """Send a [shutdown/graceful](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command.
+
+        What this command does depends on the `wants_shutdown` parameter.
+
+        Parameters
+        ----------
+        wants_shutdown : bool
+            If `True`, the game should prepare for shutdown. If `False`, the game should cancel any pending graceful
+            shutdown.
+
+        Returns
+        -------
+        bool
+            `True` if the command was sent successfully, `False` otherwise.
+
+        Warnings
+        --------
+        This command is part of the proposed API and is not officially supported yet.
+        Some SDKs may not support it.
+
+        """
         message = json.dumps(
             {
                 "command": "shutdown/graceful",
@@ -505,7 +720,21 @@ class NeuroAPI:
         return True
 
     def send_shutdown_immediate(self) -> bool:
-        """Send a shutdown/immediate command."""
+        """Send a [shutdown/immediate](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown) command.
+
+        This signals to the game that it will be shut down within a few seconds.
+
+        Returns:
+        -------
+        bool
+            `True` if the command was sent successfully, `False` otherwise.
+
+        Warnings:
+        --------
+        This command is part of the proposed API and is not officially supported yet.
+        Some SDKs may not support it.
+
+        """
         message = json.dumps(
             {
                 "command": "shutdown/immediate",
@@ -548,20 +777,23 @@ class NeuroAPI:
 
 
 class StartupCommand(NamedTuple):
-    """`startup` command."""
+    """[`startup`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#startup) command."""
 
     game: str
+    """The name of the game."""
 
 
 class ContextCommand(NamedTuple):
-    """`context` command."""
+    """[`context`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#context) command."""
 
     message: str
+    """The context message."""
     silent: bool
+    """If `True`, Neuro should not directly react to the message."""
 
 
 class ActionsRegisterCommand:
-    """`actions/register` command."""
+    """[`actions/register`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#register-actions) command."""
 
     __slots__ = ("actions",)
 
@@ -576,31 +808,35 @@ class ActionsRegisterCommand:
             )
             for action in actions
         ]
+        """The list of actions to register."""
 
 
 class ActionsUnregisterCommand(NamedTuple):
-    """`actions/unregister` command."""
+    """[`actions/unregister`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#unregister-actions) command."""
 
     action_names: list[str]
+    """The list of action names to unregister."""
 
 
 class ActionsForceCommand(NamedTuple):
-    """`actions/force` command."""
+    """[`actions/force`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#force-actions) command."""
 
     state: str | None
+    """The state of the action."""
     query: str
+    """The query string."""
     ephemeral_context: bool
     action_names: list[str]
 
 
 class ActionResultCommand(NamedTuple):
-    """`action/result` command."""
+    """[`action/result`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action-result) command."""
 
     success: bool
     message: str | None
 
 
 class ShutdownReadyCommand:
-    """`shutdown/ready` command."""
+    """[`shutdown/ready`](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#shutdown-ready) command."""
 
     __slots__ = ()

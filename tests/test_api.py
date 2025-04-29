@@ -48,7 +48,7 @@ def test_start(api: NeuroAPI) -> None:
         new_callable=Mock,
     ) as mock_start:
         api.start("localhost", 8080)
-        assert api.async_library_running
+        assert api._async_library_running
 
         # Attempt to start again
         api.start("localhost", 8080)
@@ -78,13 +78,13 @@ def test_run_start_stop(api: NeuroAPI) -> None:
     ):
         api.start("localhost", 8080)
 
-    assert api.async_library_running
+    assert api._async_library_running
     api.stop()
 
     # 2nd cancel shouldn't lead to any problems
     api.stop()
 
-    assert api.async_library_running
+    assert api._async_library_running
 
     close_mock = Mock()
     with patch.object(
@@ -104,7 +104,7 @@ def test_run_start_stop(api: NeuroAPI) -> None:
 
     close_mock.assert_called_once()
 
-    assert not api.async_library_running
+    assert not api._async_library_running
     # Make sure stop when not running is also fine
     api.stop()  # type: ignore[unreachable]
 
@@ -121,14 +121,14 @@ def test_run_start_failure(api: NeuroAPI) -> None:
             start_guest_run,
         ):
             api.start("localhost", 8080)
-    assert not api.async_library_running
+    assert not api._async_library_running
 
 
 @pytest.mark.trio
 async def test_handle_websocket_request_reject(api: NeuroAPI) -> None:
     """Test rejecting a WebSocket connection request when already connected."""
     send, receive = trio.open_memory_channel[str](0)
-    api.message_send_channel = send
+    api._message_send_channel = send
     mock_request = MagicMock()
     mock_request.reject = AsyncMock()
 
@@ -143,20 +143,20 @@ async def test_handle_websocket_request_reject(api: NeuroAPI) -> None:
 def test_send_action(api: NeuroAPI) -> None:
     """Test sending an action command."""
     send, receive = trio.open_memory_channel[str](1)
-    api.message_send_channel = send
+    api._message_send_channel = send
     assert api.send_action("123", "test_action", None)
 
-    assert api.current_action_id == "123"
+    assert api._current_action_id == "123"
     assert receive.receive_nowait() == '{"command": "action", "data": {"id": "123", "name": "test_action"}}'  # fmt: skip
 
 
 def test_send_action_with_data(api: NeuroAPI) -> None:
     """Test sending an action command."""
     send, receive = trio.open_memory_channel[str](1)
-    api.message_send_channel = send
+    api._message_send_channel = send
     assert api.send_action("123", "test_action", "data field")
 
-    assert api.current_action_id == "123"
+    assert api._current_action_id == "123"
     assert (
         receive.receive_nowait()
         == '{"command": "action", "data": {"id": "123", "name": "test_action", "data": "data field"}}'
@@ -166,7 +166,7 @@ def test_send_action_with_data(api: NeuroAPI) -> None:
 def test_send_actions_reregister_all(api: NeuroAPI) -> None:
     """Test sending reregister all command."""
     send, receive = trio.open_memory_channel[str](1)
-    api.message_send_channel = send
+    api._message_send_channel = send
     assert api.send_actions_reregister_all()
 
     assert receive.receive_nowait() == '{"command": "actions/reregister_all"}'
@@ -180,7 +180,7 @@ def test_send_actions_reregister_all_not_connected(api: NeuroAPI) -> None:
 def test_send_shutdown_graceful(api: NeuroAPI) -> None:
     """Test sending graceful shutdown command."""
     send, receive = trio.open_memory_channel[str](1)
-    api.message_send_channel = send
+    api._message_send_channel = send
     assert api.send_shutdown_graceful(True)
 
     assert receive.receive_nowait() == '{"command": "shutdown/graceful", "data": {"wants_shutdown": true}}'
@@ -194,7 +194,7 @@ def test_send_shutdown_graceful_not_connected(api: NeuroAPI) -> None:
 def test_send_shutdown_immediate(api: NeuroAPI) -> None:
     """Test sending immediate shutdown command."""
     send, receive = trio.open_memory_channel[str](1)
-    api.message_send_channel = send
+    api._message_send_channel = send
     assert api.send_shutdown_immediate()
 
     assert receive.receive_nowait() == '{"command": "shutdown/immediate"}'
@@ -209,7 +209,7 @@ def test_send_action_no_client(api: NeuroAPI) -> None:
     """Test sending an action command when no client is connected."""
     assert not api.send_action("123", "test_action", None)
 
-    assert api.current_action_id is None
+    assert api._current_action_id is None
 
 
 def test_check_invalid_keys_recursive(api: NeuroAPI) -> None:
@@ -298,7 +298,7 @@ async def test_handle_websocket_request_accept(api: NeuroAPI) -> None:
         await trio.sleep(0.05)
         nursery.cancel_scope.cancel()
 
-    assert api.message_send_channel is None
+    assert api._message_send_channel is None
 
 
 @pytest.mark.trio
@@ -309,7 +309,7 @@ async def test_handle_client_connection(api: NeuroAPI) -> None:
     ws_send, ws_receive = trio.open_memory_channel[str](1)
     mock_websocket.get_message = ws_receive.receive
     mock_websocket.send_message = ws_send.send
-    api.message_send_channel = send
+    api._message_send_channel = send
 
     await send.send('{"command": "startup", "game": "test_game"}')
 
@@ -329,7 +329,7 @@ async def test_handle_consumer(api: NeuroAPI) -> None:
     mock_websocket = MagicMock()
     send, receive = trio.open_memory_channel[str](1)
     mock_websocket.get_message = receive.receive
-    api.message_send_channel = send
+    api._message_send_channel = send
 
     await send.send('{"command": "startup", "game": "test_game"}')
 
@@ -340,7 +340,7 @@ async def test_handle_consumer(api: NeuroAPI) -> None:
         cancel_scope.cancel()
         nursery.cancel_scope.cancel()
 
-    assert api.current_game == "test_game"
+    assert api._current_game == "test_game"
 
 
 @pytest.mark.trio
@@ -349,7 +349,7 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     mock_websocket = MagicMock()
     send, receive = trio.open_memory_channel[str](1)
     mock_websocket.get_message = receive.receive
-    api.message_send_channel = send
+    api._message_send_channel = send
 
     # Missing closing brace
     await send.send('{"command": "startup", "game": "test_game"')
@@ -383,7 +383,7 @@ async def test_handle_consumer_invalid_json(api: NeuroAPI) -> None:
     if not had_json_error:
         raise ValueError("Should have gotten JSONDecodeError")
 
-    assert api.current_game == ""
+    assert api._current_game == ""
 
 
 @pytest.mark.trio
@@ -392,7 +392,7 @@ async def test_handle_producer(api: NeuroAPI) -> None:
     mock_websocket = MagicMock()
     send, receive = trio.open_memory_channel[str](1)
     mock_websocket.send_message = AsyncMock(return_value=None)
-    api.message_send_channel = send
+    api._message_send_channel = send
 
     send.send_nowait('{"command": "action", "data": {"id": "123", "name": "test_action"}}')
 
@@ -423,7 +423,7 @@ async def test_handle_consumer_unexpected_command(api: NeuroAPI) -> None:
     mock_websocket = MagicMock()
     send, receive = trio.open_memory_channel[str](1)
     mock_websocket.get_message = receive.receive
-    api.message_send_channel = send
+    api._message_send_channel = send
 
     await send.send('{"command": "unknown_command"}')
 
@@ -445,7 +445,7 @@ async def test_handle_consumer_action_result(api: NeuroAPI) -> None:
     mock_websocket = MagicMock()
     send, receive = trio.open_memory_channel[str](1)
     mock_websocket.get_message = receive.receive
-    api.message_send_channel = send
+    api._message_send_channel = send
 
     await send.send('{"command": "action/result", "data": {"id": "123", "success": true}}')
 
@@ -456,4 +456,4 @@ async def test_handle_consumer_action_result(api: NeuroAPI) -> None:
         cancel_scope.cancel()
         nursery.cancel_scope.cancel()
 
-    assert api.current_action_id is None
+    assert api._current_action_id is None
