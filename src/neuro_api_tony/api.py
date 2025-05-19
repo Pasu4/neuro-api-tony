@@ -71,12 +71,12 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
 class LogCommandProtocol(Protocol):
     """Protocol for `log_command`."""
 
-    def __call__(self, message: str, incoming: bool, addition: str | None = None) -> None:
+    def __call__(self, command: str, incoming: bool, addition: str | None = None) -> None:
         """Signature for `log_command`.
 
         Parameters
         ----------
-        message : str
+        command : str
             The command name.
         incoming : bool
             If `True`, the command was received from the client. If `False`, the command was sent to the client.

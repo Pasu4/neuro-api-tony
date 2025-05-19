@@ -73,7 +73,7 @@ class TonyController:
         self.api.on_action_result = self.on_action_result
         self.api.on_shutdown_ready = self.on_shutdown_ready
         self.api.on_unknown_command = self.on_unknown_command
-        self.api.log_command = lambda message, incoming, addition=None: self.view.log_command(message, incoming, addition)  # idk
+        self.api.log_command = self.view.log_command
         self.api.log_debug = self.view.log_debug
         self.api.log_info = self.view.log_info
         self.api.log_warning = self.view.log_warning
