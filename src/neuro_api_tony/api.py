@@ -496,6 +496,7 @@ class NeuroAPI:
                     case "actions/register":
                         names = [action["name"] for action in data["actions"]]
                         self.log_command("actions/register", True, ", ".join(names))
+                        actions = []
 
                         # Check the actions
                         for action in data["actions"]:
@@ -527,7 +528,10 @@ class NeuroAPI:
                             if action["name"] == "":
                                 self.log_warning("Action name is empty.")
 
-                        self.on_actions_register(ActionsRegisterCommand(data["actions"]))
+                            # Add the action to the list
+                            actions.append(action)
+
+                        self.on_actions_register(ActionsRegisterCommand(actions))
 
                     case "actions/unregister":
                         self.log_command("actions/unregister", True, ", ".join(data["action_names"]))
