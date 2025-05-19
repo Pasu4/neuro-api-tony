@@ -501,7 +501,13 @@ class NeuroAPI:
                         # Check the actions
                         for action in data["actions"]:
                             # Check the schema
-                            if "schema" in action and action["schema"] != {}:
+                            if "schema" in action and action["schema"] != {} and action["schema"] is not None:
+                                # Neuro API does not allow boolean schemas
+                                if "schema" in action and isinstance(action["schema"], bool):
+                                    self.log_error(f"Boolean schemas are not allowed: {action['name']}")
+                                    continue
+
+                                # Check if the schema is valid
                                 try:
                                     jsonschema.Draft7Validator.check_schema(
                                         action["schema"],
@@ -516,6 +522,10 @@ class NeuroAPI:
 
                                 if len(invalid_keys) > 0:
                                     self.log_warning(f"Disallowed keys in schema: {', '.join(invalid_keys)}")
+
+                            # Check for null schema
+                            if "schema" in action and action["schema"] is None:
+                                self.log_warning(f"Action schema is null: {action['name']}")
 
                             # Check the name
                             if not isinstance(action["name"], str):
