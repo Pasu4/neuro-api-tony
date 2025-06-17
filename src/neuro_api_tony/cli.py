@@ -25,6 +25,9 @@ Options:
     -a, --addr, --address <ADDRESS>:
         The address to start the websocket server on. Default is localhost.
 
+    --host <HOST>:
+        Alias for --addr.
+
     -l, --log, --log-level <LOG_LEVEL>:
         The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
         WARNING, ERROR, CRITICAL.
@@ -47,6 +50,7 @@ def cli_run() -> None:
                 "help",
                 "addr=",
                 "address=",
+                "host=",
                 "log=",
                 "log-level=",
                 "port=",
@@ -77,7 +81,7 @@ def cli_run() -> None:
                 )
                 sys.exit(0)
 
-            case "-a" | "--addr" | "--address":
+            case "-a" | "--addr" | "--address" | "--host":
                 address = value
 
             case "-l" | "--log" | "--log-level":
