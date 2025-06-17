@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from getopt import getopt
+from getopt import GetoptError, getopt
 from typing import Any, Final
 
 import requests
@@ -39,20 +39,28 @@ Options:
 
 def cli_run() -> None:
     """Command line interface entry point."""
-    options, _ = getopt(
-        sys.argv[1:],
-        "ha:l:p:v",
-        [
-            "help",
-            "addr=",
-            "address=",
-            "log=",
-            "log-level=",
-            "port=",
-            "update",
-            "version",
-        ],
-    )
+    try:
+        options, _ = getopt(
+            sys.argv[1:],
+            "ha:l:p:v",
+            [
+                "help",
+                "addr=",
+                "address=",
+                "log=",
+                "log-level=",
+                "port=",
+                "update",
+                "version",
+            ],
+        )
+    except GetoptError as exc:
+        message(
+            message=str(exc),
+            caption="Invalid Option",
+            style=wx.OK | wx.ICON_ERROR,
+        )
+        sys.exit(1)
 
     address = "localhost"
     port = 8000
