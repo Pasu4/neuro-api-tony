@@ -55,6 +55,7 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
         "if",
         "maxProperties",
         "minProperties",
+        "multipleOf",
         "not",
         "oneOf",
         "patternProperties",
