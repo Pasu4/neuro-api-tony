@@ -789,7 +789,7 @@ class NeuroAPI:
             else:
                 self.log_error(f"Unhandled schema value type {type(value)!r} ({value!r})")
 
-            if key === "uniqueItems":
+            if key == "uniqueItems":
                 isUniqueItemsPresent = True
 
         if isUniqueItemsPresent is True:
