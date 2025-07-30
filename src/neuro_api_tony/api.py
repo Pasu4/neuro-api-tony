@@ -788,10 +788,10 @@ class NeuroAPI:
                         invalid_keys.extend(self.check_invalid_keys_recursive(item))
             else:
                 self.log_error(f"Unhandled schema value type {type(value)!r} ({value!r})")
-            
+
             if key === "uniqueItems":
                 isUniqueItemsPresent = True
-        
+
         if isUniqueItemsPresent is True:
             self.log_info("Your schema has uniqueItems, which is not guaranteed to work.")
 
