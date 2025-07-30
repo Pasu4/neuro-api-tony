@@ -773,7 +773,7 @@ class NeuroAPI:
         Returns a list of invalid keys that were found.
         """
         invalid_keys = []
-        isUniqueItemsPresent = False
+        is_unique_items_present = False
 
         for key, value in sub_schema.items():
             if key in INVALID_SCHEMA_KEYS:
@@ -790,9 +790,9 @@ class NeuroAPI:
                 self.log_error(f"Unhandled schema value type {type(value)!r} ({value!r})")
 
             if key == "uniqueItems":
-                isUniqueItemsPresent = True
+                is_unique_items_present = True
 
-        if isUniqueItemsPresent is True:
+        if is_unique_items_present is True:
             self.log_info("Your schema has uniqueItems, which is not guaranteed to work.")
 
         return invalid_keys
