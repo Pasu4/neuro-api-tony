@@ -57,7 +57,11 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     # Install wxPython from binaries
     uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
     # Make sure installation was successful
-    python -c "import wx; print(wx.__version__)"
+    WX_RUN_VERSION=$(python -c "import wx; print(wx.__version__)")
+    if [[ "${WX_RUN_VERSION}" != "${WXPYTHON_VERSION}" ]]; then
+        echo "::error:: wxPython linux installation failed, version does not match expected."
+        exit 1
+    fi
     echo "::endgroup::"
 fi
 
@@ -94,9 +98,6 @@ else
 
     INSTALLDIR=$(python -c "import os, $PROJECT; print(os.path.dirname($PROJECT.__file__))")
     cp ../pyproject.toml "$INSTALLDIR"
-
-    # get mypy tests a nice cache
-    MYPYPATH=".." mypy --config-file= --cache-dir=./.mypy_cache -c "import $PROJECT" >/dev/null 2>/dev/null || true
 
     echo "::endgroup::"
     echo "::group:: Run Tests"
