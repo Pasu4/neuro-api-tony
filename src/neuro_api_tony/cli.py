@@ -118,6 +118,13 @@ def cli_run() -> None:
                     style=wx.OK | wx.ICON_INFORMATION,
                 )
                 sys.exit(0)
+            case _ as invalid_option:
+                message(
+                    message=f"Received invalid CLI option {invalid_option!r}.",
+                    caption="Invalid Option",
+                    style=wx.OK | wx.ICON_ERROR,
+                )
+                sys.exit(1)
 
     # Check if there are updates available
     try:
