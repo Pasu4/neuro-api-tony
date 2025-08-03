@@ -55,6 +55,7 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
         "if",
         "maxProperties",
         "minProperties",
+        "multipleOf",
         "not",
         "oneOf",
         "patternProperties",
@@ -63,6 +64,7 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
         "title",
         "unevaluatedItems",
         "unevaluatedProperties",
+        "uniqueItems",
         "writeOnly",
     },
 )
@@ -521,7 +523,9 @@ class NeuroAPI:
                                 invalid_keys = self.check_invalid_keys_recursive(action["schema"])
 
                                 if len(invalid_keys) > 0:
-                                    self.log_warning(f"Disallowed keys in schema: {', '.join(invalid_keys)}")
+                                    self.log_warning(
+                                        f"Found keys in schema that might be unsupported: {', '.join(invalid_keys)}",
+                                    )
 
                             # Check for null schema
                             if "schema" in action and action["schema"] is None:
