@@ -296,7 +296,7 @@ class TonyController:
         else:
             wx.CallAfter(
                 self.view.force_actions,
-                cmd.state,
+                cmd.state or "",
                 cmd.query,
                 cmd.ephemeral_context,
                 cmd.action_names,

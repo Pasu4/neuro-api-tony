@@ -154,7 +154,7 @@ class TonyView:
         # Do not let application exit
         event.Veto()
         # Tell api to close async run cleanly and then call destroy this frame
-        self.api_close(self.frame.Destroy)
+        self.api_close(self.frame.Destroy)  # pyright: ignore[reportArgumentType]
 
     def show(self) -> None:
         """Show the main frame."""
@@ -410,7 +410,7 @@ class MainFrame(wx.Frame):  # type: ignore[misc]
         self.view = view
         self.panel = MainPanel(self)
 
-        self.SetSize((850, 600))
+        self.SetSize(850, 600)
 
 
 class MainPanel(wx.Panel):  # type: ignore[misc]
@@ -580,7 +580,8 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         action = self.actions[index]
 
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame | ActionsForceDialog)
         sent = top.view.on_execute(action)
 
         if sent:
@@ -598,21 +599,24 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         action: NeuroAction = self.actions[index]
 
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame | ActionsForceDialog)
         top.view.on_delete_action(action.name)
 
     def on_delete_all(self, event: wx.CommandEvent) -> None:
         """Handle delete all command event."""
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame | ActionsForceDialog)
         top.view.on_delete_all_actions()
 
     def on_unlock(self, event: wx.CommandEvent) -> None:
         """Handle unlock command event."""
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame | ActionsForceDialog)
         top.view.on_unlock()
 
     def on_key_down(self, event: wx.ListEvent) -> None:
@@ -648,7 +652,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 class LogNotebook(wx.Panel):  # type: ignore[misc]
     """The notebook for logging messages."""
 
-    def __init__(self, parent: MainPanel) -> None:
+    def __init__(self, parent: wx.Panel) -> None:
         """Initialize Log Notebook."""
         super().__init__(parent)
 
@@ -691,8 +695,8 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
 
         # Tab icons
         image_list = wx.ImageList(16, 16)
-        self.img_warning = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_OTHER, (16, 16)))
-        self.img_error = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+        self.img_warning = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_OTHER, wx.Size(16, 16)))
+        self.img_error = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, wx.Size(16, 16)))
         self.notebook.AssignImageList(image_list)
 
         # Bind events
@@ -746,7 +750,8 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
         """Handle restore button event."""
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame)
         top.panel.restore_log()
 
     def on_clear(self, event: wx.CommandEvent) -> None:
@@ -755,7 +760,8 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
 
         self.reset_highlight()
 
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame)
         top.view.on_clear_logs()
 
     def on_export(self, event: wx.CommandEvent) -> None:
@@ -775,7 +781,8 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
 
-            top: MainFrame = self.GetTopLevelParent()
+            top = self.GetTopLevelParent()
+            assert isinstance(top, MainFrame)
             path = file_dialog.GetPath()
             with open(path, "w") as file:
                 file.write(top.view.model.get_logs_formatted())
@@ -784,7 +791,8 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
         """Handle maximize command event."""
         event.Skip()
 
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame)
         top.panel.maximize_log()
 
 
@@ -793,7 +801,7 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
 
     def __init__(
         self,
-        parent: LogNotebook,
+        parent: wx.Notebook,
         text_ctrl_style: int = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH,
     ) -> None:
         """Initialize Log Panel."""
@@ -825,7 +833,8 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         tag_colors += [LOG_COLOR_DEFAULT] * (len(tags) - len(tag_colors))
 
         # Log timestamp
-        top: MainFrame = self.GetTopLevelParent()
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame)
         fmt = "%H:%M:%S.%f" if top.view.controls.microsecond_precision else "%H:%M:%S"
         self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
         self.text.AppendText(f"[{dt.now().strftime(fmt)}] ")
@@ -849,11 +858,13 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
 class ControlPanel(wx.Panel):  # type: ignore[misc]
     """The panel for controlling the application."""
 
-    def __init__(self, parent: MainPanel) -> None:
+    def __init__(self, parent: wx.Panel) -> None:
         """Initialize Control Panel."""
         super().__init__(parent, style=wx.BORDER_SUNKEN)
 
-        self.view: TonyView = self.GetTopLevelParent().view
+        top = self.GetTopLevelParent()
+        assert isinstance(top, MainFrame)
+        self.view: TonyView = top.view
 
         # Create controls
 
@@ -863,7 +874,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         latency_panel = wx.Panel(self)
         latency_text1 = wx.StaticText(latency_panel, label="L*tency:")
-        self.latency_input = wx.TextCtrl(latency_panel, value="0", size=(50, -1))
+        self.latency_input = wx.TextCtrl(latency_panel, value="0", size=wx.Size(50, -1))
         latency_text2 = wx.StaticText(latency_panel, label="ms")
 
         log_level_panel = wx.Panel(self)
@@ -1096,13 +1107,13 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.info.SetValue(json.dumps(self.action.schema, indent=2))
         self.allow_invalid_checkbox.SetValue(self.allow_invalid)
 
-        self.faker = JSF(action.schema)
+        self.faker = JSF(action.schema or {})
         if action.name in view.model.last_action_data:
             self.text.SetValue(view.model.last_action_data[action.name])
         else:
             self.regenerate()
 
-        self.SetSize((600, 400))
+        self.SetSize(600, 400)
 
     def regenerate(self) -> None:
         """Regenerate the JSON data."""
@@ -1116,7 +1127,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         try:
             json_str = self.text.GetValue()
             json_cmd = json.loads(json_str)
-            jsonschema.validate(json_cmd, self.action.schema)
+            jsonschema.validate(json_cmd, self.action.schema or {})
 
             self.is_error = False
             self.text.SetToolTip("")
@@ -1145,7 +1156,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             json_str = self.text.GetValue()
             json_cmd = json.loads(json_str)
             if not self.allow_invalid:
-                jsonschema.validate(json_cmd, self.action.schema)
+                jsonschema.validate(json_cmd, self.action.schema or {})
 
             self.EndModal(wx.ID_OK)
             return
@@ -1233,7 +1244,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         state_panel = wx.Panel(self)
         self.state_label = wx.StaticText(state_panel, label="State:")
         self.state_text = wx.StaticText(state_panel, label="")
-        self.state_textctrl = wx.TextCtrl(state_panel, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 100))
+        self.state_textctrl = wx.TextCtrl(state_panel, style=wx.TE_MULTILINE | wx.TE_READONLY, size=wx.Size(-1, 100))
         self.state_textctrl.Hide()
 
         query_panel = wx.Panel(self)
