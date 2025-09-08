@@ -37,6 +37,7 @@ dependencies = [
     "Faker~=37.5.3",
     "jsf~=0.11.2",
     "jsonschema~=4.25.0",
+    "neuro-api~=2.1.0",
     "outcome~=1.3.0.post0",
     "requests~=2.32.4",
     "semver~=3.0.4",
