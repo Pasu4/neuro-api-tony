@@ -82,9 +82,15 @@ package = true
 [tool.mypy]
 files = ["src/neuro_api_tony/", "tests/"]
 enable_error_code = [
-    "truthy-bool",
-    "mutable-override",
+    "deprecated",
     "exhaustive-match",
+    "ignore-without-code",
+    "mutable-override",
+    "possibly-undefined",
+    "redundant-expr",
+    "truthy-bool",
+    "truthy-iterable",
+    "unused-awaitable",
 ]
 show_column_numbers = true
 show_error_codes = true
