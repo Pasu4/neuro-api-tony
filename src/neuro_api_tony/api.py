@@ -481,7 +481,11 @@ class NeuroAPI(AbstractTrioNeuroServer):
             assert self._async_library_running, "How can stop running if not running?"
             self._async_library_running = False
             # Unwrap to make sure exceptions are printed
-            run_outcome.unwrap()
+            try:
+                run_outcome.unwrap()
+            except Exception as exc:
+                self.log_critical("".join(traceback.format_exception(exc)))
+                raise
 
         self._async_library_running = True
         self._async_library_root_cancel = trio.CancelScope()
@@ -565,6 +569,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
             )
         except Exception as exc:
             self.log_critical(f"Failed to start websocket server:\n{exc}")
+            self.log_critical("".join(traceback.format_exception(exc)))
             raise
 
     @property
@@ -635,6 +640,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
                 break
             except Exception as exc:
                 self.log_error(f"Error while handling message: {exc}")
+                self.log_error("".join(traceback.format_exception(exc)))
                 traceback.print_exception(exc)
                 break
         # Cancel (stop) writing head
@@ -673,7 +679,11 @@ class NeuroAPI(AbstractTrioNeuroServer):
             self.log_error("No clients connected!")
             return False
         _client, send_channel = self._clients[client_id]
-        send_channel.send_nowait(async_partial)
+        try:
+            send_channel.send_nowait(async_partial)
+        except trio.WouldBlock:
+            self.log_error("Cannot send command to client, already trying to send a command.")
+            return False
         return True
 
     def send_action(
