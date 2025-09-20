@@ -10,6 +10,9 @@ import trio
 if sys.version_info < (3, 11):
     pass
 
+from collections.abc import Coroutine
+from functools import partial
+
 from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
 
@@ -111,7 +114,7 @@ def test_run_start_failure(api: NeuroAPI) -> None:
     def start_guest_run(*args: Any, **kwargs: Any) -> None:
         raise ValueError("jerald")
 
-    with pytest.raises(ValueError, match="^jerald$"):
+    with pytest.raises(ValueError, match=r"^jerald$"):
         with patch(
             "trio.lowlevel.start_guest_run",
             start_guest_run,
@@ -404,7 +407,7 @@ def test_actions_register_command() -> None:
 @pytest.mark.trio
 async def test_handle_producer_no_client(api: NeuroAPI) -> None:
     """Test handling a producer message when no client is connected."""
-    send, receive = trio.open_memory_channel[str](1)
+    _send, receive = trio.open_memory_channel[partial[Coroutine[Any, Any, Any]]](1)
 
     async with trio.open_nursery() as nursery:
         nursery.start_soon(api._handle_producer, MagicMock(), receive)
