@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple, Protocol
 import jsonschema
 import jsonschema.exceptions
 import trio
+from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer
 from trio_websocket import (
     ConnectionClosed,
     WebSocketConnection,
@@ -23,9 +24,10 @@ from trio_websocket import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from neuro_api.command import Action
     from outcome import Outcome
 
-from .model import NeuroAction
+from neuro_api_tony.model import NeuroAction
 
 ACTION_NAME_ALLOWED_CHARS: Final = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
@@ -89,7 +91,67 @@ class LogCommandProtocol(Protocol):
         """
 
 
-class NeuroAPI:
+class NeuroAPIClient(AbstractNeuroServerClient):
+    """Neuro API client."""
+
+    __slots__ = ("server", "websocket")
+
+    def __init__(
+        self,
+        websocket: WebSocketConnection,
+        server: NeuroAPI,
+    ) -> None:
+        """Initialize Neuro API client."""
+        super().__init__()
+        self.websocket = websocket
+        self.server = server
+
+    def get_next_id(self) -> str:  # noqa: D102
+        return self.server.get_next_id()
+
+    async def write_to_websocket(self, data: str) -> None:  # noqa: D102
+        await self.websocket.send_message(data)
+
+    async def read_from_websocket(  # noqa: D102
+        self,
+    ) -> bytes | bytearray | memoryview | str:
+        return await self.websocket.get_message()
+
+    async def handle_action_result(  # noqa: D102
+        self,
+        game_title: str,
+        id_: str,
+        success: bool,
+        message: str | None,
+    ) -> None:
+        self.server.on_action_result(ActionResultCommand(success, message))
+
+    async def handle_actions_force(  # noqa: D102
+        self,
+        game_title: str,
+        state: str | None,
+        query: str,
+        ephemeral_context: bool,
+        action_names: list[str],
+    ) -> None:
+        self.server.on_actions_force(ActionsForceCommand(state, query, ephemeral_context, action_names))
+
+    async def handle_actions_register(  # noqa: D102
+        self,
+        game_title: str,
+        actions: list[Action],
+    ) -> None:
+        self.server.on_actions_register(ActionsRegisterCommand([a._asdict() for a in actions]))
+
+    async def handle_actions_unregister(  # noqa: D102
+        self,
+        game_title: str,
+        action_names: list[str],
+    ) -> None:
+        self.server.on_actions_unregister(ActionsUnregisterCommand(action_names))
+
+
+class NeuroAPI(AbstractTrioNeuroServer):
     """NeuroAPI class."""
 
     def __init__(self, run_sync_soon_threadsafe: Callable[[Callable[[], object]], object]) -> None:
@@ -200,7 +262,7 @@ class NeuroAPI:
             The message to log.
 
         """
-        self.log_info: Callable[[str], None] = lambda message: None
+        self.log_info: Callable[[str], None] = lambda message: None  # type: ignore[assignment]
         """Logging callback that is called when an info message should be logged.
 
         Parameters
@@ -209,7 +271,7 @@ class NeuroAPI:
             The message to log.
 
         """
-        self.log_warning: Callable[[str], None] = lambda message: None
+        self.log_warning: Callable[[str], None] = lambda message: None  # type: ignore[assignment]
         """Logging callback that is called when a warning message should be logged.
 
         Parameters
@@ -227,7 +289,7 @@ class NeuroAPI:
             The message to log.
 
         """
-        self.log_critical: Callable[[str], None] = lambda message: None
+        self.log_critical: Callable[[str], None] = lambda message: None  # type: ignore[assignment]
         """Logging callback that is called when a critical error message should be logged.
 
         If a critical error occurs, the API instance is in an invalid state and should not be used anymore.
@@ -262,6 +324,33 @@ class NeuroAPI:
         self._async_library_running = False
         self._async_library_root_cancel: trio.CancelScope
         self._received_loop_close_request = False
+        self._next_id = 0
+
+    def get_next_id(self) -> str:
+        """Generate and return the next unique command identifier."""
+        value = self._next_id
+        self._next_id += 1
+        return f"tony_action_{value}"
+
+    async def choose_force_action(  # noqa: D102
+        self,
+        game_title: str | None,
+        state: str | None,
+        query: str,
+        ephemeral_context: bool,
+        actions: tuple[Action, ...],
+    ) -> tuple[str, str | None]:
+        raise NotImplementedError()
+
+    def add_context(  # noqa: D102
+        self,
+        game_title: str | None,
+        message: str,
+        reply_if_not_busy: bool,
+    ) -> None:
+        self.on_context(
+            ContextCommand(message, not reply_if_not_busy),
+        )
 
     def start(self, address: str, port: int) -> None:
         """Start hosting the websocket server with Trio in the background.
