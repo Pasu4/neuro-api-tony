@@ -668,6 +668,11 @@ class NeuroAPI(AbstractTrioNeuroServer):
             except ConnectionClosed:
                 self.log_info("Websocket connection closed by client.")
                 break
+            except TypeError as exc:
+                self.log_error(f"TypeError while handling message: {exc}")
+                self.log_error("".join(traceback.format_exception(exc)))
+                traceback.print_exception(exc)
+                self.log_error("Assuming non-critical, keeping websocket open.")
             except Exception as exc:
                 self.log_error(f"Error while handling message: {exc}")
                 self.log_error("".join(traceback.format_exception(exc)))
