@@ -245,6 +245,35 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         except orjson.JSONDecodeError:
             self.server.log_raw(data.decode("utf-8"), False)
 
+    def deserialize_actions(  # type: ignore[override]  # noqa: D102
+        self,
+        data: dict[str, list[object]],
+    ) -> list[Action]:
+        actions_data = check_typed_dict(data, RegisterActionsData)
+
+        actions: list[Action] = []
+        for raw_action in actions_data["actions"]:
+            try:
+                action_data = check_typed_dict(
+                    raw_action,
+                    ActionSchema,
+                )
+            except ValueError as exc:
+                self.server.log_error(f"Error decoding action: {exc}")
+                continue
+            action = Action(
+                action_data["name"],
+                action_data["description"],
+                action_data.get("schema"),
+            )
+            try:
+                check_action(action)
+            except ValueError as exc:
+                self.server.log_error(f"Error checking action {action.name!r}: {exc}")
+                self.server.log_info(f"Going to register {action.name!r} anyways")
+            actions.append(action)
+        return actions
+
 
 class NeuroAPI(AbstractTrioNeuroServer):
     """NeuroAPI class."""
@@ -625,35 +654,6 @@ class NeuroAPI(AbstractTrioNeuroServer):
             self.log_info("Closing current websocket connection.")
         finally:
             del self._clients[client_id]
-
-    def deserialize_actions(  # noqa: D102
-        self,
-        data: dict[str, list[object]],
-    ) -> list[Action]:
-        actions_data = check_typed_dict(data, RegisterActionsData)
-
-        actions: list[Action] = []
-        for raw_action in actions_data["actions"]:
-            try:
-                action_data = check_typed_dict(
-                    raw_action,
-                    ActionSchema,
-                )
-            except ValueError as exc:
-                self.log_error(f"Error decoding action: {exc}")
-                continue
-            action = Action(
-                action_data["name"],
-                action_data["description"],
-                action_data.get("schema"),
-            )
-            try:
-                check_action(action)
-            except ValueError as exc:
-                self.log_error(f"Error checking action {action.name!r}: {exc}")
-                self.log_info(f"Going to register {action.name!r} anyways")
-            actions.append(action)
-        return actions
 
     async def _handle_consumer(
         self,
