@@ -465,6 +465,8 @@ class NeuroAPI(AbstractTrioNeuroServer):
         ephemeral_context: bool,
         actions: tuple[Action, ...],
     ) -> tuple[str, str | None]:
+        # I don't think this should be called, but have to implement
+        # because required abstract method
         self.on_actions_force(
             ActionsForceCommand(state, query, ephemeral_context, [action.name for action in actions]),
         )
@@ -476,6 +478,8 @@ class NeuroAPI(AbstractTrioNeuroServer):
         message: str,
         reply_if_not_busy: bool,
     ) -> None:
+        # I don't think this should be called, but have to implement
+        # because required abstract method
         self.on_context(
             ContextCommand(message, not reply_if_not_busy),
         )
@@ -535,10 +539,12 @@ class NeuroAPI(AbstractTrioNeuroServer):
                 restrict_keyboard_interrupt_to_checkpoints=True,
                 strict_exception_groups=True,
             )
-        except Exception:
+        except Exception as exc:
             # Make sure async_library_running can never be in invalid state
             # even if trio fails to launch for some reason (shouldn't happen but still)
             self._async_library_running = False
+            self.log_critical(f"Failed to start async Trio guest run:\n{exc}")
+            self.log_critical("".join(traceback.format_exception(exc)))
             raise
 
     def stop(self) -> None:
@@ -612,6 +618,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         request: WebSocketRequest,
     ) -> None:
         """Handle websocket connection request."""
+        # TODO: Remove this check once GUI supports multiple clients
         if self.clients_connected:
             # 503 is "service unavailable"
             await request.reject(
@@ -621,6 +628,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
             self.log_error("Another client attempted to connect, rejecting, server does not support multiple connections at once currently")  # fmt: skip
             return
 
+        # With block means connection closed once scope has been left
         async with await request.accept() as connection:
             await self._handle_client_connection(connection)
 
@@ -631,9 +639,28 @@ class NeuroAPI(AbstractTrioNeuroServer):
         """Handle websocket connection lifetime."""
         client = NeuroAPIClient(connection, self)
 
+        # Channel buffer of zero means no buffer, receive_channel has to
+        # be actively waiting for something to be sent for async partial
+        # functions to go through
         send_channel, receive_channel = trio.open_memory_channel[partial[Coroutine[Any, Any, Any]]](0)
 
+        # TODO: Maybe remember next client id in a different way than
+        # length, as if client disconnects, length will be the same as a
+        # prior value.
+        #
+        # For example, situation where client 0 connects, then 1
+        # connects, then 0 disconnects, and then another client
+        # connects. Newest client will be assigned id 1 and overwrite
+        # entry for already existing client id 1.
+        #
+        # Could maybe store based off connection ip address and port
+        # number?
         client_id = len(self._clients)
+
+        # band-aid fix for issue described above
+        while client_id in self._clients:
+            client_id += 1
+
         self._clients[client_id] = (client, send_channel)
 
         try:
@@ -651,7 +678,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
                         receive_channel,
                     )
         except trio.Cancelled:
-            self.log_info("Closing current websocket connection.")
+            self.log_info(f"Closing websocket connection for client id {client_id}.")
         finally:
             del self._clients[client_id]
 
@@ -668,17 +695,13 @@ class NeuroAPI(AbstractTrioNeuroServer):
             except ConnectionClosed:
                 self.log_info("Websocket connection closed by client.")
                 break
-            except TypeError as exc:
+            except (TypeError, ValueError) as exc:
                 self.log_error(str(exc))
                 self.log_debug("".join(traceback.format_exception(exc)))
                 traceback.print_exception(exc)
-                self.log_debug("Assuming non-critical, keeping websocket open.")
-            except ValueError as exc:
-                self.log_error(str(exc))
-                self.log_debug("".join(traceback.format_exception(exc)))
-                traceback.print_exception(exc)
+                self.log_debug("Assuming non-critical exception, keeping websocket open.")
             except Exception as exc:
-                self.log_error(f"Error while handling message: {exc}")
+                self.log_error(f"Error while reading/handling message: {exc}")
                 self.log_error("".join(traceback.format_exception(exc)))
                 traceback.print_exception(exc)
                 break
@@ -701,10 +724,12 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
             # Write message
             # If connection failure happens, will crash the read head
-            # because both share a nursery, ensuring connection closes
+            # because exception is propagated and both share a nursery,
+            # ensuring connection closes
             await async_partial()
 
     def _get_client(self, client_id: int) -> NeuroAPIClient | None:
+        """Return NeuroAPIClient instance from given client id or None if not found."""
         result = self._clients.get(client_id)
         if result is None:
             self.log_error(f"Client id {client_id} not found!")
@@ -713,7 +738,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         return client
 
     def _submit_async_action(self, client_id: int, async_partial: partial[Coroutine[Any, Any, Any]]) -> bool:
-        """Submit a message to the send queue. Return True if client connected."""
+        """Submit a message to the send queue. Return True if able to submit action successfully."""
         if not self.clients_connected:
             self.log_error("No clients connected!")
             return False
