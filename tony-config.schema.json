@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "logLevel": {
+            "default": "INFO",
+            "description": "Minimum log level to log. Log levels are DEBUG < INFO < WARNING < ERROR < CRITICAL.",
+            "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+            ],
+            "markdownEnumDescriptions": [
+                "Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.",
+                "Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).",
+                "Things that do not comply with the API specification, but which Tony can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.",
+                "Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.",
+                "Something went wrong and Tony will likely have to be restarted."
+            ]
+        }
+    }
+}
