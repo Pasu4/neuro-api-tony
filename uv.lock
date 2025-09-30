@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.11'",
@@ -471,6 +471,15 @@ wheels = [
 ]
 
 [[package]]
+name = "json-source-map"
+version = "1.0.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e6/f0/560df0f36ad3e6c1e9b2a077a297df2c4dc4a2c427580d1995782aff67d1/json_source_map-1.0.5.tar.gz", hash = "sha256:de99103c0637707368eb888d7aaa82bad1e21dbe2d21813998caabaa7c2e52f9", size = 6676, upload-time = "2022-12-20T12:01:25.669Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/5c/bdddb48cf521428117bd1338c531c0027f1c32beba23c89f9713229fe17c/json_source_map-1.0.5-py3-none-any.whl", hash = "sha256:c8ddb8db76dc238fce485abb548e5c7fc2b44d5ae8efb766e90e7c15840afaca", size = 7432, upload-time = "2022-12-20T12:01:24.323Z" },
+]
+
+[[package]]
 name = "jsonschema"
 version = "4.25.1"
 source = { registry = "https://pypi.org/simple" }
@@ -590,6 +599,7 @@ dependencies = [
     { name = "attrs" },
     { name = "faker" },
     { name = "jsf" },
+    { name = "json-source-map" },
     { name = "jsonschema" },
     { name = "neuro-api" },
     { name = "outcome" },
@@ -625,6 +635,7 @@ requires-dist = [
     { name = "exceptiongroup", marker = "extra == 'tests'", specifier = ">=1.2.2" },
     { name = "faker", specifier = "~=37.5.3" },
     { name = "jsf", specifier = "~=0.11.2" },
+    { name = "json-source-map", specifier = "~=1.0.5" },
     { name = "jsonschema", specifier = "~=4.25.0" },
     { name = "mypy", marker = "extra == 'tools'", specifier = ">=1.17.0" },
     { name = "neuro-api", specifier = "~=2.2.1" },
