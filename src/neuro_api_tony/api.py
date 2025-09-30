@@ -14,8 +14,8 @@ import jsonschema
 import jsonschema.exceptions
 import orjson
 import trio
-from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, check_action, check_invalid_keys_recursive, check_typed_dict
-from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer, ActionSchema, RegisterActionsData
+from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, check_invalid_keys_recursive
+from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer
 from trio_websocket import (
     ConnectionClosed,
     WebSocketConnection,
@@ -184,14 +184,14 @@ class NeuroAPIClient(AbstractNeuroServerClient):
                         f"Found keys in schema that might be unsupported: {', '.join(invalid_keys)}",
                     )
 
-            # Check for null schema
-            if action.schema is None:
-                self.server.log_warning(f"Action schema is null: {action.name}")
+            # # Check for null schema
+            # if action.schema is None:
+            #     self.server.log_warning(f"Action schema is null: {action.name}")
 
-            # Check the name
-            if not isinstance(action.name, str):
-                self.server.log_error(f"Action name is not a string: {action.name}")  # type: ignore[unreachable]
-                continue
+            # # Check the name
+            # if not isinstance(action.name, str):
+            #     self.server.log_error(f"Action name is not a string: {action.name}")  # type: ignore[unreachable]
+            #     continue
 
             if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action.name):
                 self.server.log_warning("Action name is not a lowercase string.")
@@ -249,28 +249,49 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         self,
         data: dict[str, list[object]],
     ) -> list[Action]:
-        actions_data = check_typed_dict(data, RegisterActionsData)
+        # actions_data = check_typed_dict(data, RegisterActionsData)
 
+        # Manually check the data because check_typed_dict is too strict
         actions: list[Action] = []
-        for raw_action in actions_data["actions"]:
-            try:
-                action_data = check_typed_dict(
-                    raw_action,
-                    ActionSchema,
-                )
-            except ValueError as exc:
-                self.server.log_error(f"Error decoding action: {exc}")
+        for raw_action in data["actions"]:
+            if not isinstance(raw_action, dict):
+                self.server.log_error(f"Action is not an object: {raw_action}")
                 continue
+
+            if "name" not in raw_action:
+                self.server.log_error(f"Action missing name: {raw_action}")
+                continue
+            if not isinstance(raw_action["name"], str):
+                self.server.log_error(f"Action name is not a string: {raw_action}")
+                continue
+
+            if "description" not in raw_action:
+                self.server.log_error(f"Action missing description: {raw_action['name']}")
+                continue
+            if not isinstance(raw_action["description"], str):
+                self.server.log_error(f"Action description is not a string: {raw_action}")
+                continue
+
+            if "schema" in raw_action:
+                if raw_action["schema"] is None:
+                    self.server.log_warning(f"Action schema is null: {raw_action['name']}")
+                elif isinstance(raw_action["schema"], bool):
+                    self.server.log_error(f"Boolean schemas are not allowed: {raw_action['name']}")
+                    continue
+                elif not isinstance(raw_action["schema"], dict):
+                    self.server.log_error(f"Action schema is not an object: {raw_action}")
+                    continue
+
+            if raw_action.keys() - {"name", "description", "schema"}:
+                self.server.log_warning(
+                    f"Action has additional properties: {', '.join(raw_action.keys() - {'name', 'description', 'schema'})}",
+                )
+
             action = Action(
-                action_data["name"],
-                action_data["description"],
-                action_data.get("schema"),
+                raw_action["name"],
+                raw_action["description"],
+                raw_action.get("schema"),
             )
-            try:
-                check_action(action)
-            except ValueError as exc:
-                self.server.log_error(f"Error checking action {action.name!r}: {exc}")
-                self.server.log_info(f"Going to register {action.name!r} anyways")
             actions.append(action)
         return actions
 
