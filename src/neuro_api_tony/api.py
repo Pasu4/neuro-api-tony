@@ -6,13 +6,16 @@ for more information.
 
 from __future__ import annotations
 
-import json
 import traceback
-from typing import TYPE_CHECKING, Any, Final, NamedTuple, Protocol
+from functools import partial
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
 
 import jsonschema
 import jsonschema.exceptions
+import orjson
 import trio
+from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, check_invalid_keys_recursive
+from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer
 from trio_websocket import (
     ConnectionClosed,
     WebSocketConnection,
@@ -25,49 +28,11 @@ if TYPE_CHECKING:
 
     from outcome import Outcome
 
-from .model import NeuroAction
+from collections.abc import Coroutine
 
-ACTION_NAME_ALLOWED_CHARS: Final = "abcdefghijklmnopqrstuvwxyz0123456789_-"
+from neuro_api.command import Action
 
-# See https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action
-INVALID_SCHEMA_KEYS: Final = frozenset(
-    {
-        "$anchor",
-        "$comment",
-        "$defs",
-        "$dynamicAnchor",
-        "$dynamicRef",
-        "$id",
-        "$ref",
-        "$schema",
-        "$vocabulary",
-        "additionalProperties",
-        "allOf",
-        "anyOf",
-        "contentEncoding",
-        "contentMediaType",
-        "contentSchema",
-        "dependentRequired",
-        "dependentSchemas",
-        "deprecated",
-        "description",
-        "else",
-        "if",
-        "maxProperties",
-        "minProperties",
-        "multipleOf",
-        "not",
-        "oneOf",
-        "patternProperties",
-        "readOnly",
-        "then",
-        "title",
-        "unevaluatedItems",
-        "unevaluatedProperties",
-        "uniqueItems",
-        "writeOnly",
-    },
-)
+from neuro_api_tony.model import NeuroAction
 
 
 class LogCommandProtocol(Protocol):
@@ -89,7 +54,249 @@ class LogCommandProtocol(Protocol):
         """
 
 
-class NeuroAPI:
+class NeuroAPIClient(AbstractNeuroServerClient):
+    """Neuro API client."""
+
+    __slots__ = ("game_title", "server", "websocket")
+
+    def __init__(
+        self,
+        websocket: WebSocketConnection,
+        server: NeuroAPI,
+    ) -> None:
+        """Initialize Neuro API client."""
+        super().__init__()
+        self.websocket = websocket
+        self.server = server
+        self.game_title: str | None = None
+
+    def get_next_id(self) -> str:  # noqa: D102
+        return self.server.get_next_id()
+
+    async def write_to_websocket(self, data: str) -> None:  # noqa: D102
+        await self.websocket.send_message(data)
+
+    async def read_from_websocket(  # noqa: D102
+        self,
+    ) -> bytes | bytearray | memoryview | str:
+        response = await self.websocket.get_message()
+
+        try:
+            self.server.log_raw(
+                orjson.dumps(
+                    orjson.loads(response),
+                    option=orjson.OPT_INDENT_2,
+                ).decode("utf-8"),
+                True,
+            )
+        except orjson.JSONDecodeError:
+            if isinstance(response, bytes):
+                self.server.log_raw(response.decode("utf-8"), True)
+            else:
+                self.server.log_raw(response, True)
+
+        return response
+
+    def check_game_title(self, game_title: str) -> None:
+        """Log if game title is correct."""
+        if self.game_title is None:
+            self.server.log_warning("No startup command received.")
+            return
+        if self.game_title != game_title:
+            self.server.log_warning("Game name does not match the current game.")
+
+    async def handle_startup(  # noqa: D102
+        self,
+        game_title: str,
+    ) -> None:
+        if self.game_title is not None:
+            self.server.log_warning("Game name does not match the current game.")
+        self.game_title = game_title
+        self.server.log_command("startup", True, game_title)
+        self.server.on_startup(StartupCommand(game_title))
+
+    async def handle_context(  # noqa: D102
+        self,
+        game_title: str,
+        message: str,
+        silent: bool,
+    ) -> None:
+        self.check_game_title(game_title)
+        self.server.log_command("context", True)
+        self.server.on_context(ContextCommand(message, silent))
+
+    async def handle_action_result(  # noqa: D102
+        self,
+        game_title: str,
+        id_: str,
+        success: bool,
+        message: str | None,
+    ) -> None:
+        self.check_game_title(game_title)
+        self.server.log_command("action/result", True, "success" if success else "failure")
+        self.server.on_action_result(ActionResultCommand(success, message))
+
+    async def handle_actions_force(  # noqa: D102
+        self,
+        game_title: str,
+        state: str | None,
+        query: str,
+        ephemeral_context: bool,
+        action_names: list[str],
+    ) -> None:
+        self.server.log_command("actions/force", True, ", ".join(action_names))
+        self.server.on_actions_force(ActionsForceCommand(state, query, ephemeral_context, action_names))
+
+    async def handle_actions_register(  # noqa: D102
+        self,
+        game_title: str,
+        actions: list[Action],
+    ) -> None:
+        self.check_game_title(game_title)
+        self.server.log_command("actions/register", True, ", ".join(action.name for action in actions))
+
+        checked_actions = []
+
+        # Check the actions
+        for action in actions:
+            # Check the schema
+            if action.schema != {} and action.schema is not None:
+                # Neuro API does not allow boolean schemas
+                if isinstance(action.schema, bool):  # type: ignore[unreachable]
+                    self.server.log_error(f"Boolean schemas are not allowed: {action.name}")  # type: ignore[unreachable]
+                    continue
+
+                # Check if the schema is valid
+                try:
+                    jsonschema.Draft7Validator.check_schema(
+                        action.schema,
+                    )
+                except jsonschema.exceptions.SchemaError as e:
+                    self.server.log_error(
+                        f'Invalid schema for action "{action.name}": {e}',
+                    )
+                    continue
+
+                invalid_keys = check_invalid_keys_recursive(action.schema)
+
+                if len(invalid_keys) > 0:
+                    self.server.log_warning(
+                        f"Found keys in schema that might be unsupported: {', '.join(invalid_keys)}",
+                    )
+
+            # # Check for null schema
+            # if action.schema is None:
+            #     self.server.log_warning(f"Action schema is null: {action.name}")
+
+            # # Check the name
+            # if not isinstance(action.name, str):
+            #     self.server.log_error(f"Action name is not a string: {action.name}")  # type: ignore[unreachable]
+            #     continue
+
+            if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action.name):
+                self.server.log_warning("Action name is not a lowercase string.")
+
+            if not action.name:
+                self.server.log_warning("Action name is empty.")
+
+            # Add the action to the list
+            checked_actions.append(action._asdict())
+
+        self.server.on_actions_register(ActionsRegisterCommand(checked_actions))
+
+    async def handle_actions_unregister(  # noqa: D102
+        self,
+        game_title: str,
+        action_names: list[str],
+    ) -> None:
+        self.check_game_title(game_title)
+        self.server.log_command("actions/unregister", True, ", ".join(action_names))
+        self.server.on_actions_unregister(ActionsUnregisterCommand(action_names))
+
+    async def handle_shutdown_ready(  # noqa: D102
+        self,
+        game_title: str,
+    ) -> None:
+        self.check_game_title(game_title)
+        self.server.log_command("shutdown/ready", True)
+        self.server.log_info("shutdown/ready (automation API) is not supported by Tony.")
+        self.server.on_shutdown_ready(ShutdownReadyCommand())
+
+    async def handle_unknown_command(  # noqa: D102
+        self,
+        command: str,
+        data: dict[str, object] | None,
+    ) -> None:
+        self.server.log_command(command, True, "Unknown command")
+        self.server.log_warning(f"Unknown command: {command}")
+        self.server.on_unknown_command((command, data))
+
+    async def send_command_data(self, data: bytes) -> None:  # noqa: D102
+        await super().send_command_data(data)
+
+        try:
+            self.server.log_raw(
+                orjson.dumps(
+                    orjson.loads(data),
+                    option=orjson.OPT_INDENT_2,
+                ).decode("utf-8"),
+                False,
+            )
+        except orjson.JSONDecodeError:
+            self.server.log_raw(data.decode("utf-8"), False)
+
+    def deserialize_actions(  # type: ignore[override]  # noqa: D102
+        self,
+        data: dict[str, list[object]],
+    ) -> list[Action]:
+        # actions_data = check_typed_dict(data, RegisterActionsData)
+
+        # Manually check the data because check_typed_dict is too strict
+        actions: list[Action] = []
+        for raw_action in data["actions"]:
+            if not isinstance(raw_action, dict):
+                self.server.log_error(f"Action is not an object: {raw_action}")
+                continue
+
+            if "name" not in raw_action:
+                self.server.log_error(f"Action missing name: {raw_action}")
+                continue
+            if not isinstance(raw_action["name"], str):
+                self.server.log_error(f"Action name is not a string: {raw_action}")
+                continue
+
+            if "description" not in raw_action:
+                self.server.log_error(f"Action missing description: {raw_action['name']}")
+                continue
+            if not isinstance(raw_action["description"], str):
+                self.server.log_error(f"Action description is not a string: {raw_action}")
+                continue
+
+            if "schema" in raw_action:
+                if raw_action["schema"] is None:
+                    self.server.log_warning(f"Action schema is null: {raw_action['name']}")
+                elif isinstance(raw_action["schema"], bool):
+                    self.server.log_error(f"Boolean schemas are not allowed: {raw_action['name']}")
+                    continue
+                elif not isinstance(raw_action["schema"], dict):
+                    self.server.log_error(f"Action schema is not an object: {raw_action}")
+                    continue
+
+            if raw_action.keys() - {"name", "description", "schema"}:
+                self.server.log_warning(
+                    f"Action has additional properties: {', '.join(raw_action.keys() - {'name', 'description', 'schema'})}",
+                )
+
+            action = Action(
+                raw_action["name"],
+                raw_action["description"],
+                raw_action.get("schema"),
+            )
+            actions.append(action)
+        return actions
+
+
+class NeuroAPI(AbstractTrioNeuroServer):
     """NeuroAPI class."""
 
     def __init__(self, run_sync_soon_threadsafe: Callable[[Callable[[], object]], object]) -> None:
@@ -102,10 +309,6 @@ class NeuroAPI:
             See the Trio documentation for more information.
 
         """
-        self._message_send_channel: trio.MemorySendChannel[str] | None = None
-        self._current_game = ""
-        self._current_action_id: str | None = None
-        self._action_forced = False
         # Tests fail if I rename this to `_run_sync_soon_threadsafe`
         self.run_sync_soon_threadsafe = run_sync_soon_threadsafe
 
@@ -200,7 +403,7 @@ class NeuroAPI:
             The message to log.
 
         """
-        self.log_info: Callable[[str], None] = lambda message: None
+        self.log_info: Callable[[str], None] = lambda message: None  # type: ignore[assignment]
         """Logging callback that is called when an info message should be logged.
 
         Parameters
@@ -209,7 +412,7 @@ class NeuroAPI:
             The message to log.
 
         """
-        self.log_warning: Callable[[str], None] = lambda message: None
+        self.log_warning: Callable[[str], None] = lambda message: None  # type: ignore[assignment]
         """Logging callback that is called when a warning message should be logged.
 
         Parameters
@@ -227,7 +430,7 @@ class NeuroAPI:
             The message to log.
 
         """
-        self.log_critical: Callable[[str], None] = lambda message: None
+        self.log_critical: Callable[[str], None] = lambda message: None  # type: ignore[assignment]
         """Logging callback that is called when a critical error message should be logged.
 
         If a critical error occurs, the API instance is in an invalid state and should not be used anymore.
@@ -262,6 +465,45 @@ class NeuroAPI:
         self._async_library_running = False
         self._async_library_root_cancel: trio.CancelScope
         self._received_loop_close_request = False
+        self._next_id = 0
+
+        self._clients: dict[
+            int,
+            tuple[NeuroAPIClient, trio.MemorySendChannel[partial[Coroutine[Any, Any, Any]]]],
+        ] = {}
+
+    def get_next_id(self) -> str:
+        """Generate and return the next unique command identifier."""
+        value = self._next_id
+        self._next_id += 1
+        return f"tony_action_{value}"
+
+    async def choose_force_action(  # noqa: D102
+        self,
+        game_title: str | None,
+        state: str | None,
+        query: str,
+        ephemeral_context: bool,
+        actions: tuple[Action, ...],
+    ) -> tuple[str, str | None]:
+        # I don't think this should be called, but have to implement
+        # because required abstract method
+        self.on_actions_force(
+            ActionsForceCommand(state, query, ephemeral_context, [action.name for action in actions]),
+        )
+        raise NotImplementedError("Return value not implemented.")
+
+    def add_context(  # noqa: D102
+        self,
+        game_title: str | None,
+        message: str,
+        reply_if_not_busy: bool,
+    ) -> None:
+        # I don't think this should be called, but have to implement
+        # because required abstract method
+        self.on_context(
+            ContextCommand(message, not reply_if_not_busy),
+        )
 
     def start(self, address: str, port: int) -> None:
         """Start hosting the websocket server with Trio in the background.
@@ -294,7 +536,11 @@ class NeuroAPI:
             assert self._async_library_running, "How can stop running if not running?"
             self._async_library_running = False
             # Unwrap to make sure exceptions are printed
-            run_outcome.unwrap()
+            try:
+                run_outcome.unwrap()
+            except Exception as exc:
+                self.log_critical("".join(traceback.format_exception(exc)))
+                raise
 
         self._async_library_running = True
         self._async_library_root_cancel = trio.CancelScope()
@@ -314,10 +560,12 @@ class NeuroAPI:
                 restrict_keyboard_interrupt_to_checkpoints=True,
                 strict_exception_groups=True,
             )
-        except Exception:
+        except Exception as exc:
             # Make sure async_library_running can never be in invalid state
             # even if trio fails to launch for some reason (shouldn't happen but still)
             self._async_library_running = False
+            self.log_critical(f"Failed to start async Trio guest run:\n{exc}")
+            self.log_critical("".join(traceback.format_exception(exc)))
             raise
 
     def stop(self) -> None:
@@ -378,19 +626,21 @@ class NeuroAPI:
             )
         except Exception as exc:
             self.log_critical(f"Failed to start websocket server:\n{exc}")
+            self.log_critical("".join(traceback.format_exception(exc)))
             raise
 
     @property
-    def client_connected(self) -> bool:
-        """Is there a client connected."""
-        return self._message_send_channel is not None
+    def clients_connected(self) -> int:
+        """Number of clients connected."""
+        return len(self._clients)
 
     async def _handle_websocket_request(
         self,
         request: WebSocketRequest,
     ) -> None:
         """Handle websocket connection request."""
-        if self.client_connected:
+        # TODO: Remove this check once GUI supports multiple clients
+        if self.clients_connected:
             # 503 is "service unavailable"
             await request.reject(
                 503,
@@ -399,202 +649,81 @@ class NeuroAPI:
             self.log_error("Another client attempted to connect, rejecting, server does not support multiple connections at once currently")  # fmt: skip
             return
 
-        try:
-            # With blocks for send and receive to handle closing when done
-            # Using message_send_channel to send websocket messages synchronously
-            # Zero here means no buffer, send not allowed to happen if receive channel has
-            # not read prior message waiting yet.
-            self._message_send_channel, receive_channel = trio.open_memory_channel[str](0)
-            with self._message_send_channel, receive_channel:
-                # Accept connection
-                async with await request.accept() as connection:
-                    await self._handle_client_connection(
-                        connection,
-                        receive_channel,
-                    )
-        finally:
-            self._message_send_channel = None
+        # With block means connection closed once scope has been left
+        async with await request.accept() as connection:
+            await self._handle_client_connection(connection)
 
     async def _handle_client_connection(
         self,
-        websocket: WebSocketConnection,
-        receive_channel: trio.MemoryReceiveChannel[str],
+        connection: WebSocketConnection,
     ) -> None:
         """Handle websocket connection lifetime."""
+        client = NeuroAPIClient(connection, self)
+
+        # Channel buffer of zero means no buffer, receive_channel has to
+        # be actively waiting for something to be sent for async partial
+        # functions to go through
+        send_channel, receive_channel = trio.open_memory_channel[partial[Coroutine[Any, Any, Any]]](0)
+
+        # TODO: Maybe remember next client id in a different way than
+        # length, as if client disconnects, length will be the same as a
+        # prior value.
+        #
+        # For example, situation where client 0 connects, then 1
+        # connects, then 0 disconnects, and then another client
+        # connects. Newest client will be assigned id 1 and overwrite
+        # entry for already existing client id 1.
+        #
+        # Could maybe store based off connection ip address and port
+        # number?
+        client_id = len(self._clients)
+
+        # band-aid fix for issue described above
+        while client_id in self._clients:
+            client_id += 1
+
+        self._clients[client_id] = (client, send_channel)
+
         try:
-            async with trio.open_nursery() as nursery:
-                # Start running connection read and write tasks in the background
-                nursery.start_soon(
-                    self._handle_consumer,
-                    websocket,
-                    nursery.cancel_scope,
-                )
-                nursery.start_soon(
-                    self._handle_producer,
-                    websocket,
-                    receive_channel,
-                )
+            with send_channel, receive_channel:
+                async with trio.open_nursery() as nursery:
+                    # Start running connection read and write tasks in the background
+                    nursery.start_soon(
+                        self._handle_consumer,
+                        client,
+                        nursery.cancel_scope,
+                    )
+                    nursery.start_soon(
+                        self._handle_producer,
+                        client,
+                        receive_channel,
+                    )
         except trio.Cancelled:
-            self.log_info("Closing current websocket connection.")
+            self.log_info(f"Closing websocket connection for client id {client_id}.")
+        finally:
+            del self._clients[client_id]
 
     async def _handle_consumer(
         self,
-        websocket: WebSocketConnection,
+        client: NeuroAPIClient,
         cancel_scope: trio.CancelScope,
     ) -> None:
         """Handle websocket reading head."""
         while True:
             try:
-                # Read message from websocket
-                message = await websocket.get_message()
+                # Read from websocket and call message handlers
+                await client.read_message()
             except ConnectionClosed:
                 self.log_info("Websocket connection closed by client.")
                 break
-
-            try:
-                json_cmd = json.loads(message)
-                self.log_raw(json.dumps(json_cmd, indent=2), True)
-
-                game = json_cmd.get("game", {})
-                data = json_cmd.get("data", {})
-
-                if game == "" or not isinstance(game, str):
-                    self.log_warning("Game name is not set.")
-                else:
-                    # Check game name
-                    if json_cmd["command"] == "startup" or json_cmd["command"] == "game/startup":
-                        self._current_game = game
-                    elif self._current_game != game:
-                        self.log_warning("Game name does not match the current game.")
-                    elif self._current_game == "":
-                        self.log_warning("No startup command received.")
-
-                # Check action result when waiting for it
-                if self._current_action_id is not None and json_cmd["command"] == "actions/force":
-                    self.log_warning("Received actions/force while waiting for action/result.")
-
-                # Check if an action is already forced
-                if self._action_forced and json_cmd["command"] == "actions/force":
-                    self.log_warning("Received actions/force while an action is already forced.")
-
-                # Handle the command
-                match json_cmd["command"]:
-                    case "startup" | "game/startup":
-                        self.log_command(json_cmd["command"], True, game)
-
-                        self._current_action_id = None
-
-                        self.on_startup(StartupCommand(game))
-
-                        if json_cmd["command"] == "game/startup":
-                            self.log_warning('"game/startup" command is deprecated. Use "startup" instead.')
-
-                    case "context":
-                        self.log_command("context", True)
-                        self.on_context(
-                            ContextCommand(data["message"], data["silent"]),
-                        )
-
-                    case "actions/register":
-                        names = [action["name"] for action in data["actions"]]
-                        self.log_command("actions/register", True, ", ".join(names))
-                        actions = []
-
-                        # Check the actions
-                        for action in data["actions"]:
-                            # Check the schema
-                            if "schema" in action and action["schema"] != {} and action["schema"] is not None:
-                                # Neuro API does not allow boolean schemas
-                                if "schema" in action and isinstance(action["schema"], bool):
-                                    self.log_error(f"Boolean schemas are not allowed: {action['name']}")
-                                    continue
-
-                                # Check if the schema is valid
-                                try:
-                                    jsonschema.Draft7Validator.check_schema(
-                                        action["schema"],
-                                    )
-                                except jsonschema.exceptions.SchemaError as e:
-                                    self.log_error(
-                                        f'Invalid schema for action "{action["name"]}": {e}',
-                                    )
-                                    continue
-
-                                invalid_keys = self.check_invalid_keys_recursive(action["schema"])
-
-                                if len(invalid_keys) > 0:
-                                    self.log_warning(
-                                        f"Found keys in schema that might be unsupported: {', '.join(invalid_keys)}",
-                                    )
-
-                            # Check for null schema
-                            if "schema" in action and action["schema"] is None:
-                                self.log_warning(f"Action schema is null: {action['name']}")
-
-                            # Check the name
-                            if not isinstance(action["name"], str):
-                                self.log_error(f"Action name is not a string: {action['name']}")
-                                continue
-
-                            if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action["name"]):
-                                self.log_warning("Action name is not a lowercase string.")
-
-                            if action["name"] == "":
-                                self.log_warning("Action name is empty.")
-
-                            # Add the action to the list
-                            actions.append(action)
-
-                        self.on_actions_register(ActionsRegisterCommand(actions))
-
-                    case "actions/unregister":
-                        self.log_command("actions/unregister", True, ", ".join(data["action_names"]))
-                        self.on_actions_unregister(ActionsUnregisterCommand(data["action_names"]))
-
-                    case "actions/force":
-                        self._action_forced = True
-                        self.log_command("actions/force", True, ", ".join(data["action_names"]))
-                        self.on_actions_force(
-                            ActionsForceCommand(
-                                data.get("state"),
-                                data["query"],
-                                data.get("ephemeral_context", False),
-                                data["action_names"],
-                            ),
-                        )
-
-                    case "action/result":
-                        self.log_command("action/result", True, "success" if data["success"] else "failure")
-
-                        # Check if an action/result was expected
-                        if self._current_action_id is None:
-                            self.log_warning("Unexpected action/result.")
-                        # Check if the action ID matches
-                        elif self._current_action_id != data["id"]:
-                            self.log_warning(f'Received action ID "{data["id"]}" does not match the expected action ID "{self._current_action_id}".')  # fmt: skip
-
-                        self.log_debug(f"Action ID: {data['id']}")
-
-                        self._current_action_id = None
-                        self.on_action_result(
-                            ActionResultCommand(
-                                data["success"],
-                                data.get("message", None),
-                            ),
-                        )
-
-                    case "shutdown/ready":
-                        self.log_command("shutdown/ready", True)
-                        self.log_info("shutdown/ready is not officially supported.")
-                        self.on_shutdown_ready(ShutdownReadyCommand())
-
-                    case _:
-                        self.log_command(json_cmd["command"], True, "Unknown command")
-                        self.log_warning(f"Unknown command: {json_cmd['command']}")
-                        self.on_unknown_command(json_cmd)
-
+            except (TypeError, ValueError) as exc:
+                self.log_error(str(exc))
+                self.log_debug("".join(traceback.format_exception(exc)))
+                traceback.print_exception(exc)
+                self.log_debug("Assuming non-critical exception, keeping websocket open.")
             except Exception as exc:
-                self.log_error(f"Error while handling message: {exc}")
+                self.log_error(f"Error while reading/handling message: {exc}")
+                self.log_error("".join(traceback.format_exception(exc)))
                 traceback.print_exception(exc)
                 break
         # Cancel (stop) writing head
@@ -602,13 +731,13 @@ class NeuroAPI:
 
     async def _handle_producer(
         self,
-        websocket: WebSocketConnection,
-        receive_channel: trio.MemoryReceiveChannel[str],
+        client: NeuroAPIClient,
+        receive_channel: trio.MemoryReceiveChannel[partial[Coroutine[Any, Any, Any]]],
     ) -> None:
         """Handle websocket writing head."""
         while True:
             # Wait for messages from sending side of memory channel (queue)
-            message = await receive_channel.receive()
+            async_partial = await receive_channel.receive()
 
             # Artificial latency
             # Make sure never < 0 or raises ValueError
@@ -616,26 +745,39 @@ class NeuroAPI:
 
             # Write message
             # If connection failure happens, will crash the read head
-            # because both share a nursery, ensuring connection closes
-            await websocket.send_message(message)
+            # because exception is propagated and both share a nursery,
+            # ensuring connection closes
+            await async_partial()
 
-            try:
-                self.log_raw(json.dumps(json.loads(message), indent=2), False)
-            except json.JSONDecodeError:
-                self.log_raw(message, False)
+    def _get_client(self, client_id: int) -> NeuroAPIClient | None:
+        """Return NeuroAPIClient instance from given client id or None if not found."""
+        result = self._clients.get(client_id)
+        if result is None:
+            self.log_error(f"Client id {client_id} not found!")
+            return None
+        client, _send_channel = result
+        return client
 
-    def _submit_message(self, message: str) -> bool:
-        """Submit a message to the send queue. Return True if client connected."""
-        if not self.client_connected:
-            self.log_error("No client connected!")
+    def _submit_async_action(self, client_id: int, async_partial: partial[Coroutine[Any, Any, Any]]) -> bool:
+        """Submit a message to the send queue. Return True if able to submit action successfully."""
+        if not self.clients_connected:
+            self.log_error("No clients connected!")
             return False
-        # Otherwise send channel should exist
-        # type checkers need help understanding `self.client_connected`
-        assert self._message_send_channel is not None
-        self._message_send_channel.send_nowait(message)
+        _client, send_channel = self._clients[client_id]
+        try:
+            send_channel.send_nowait(async_partial)
+        except trio.WouldBlock:
+            self.log_error("Cannot send command to client, already trying to send a command.")
+            return False
         return True
 
-    def send_action(self, id_: str, name: str, data: str | None) -> bool:
+    def send_action(
+        self,
+        id_: str,
+        name: str,
+        data: str | None,
+        client_id: int = 0,
+    ) -> bool:
         """Send an action command.
 
         Parameters
@@ -644,31 +786,25 @@ class NeuroAPI:
             An arbitrary unique string that identifies the action. This is used to match the action with the result returned by the game.
 
         """
-        self._action_forced = False
+        client = self._get_client(client_id)
 
-        payload = {
-            "id": id_,
-            "name": name,
-        }
-        if data is not None:
-            payload["data"] = data
-        obj = {
-            "command": "action",
-            "data": payload,
-        }
-
-        message = json.dumps(obj)
-
-        if not self._submit_message(message):
+        if client is None:
             return False
 
-        self._current_action_id = id_
+        if not self._submit_async_action(
+            client_id,
+            partial(client.send_action_command, name, data),
+        ):
+            return False
+
         self.log_command("action", False, name + (" {...}" if data else ""))
-        self.log_debug(f"Action ID: {id_}")
 
         return True
 
-    def send_actions_reregister_all(self) -> bool:
+    def send_actions_reregister_all(
+        self,
+        client_id: int = 0,
+    ) -> bool:
         """Send an [actions/reregister_all](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#reregister-all-actions) command.
 
         This signals to the game to unregister all actions and reregister them.
@@ -684,21 +820,27 @@ class NeuroAPI:
         Some SDKs may not support it.
 
         """
-        message = json.dumps(
-            {
-                "command": "actions/reregister_all",
-            },
-        )
+        client = self._get_client(client_id)
 
-        if not self._submit_message(message):
+        if client is None:
+            return False
+
+        if not self._submit_async_action(
+            client_id,
+            partial(client.send_reregister_all_command),
+        ):
             return False
 
         self.log_command("actions/reregister_all", False)
-        self.log_info("actions/reregister_all is not officially supported.")
+        self.log_info("actions/reregister_all is a proposed feature and may not be supported.")
 
         return True
 
-    def send_shutdown_graceful(self, wants_shutdown: bool) -> bool:
+    def send_shutdown_graceful(
+        self,
+        wants_shutdown: bool,
+        client_id: int = 0,
+    ) -> bool:
         """Send a [shutdown/graceful](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command.
 
         What this command does depends on the `wants_shutdown` parameter.
@@ -720,24 +862,26 @@ class NeuroAPI:
         Some SDKs may not support it.
 
         """
-        message = json.dumps(
-            {
-                "command": "shutdown/graceful",
-                "data": {
-                    "wants_shutdown": wants_shutdown,
-                },
-            },
-        )
+        client = self._get_client(client_id)
 
-        if not self._submit_message(message):
+        if client is None:
+            return False
+
+        if not self._submit_async_action(
+            client_id,
+            partial(client.send_graceful_shutdown_command, wants_shutdown),
+        ):
             return False
 
         self.log_command("shutdown/graceful", False, f"{wants_shutdown=}")
-        self.log_info("shutdown/graceful is not officially supported.")
+        self.log_info("shutdown/graceful is a proposed feature and may not be supported.")
 
         return True
 
-    def send_shutdown_immediate(self) -> bool:
+    def send_shutdown_immediate(
+        self,
+        client_id: int = 0,
+    ) -> bool:
         """Send a [shutdown/immediate](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown) command.
 
         This signals to the game that it will be shut down within a few seconds.
@@ -753,45 +897,21 @@ class NeuroAPI:
         Some SDKs may not support it.
 
         """
-        message = json.dumps(
-            {
-                "command": "shutdown/immediate",
-            },
-        )
+        client = self._get_client(client_id)
 
-        if not self._submit_message(message):
+        if client is None:
+            return False
+
+        if not self._submit_async_action(
+            client_id,
+            partial(client.send_immediate_shutdown_command),
+        ):
             return False
 
         self.log_command("shutdown/immediate", False)
-        self.log_info("shutdown/immediate is not officially supported.")
+        self.log_info("shutdown/immediate is a proposed feature and may not be supported.")
 
         return True
-
-    def check_invalid_keys_recursive(
-        self,
-        sub_schema: dict[str, Any],
-    ) -> list[str]:
-        """Recursively checks for invalid keys in the schema.
-
-        Returns a list of invalid keys that were found.
-        """
-        invalid_keys = []
-
-        for key, value in sub_schema.items():
-            if key in INVALID_SCHEMA_KEYS:
-                invalid_keys.append(key)
-            elif isinstance(value, str | int | bool):
-                pass
-            elif isinstance(value, dict):
-                invalid_keys.extend(self.check_invalid_keys_recursive(value))
-            elif isinstance(value, list):
-                for item in value:
-                    if isinstance(item, dict):
-                        invalid_keys.extend(self.check_invalid_keys_recursive(item))
-            else:
-                self.log_error(f"Unhandled schema value type {type(value)!r} ({value!r})")
-
-        return invalid_keys
 
 
 class StartupCommand(NamedTuple):
