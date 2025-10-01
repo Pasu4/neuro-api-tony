@@ -7,6 +7,7 @@ for more information.
 from __future__ import annotations
 
 import traceback
+import weakref
 from functools import partial
 from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
 
@@ -38,11 +39,13 @@ from neuro_api_tony.model import NeuroAction
 class LogCommandProtocol(Protocol):
     """Protocol for `log_command`."""
 
-    def __call__(self, command: str, incoming: bool, addition: str | None = None) -> None:
+    def __call__(self, client_id: int, command: str, incoming: bool, addition: str | None = None) -> None:
         """Signature for `log_command`.
 
         Parameters
         ----------
+        client_id : int
+            Client id that is logging this command.
         command : str
             The command name.
         incoming : bool
@@ -57,18 +60,32 @@ class LogCommandProtocol(Protocol):
 class NeuroAPIClient(AbstractNeuroServerClient):
     """Neuro API client."""
 
-    __slots__ = ("game_title", "server", "websocket")
+    __slots__ = ("_client_id", "_server", "game_title", "websocket")
 
     def __init__(
         self,
         websocket: WebSocketConnection,
         server: NeuroAPI,
+        client_id: int,
     ) -> None:
         """Initialize Neuro API client."""
         super().__init__()
         self.websocket = websocket
-        self.server = server
+        self._client_id = client_id
+
+        # Use weak reference to make reference loops impossible (allow
+        # server to be garbage collected instead of reference loop)
+        self._server = weakref.ref(server)
+
         self.game_title: str | None = None
+
+    @property
+    def server(self) -> NeuroAPI:
+        """Bound NeuroAPI Server."""
+        server_instance = self._server()
+        if server_instance is None:
+            raise ValueError("Server reference is dead")
+        return server_instance
 
     def get_next_id(self) -> str:  # noqa: D102
         return self.server.get_next_id()
@@ -112,8 +129,8 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         if self.game_title is not None:
             self.server.log_warning("Game name does not match the current game.")
         self.game_title = game_title
-        self.server.log_command("startup", True, game_title)
-        self.server.on_startup(StartupCommand(game_title))
+        self.server.log_command(self._client_id, "startup", True, game_title)
+        self.server.on_startup(self._client_id, StartupCommand(game_title))
 
     async def handle_context(  # noqa: D102
         self,
@@ -122,8 +139,8 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         silent: bool,
     ) -> None:
         self.check_game_title(game_title)
-        self.server.log_command("context", True)
-        self.server.on_context(ContextCommand(message, silent))
+        self.server.log_command(self._client_id, "context", True)
+        self.server.on_context(self._client_id, ContextCommand(message, silent))
 
     async def handle_action_result(  # noqa: D102
         self,
@@ -133,8 +150,8 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         message: str | None,
     ) -> None:
         self.check_game_title(game_title)
-        self.server.log_command("action/result", True, "success" if success else "failure")
-        self.server.on_action_result(ActionResultCommand(success, message))
+        self.server.log_command(self._client_id, "action/result", True, "success" if success else "failure")
+        self.server.on_action_result(self._client_id, ActionResultCommand(success, message))
 
     async def handle_actions_force(  # noqa: D102
         self,
@@ -144,8 +161,11 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         ephemeral_context: bool,
         action_names: list[str],
     ) -> None:
-        self.server.log_command("actions/force", True, ", ".join(action_names))
-        self.server.on_actions_force(ActionsForceCommand(state, query, ephemeral_context, action_names))
+        self.server.log_command(self._client_id, "actions/force", True, ", ".join(action_names))
+        self.server.on_actions_force(
+            self._client_id,
+            ActionsForceCommand(state, query, ephemeral_context, action_names),
+        )
 
     async def handle_actions_register(  # noqa: D102
         self,
@@ -153,7 +173,12 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         actions: list[Action],
     ) -> None:
         self.check_game_title(game_title)
-        self.server.log_command("actions/register", True, ", ".join(action.name for action in actions))
+        self.server.log_command(
+            self._client_id,
+            "actions/register",
+            True,
+            ", ".join(action.name for action in actions),
+        )
 
         checked_actions = []
 
@@ -202,7 +227,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             # Add the action to the list
             checked_actions.append(action._asdict())
 
-        self.server.on_actions_register(ActionsRegisterCommand(checked_actions))
+        self.server.on_actions_register(self._client_id, ActionsRegisterCommand(checked_actions))
 
     async def handle_actions_unregister(  # noqa: D102
         self,
@@ -210,26 +235,26 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         action_names: list[str],
     ) -> None:
         self.check_game_title(game_title)
-        self.server.log_command("actions/unregister", True, ", ".join(action_names))
-        self.server.on_actions_unregister(ActionsUnregisterCommand(action_names))
+        self.server.log_command(self._client_id, "actions/unregister", True, ", ".join(action_names))
+        self.server.on_actions_unregister(self._client_id, ActionsUnregisterCommand(action_names))
 
     async def handle_shutdown_ready(  # noqa: D102
         self,
         game_title: str,
     ) -> None:
         self.check_game_title(game_title)
-        self.server.log_command("shutdown/ready", True)
+        self.server.log_command(self._client_id, "shutdown/ready", True)
         self.server.log_info("shutdown/ready (automation API) is not supported by Tony.")
-        self.server.on_shutdown_ready(ShutdownReadyCommand())
+        self.server.on_shutdown_ready(self._client_id, ShutdownReadyCommand())
 
     async def handle_unknown_command(  # noqa: D102
         self,
         command: str,
         data: dict[str, object] | None,
     ) -> None:
-        self.server.log_command(command, True, "Unknown command")
+        self.server.log_command(self._client_id, command, True, "Unknown command")
         self.server.log_warning(f"Unknown command: {command}")
-        self.server.on_unknown_command((command, data))
+        self.server.on_unknown_command(self._client_id, (command, data))
 
     async def send_command_data(self, data: bytes) -> None:  # noqa: D102
         await super().send_command_data(data)
@@ -314,7 +339,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
         # Dependency injection
         # fmt: off
-        self.on_startup: Callable[[StartupCommand], None] = lambda cmd: None
+        self.on_startup: Callable[[int, StartupCommand], None] = lambda client_id, cmd: None
         """Callback that is called when a [startup](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#startup) command is received.
 
         Parameters
@@ -322,7 +347,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : StartupCommand
             The received command.
         """
-        self.on_context: Callable[[ContextCommand], None] = lambda cmd: None
+        self.on_context: Callable[[int, ContextCommand], None] = lambda client_id, cmd: None
         """Callback that is called when a [context](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#context) command is received.
 
         Parameters
@@ -330,7 +355,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : ContextCommand
             The received command.
         """
-        self.on_actions_register: Callable[[ActionsRegisterCommand], None] = lambda cmd: None
+        self.on_actions_register: Callable[[int, ActionsRegisterCommand], None] = lambda client_id, cmd: None
         """Callback that is called when an [actions/register](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#register-actions) command is received.
 
         Parameters
@@ -338,7 +363,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : ActionsRegisterCommand
             The received command.
         """
-        self.on_actions_unregister: Callable[[ActionsUnregisterCommand], None] = lambda cmd: None
+        self.on_actions_unregister: Callable[[int, ActionsUnregisterCommand], None] = lambda client_id, cmd: None
         """Callback that is called when an [actions/unregister](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#unregister-actions) command is received.
 
         Parameters
@@ -346,7 +371,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : ActionsUnregisterCommand
             The received command.
         """
-        self.on_actions_force: Callable[[ActionsForceCommand], None] = lambda cmd: None
+        self.on_actions_force: Callable[[int, ActionsForceCommand], None] = lambda client_id, cmd: None
         """Callback that is called when an [actions/force](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#force-actions) command is received.
 
         Parameters
@@ -354,7 +379,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : ActionsForceCommand
             The received command.
         """
-        self.on_action_result: Callable[[ActionResultCommand], None] = lambda cmd: None
+        self.on_action_result: Callable[[int, ActionResultCommand], None] = lambda client_id, cmd: None
         """Callback that is called when an [action/result](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action-result) command is received.
 
         Parameters
@@ -362,7 +387,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : ActionResultCommand
             The received command.
         """
-        self.on_shutdown_ready: Callable[[ShutdownReadyCommand], None] = lambda cmd: None
+        self.on_shutdown_ready: Callable[[int, ShutdownReadyCommand], None] = lambda client_id, cmd: None
         """Callback that is called when a [shutdown/ready](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#shutdown-ready) command is received.
 
         Parameters
@@ -370,7 +395,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : ShutdownReadyCommand
             The received command.
         """
-        self.on_unknown_command: Callable[[Any], None] = lambda cmd: None
+        self.on_unknown_command: Callable[[int, Any], None] = lambda client_id, cmd: None
         """Callback that is called when an unknown command is received.
 
         Parameters
@@ -378,7 +403,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         cmd : Any
             The received command.
         """
-        self.log_command: LogCommandProtocol = lambda command, incoming, addition=None: None
+        self.log_command: LogCommandProtocol = lambda client_id, command, incoming, addition=None: None
         """
         log_command(command, incoming, addition)
 
@@ -465,8 +490,9 @@ class NeuroAPI(AbstractTrioNeuroServer):
         self._async_library_running = False
         self._async_library_root_cancel: trio.CancelScope
         self._received_loop_close_request = False
-        self._next_id = 0
+        self._next_command_id = 0
 
+        self._next_client_id = 0
         self._clients: dict[
             int,
             tuple[NeuroAPIClient, trio.MemorySendChannel[partial[Coroutine[Any, Any, Any]]]],
@@ -474,8 +500,8 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
     def get_next_id(self) -> str:
         """Generate and return the next unique command identifier."""
-        value = self._next_id
-        self._next_id += 1
+        value = self._next_command_id
+        self._next_command_id += 1
         return f"tony_action_{value}"
 
     async def choose_force_action(  # noqa: D102
@@ -488,10 +514,12 @@ class NeuroAPI(AbstractTrioNeuroServer):
     ) -> tuple[str, str | None]:
         # I don't think this should be called, but have to implement
         # because required abstract method
-        self.on_actions_force(
-            ActionsForceCommand(state, query, ephemeral_context, [action.name for action in actions]),
-        )
-        raise NotImplementedError("Return value not implemented.")
+        # client_id = 0
+        # self.on_actions_force(
+        #     client_id,
+        #     ActionsForceCommand(state, query, ephemeral_context, [action.name for action in actions]),
+        # )
+        raise NotImplementedError("Not implemented, should be handled in client class.")
 
     def add_context(  # noqa: D102
         self,
@@ -501,9 +529,12 @@ class NeuroAPI(AbstractTrioNeuroServer):
     ) -> None:
         # I don't think this should be called, but have to implement
         # because required abstract method
-        self.on_context(
-            ContextCommand(message, not reply_if_not_busy),
-        )
+        # client_id = 0
+        # self.on_context(
+        #     client_id,
+        #     ContextCommand(message, not reply_if_not_busy),
+        # )
+        raise NotImplementedError("Not implemented, should be handled in client class.")
 
     def start(self, address: str, port: int) -> None:
         """Start hosting the websocket server with Trio in the background.
@@ -658,36 +689,25 @@ class NeuroAPI(AbstractTrioNeuroServer):
         connection: WebSocketConnection,
     ) -> None:
         """Handle websocket connection lifetime."""
-        client = NeuroAPIClient(connection, self)
+        # Monotonically increasing client id so there will never be
+        # duplicates
+        client_id = self._next_client_id
+        self._next_client_id += 1
+
+        client = NeuroAPIClient(connection, self, client_id)
 
         # Channel buffer of zero means no buffer, receive_channel has to
         # be actively waiting for something to be sent for async partial
         # functions to go through
         send_channel, receive_channel = trio.open_memory_channel[partial[Coroutine[Any, Any, Any]]](0)
 
-        # TODO: Maybe remember next client id in a different way than
-        # length, as if client disconnects, length will be the same as a
-        # prior value.
-        #
-        # For example, situation where client 0 connects, then 1
-        # connects, then 0 disconnects, and then another client
-        # connects. Newest client will be assigned id 1 and overwrite
-        # entry for already existing client id 1.
-        #
-        # Could maybe store based off connection ip address and port
-        # number?
-        client_id = len(self._clients)
-
-        # band-aid fix for issue described above
-        while client_id in self._clients:
-            client_id += 1
-
         self._clients[client_id] = (client, send_channel)
 
         try:
             with send_channel, receive_channel:
                 async with trio.open_nursery() as nursery:
-                    # Start running connection read and write tasks in the background
+                    # Start running connection read and write tasks in
+                    # the background
                     nursery.start_soon(
                         self._handle_consumer,
                         client,
@@ -776,7 +796,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         id_: str,
         name: str,
         data: str | None,
-        client_id: int = 0,
+        client_id: int,
     ) -> bool:
         """Send an action command.
 
@@ -797,13 +817,13 @@ class NeuroAPI(AbstractTrioNeuroServer):
         ):
             return False
 
-        self.log_command("action", False, name + (" {...}" if data else ""))
+        self.log_command(client_id, "action", False, name + (" {...}" if data else ""))
 
         return True
 
     def send_actions_reregister_all(
         self,
-        client_id: int = 0,
+        client_id: int,
     ) -> bool:
         """Send an [actions/reregister_all](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#reregister-all-actions) command.
 
@@ -831,7 +851,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         ):
             return False
 
-        self.log_command("actions/reregister_all", False)
+        self.log_command(client_id, "actions/reregister_all", False)
         self.log_info("actions/reregister_all is a proposed feature and may not be supported.")
 
         return True
@@ -839,7 +859,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
     def send_shutdown_graceful(
         self,
         wants_shutdown: bool,
-        client_id: int = 0,
+        client_id: int,
     ) -> bool:
         """Send a [shutdown/graceful](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command.
 
@@ -873,14 +893,14 @@ class NeuroAPI(AbstractTrioNeuroServer):
         ):
             return False
 
-        self.log_command("shutdown/graceful", False, f"{wants_shutdown=}")
+        self.log_command(client_id, "shutdown/graceful", False, f"{wants_shutdown=}")
         self.log_info("shutdown/graceful is a proposed feature and may not be supported.")
 
         return True
 
     def send_shutdown_immediate(
         self,
-        client_id: int = 0,
+        client_id: int,
     ) -> bool:
         """Send a [shutdown/immediate](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown) command.
 
@@ -908,7 +928,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         ):
             return False
 
-        self.log_command("shutdown/immediate", False)
+        self.log_command(client_id, "shutdown/immediate", False)
         self.log_info("shutdown/immediate is a proposed feature and may not be supported.")
 
         return True
