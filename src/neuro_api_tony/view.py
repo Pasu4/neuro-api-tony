@@ -1452,35 +1452,35 @@ def setup_json_editor(editor: wx.stc.StyledTextCtrl, dark: bool) -> None:
 
     if dark:
         editor.SetCaretForeground("white")
-        # editor.SetBackgroundColour(wx.Colour(30, 30, 30))
 
         editor.StyleSetSpec(wx.stc.STC_STYLE_DEFAULT, "fore:white,back:#1E1E1E,face:Courier New")
         editor.StyleClearAll()
 
         # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
 
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR,              "fore:white,back:red")  # We have squiggles for this
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE,     "fore:orange")  # Doesn't seem to work
-        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL,          "fore:black,back:red,eol")
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:white,back:red")  # We have squiggles for this
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange")  # Doesn't seem to work
+        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
         editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, "fore:blue")
         editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, "fore:sky blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, "fore:slate blue")
         editor.StyleSetSpec(wx.stc.STC_JSON_STRING, "fore:coral")
         editor.StyleSetSpec(wx.stc.STC_JSON_URI, "fore:coral,underline")
         editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, "fore:pale green")
     else:
         editor.SetCaretForeground("black")
-        # editor.SetBackgroundColour(wx.Colour(255, 255, 255))
 
         editor.StyleSetSpec(wx.stc.STC_STYLE_DEFAULT, "fore:black,back:white,face:Courier New")
         editor.StyleClearAll()
 
         # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
 
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR,              "fore:black,back:red")  # We have squiggles for this
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE,     "fore:orange red")  # Doesn't seem to work
-        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL,          "fore:black,back:red,eol")
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:black,back:red")  # We have squiggles for this
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange red")  # Doesn't seem to work
+        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
         editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, "fore:blue")
         editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, "fore:cornflower blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, "fore:medium blue")
         editor.StyleSetSpec(wx.stc.STC_JSON_STRING, "fore:sienna")
         editor.StyleSetSpec(wx.stc.STC_JSON_URI, "fore:sienna,underline")
         editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, "fore:sea green")
@@ -1490,10 +1490,9 @@ def setup_json_editor(editor: wx.stc.StyledTextCtrl, dark: bool) -> None:
         # editor.StyleSetSpec(wx.stc.STC_JSON_OPERATOR,           "back:magenta")  # Punctuation
 
         # Idk what these do
-        # editor.StyleSetSpec(wx.stc.STC_JSON_BLOCKCOMMENT,       "back:green")
-        # editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI,         "back:blue")
-        # editor.StyleSetSpec(wx.stc.STC_JSON_LDKEYWORD,          "back:cyan")
-        # editor.StyleSetSpec(wx.stc.STC_JSON_LINECOMMENT,        "back:dim grey")
+        # editor.StyleSetSpec(wx.stc.STC_JSON_BLOCKCOMMENT, "back:green")
+        # editor.StyleSetSpec(wx.stc.STC_JSON_LDKEYWORD, "back:cyan")
+        # editor.StyleSetSpec(wx.stc.STC_JSON_LINECOMMENT, "back:dim grey")
 
 
 # endregion
