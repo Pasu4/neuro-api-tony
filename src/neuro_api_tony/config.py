@@ -9,4 +9,6 @@ from dataclass_wizard import JSONWizard
 class Config(JSONWizard, key_case="AUTO"):
     """Tony configuration."""
 
+    conflict_policy: str = "ignoreAlways"
+    delete_actions_on_disconnect: bool = True
     log_level: str = "INFO"

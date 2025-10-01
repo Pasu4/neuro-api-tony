@@ -1,6 +1,28 @@
 {
     "$schema": "https://json-schema.org/draft-07/schema#",
     "properties": {
+        "conflictPolicy": {
+            "default": "ignoreAlways",
+            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignoreAlways` is the correct behavior, but changing to `overwriteAlways` has been proposed.",
+            "enum": [
+                "ignoreAlways",
+                "overwriteAlways",
+                "ignoreIfSameGame",
+                "overwriteIfSameGame",
+                "allowAlways"
+            ],
+            "enumDescriptions": [
+                "Ignore the new action and keep the old action.",
+                "Overwrite the old action with the new action.",
+                "Ignore the new action if it is from the same game as the old action, otherwise register it as normal.",
+                "Overwrite the old action with the new action if both are from the same game, otherwise register it as normal.",
+                "Do not check for duplicate action names."
+            ]
+        },
+        "deleteActionsOnDisconnect": {
+            "default": true,
+            "description": "If true, deletes all actions associated with a client when it disconnects."
+        },
         "logLevel": {
             "default": "INFO",
             "description": "Minimum log level to log. Log levels are DEBUG < INFO < WARNING < ERROR < CRITICAL.",
