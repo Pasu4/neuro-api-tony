@@ -34,6 +34,7 @@ classifiers = [
 keywords = ["ai", "neuro-sama", "integration"]
 dependencies = [
     "attrs~=25.3.0",
+    "dataclass-wizard~=0.35.1",
     "Faker~=37.5.3",
     "jsf~=0.11.2",
     "json-source-map~=1.0.5",
