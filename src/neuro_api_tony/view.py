@@ -1139,6 +1139,17 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         if not mod & (wx.stc.STC_MOD_INSERTTEXT | wx.stc.STC_MOD_DELETETEXT):
             return
 
+        # TODO: Configurable
+        if event.GetText() == "\n" and mod & wx.stc.STC_MOD_INSERTTEXT and not (mod & wx.stc.STC_PERFORMED_REDO):
+            position = event.GetPosition()
+            line = self.text.LineFromPosition(position)
+            # line_content = self.text.GetLine(line)
+            indent = self.text.GetLineIndentation(line)
+            wx.CallAfter(self.text.SetLineIndentation, line + 1, indent)
+            wx.CallAfter(self.text.GotoPos, position + 1 + indent)
+            # event.SetText("\n" + " " * indent)
+            return
+
         self.text.SetIndicatorCurrent(0)
         self.text.IndicatorClearRange(0, self.text.GetLength())
 
