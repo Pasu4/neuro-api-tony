@@ -11,6 +11,7 @@ class NeuroAction(NamedTuple):
     name: str
     description: str
     schema: dict[str, Any] | None
+    client_id: int
 
 
 class TonyModel:
@@ -32,17 +33,17 @@ class TonyModel:
         """Add an action to the list."""
         self.actions.append(action)
 
-    def remove_action(self, action: NeuroAction) -> None:
+    def _remove_action(self, action: NeuroAction) -> None:
         """Remove an action from the list."""
         self.actions.remove(action)
 
-    def remove_action_by_name(self, name: str) -> None:
-        """Remove an action from the list by name."""
-        # Iterating over tuple copy or else will have
-        # error from "list modified during iteration"
+    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+        """Remove actions from the list by name and/or client_id."""
         for action in tuple(self.actions):
-            if action.name == name:
-                self.remove_action(action)
+            name_match = name is None or action.name == name
+            client_id_match = client_id is None or action.client_id == client_id
+            if name_match and client_id_match:
+                self._remove_action(action)
 
     def clear_actions(self) -> None:
         """Clear all actions from the list."""

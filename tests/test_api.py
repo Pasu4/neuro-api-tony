@@ -257,10 +257,10 @@ def test_actions_register_command() -> None:
         },
     ]
 
-    command = ActionsRegisterCommand(actions)
+    command = ActionsRegisterCommand(0, actions)
     assert command.actions == [
-        NeuroAction("jerald", "jerald action", None),
-        NeuroAction("jerald_schema", "jerald action with schema", {}),
+        NeuroAction("jerald", "jerald action", None, 0),
+        NeuroAction("jerald_schema", "jerald action with schema", {}, 0),
     ]
 
 

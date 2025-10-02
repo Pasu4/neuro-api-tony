@@ -110,7 +110,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             if isinstance(response, bytes):
                 self.server.log_raw(response.decode("utf-8"), True)
             else:
-                self.server.log_raw(response, True)
+                self.server.log_raw(response, True)  # pyright: ignore[reportArgumentType]
 
         return response
 
@@ -227,7 +227,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             # Add the action to the list
             checked_actions.append(action._asdict())
 
-        self.server.on_actions_register(self._client_id, ActionsRegisterCommand(checked_actions))
+        self.server.on_actions_register(self._client_id, ActionsRegisterCommand(self._client_id, checked_actions))
 
     async def handle_actions_unregister(  # noqa: D102
         self,
@@ -823,7 +823,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
     def send_actions_reregister_all(
         self,
-        client_id: int,
+        client_id: int | None,
     ) -> bool:
         """Send an [actions/reregister_all](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#reregister-all-actions) command.
 
@@ -840,26 +840,32 @@ class NeuroAPI(AbstractTrioNeuroServer):
         Some SDKs may not support it.
 
         """
-        client = self._get_client(client_id)
+        client_ids = [client_id] if client_id is not None else list(self._clients.keys())
+        result = True
 
-        if client is None:
-            return False
+        for client_id in client_ids:
+            client = self._get_client(client_id)
 
-        if not self._submit_async_action(
-            client_id,
-            partial(client.send_reregister_all_command),
-        ):
-            return False
+            if client is None:
+                result = False
+                continue
 
-        self.log_command(client_id, "actions/reregister_all", False)
-        self.log_info("actions/reregister_all is a proposed feature and may not be supported.")
+            if not self._submit_async_action(
+                client_id,
+                partial(client.send_reregister_all_command),
+            ):
+                result = False
+                continue
 
-        return True
+            self.log_command(client_id, "actions/reregister_all", False)
+            self.log_info("actions/reregister_all is a proposed feature and may not be supported.")
+
+        return result
 
     def send_shutdown_graceful(
         self,
         wants_shutdown: bool,
-        client_id: int,
+        client_id: int | None,
     ) -> bool:
         """Send a [shutdown/graceful](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown) command.
 
@@ -882,25 +888,30 @@ class NeuroAPI(AbstractTrioNeuroServer):
         Some SDKs may not support it.
 
         """
-        client = self._get_client(client_id)
+        client_ids = [client_id] if client_id is not None else list(self._clients.keys())
+        result = True
+        for client_id in client_ids:
+            client = self._get_client(client_id)
 
-        if client is None:
-            return False
+            if client is None:
+                result = False
+                continue
 
-        if not self._submit_async_action(
-            client_id,
-            partial(client.send_graceful_shutdown_command, wants_shutdown),
-        ):
-            return False
+            if not self._submit_async_action(
+                client_id,
+                partial(client.send_graceful_shutdown_command, wants_shutdown),
+            ):
+                result = False
+                continue
 
-        self.log_command(client_id, "shutdown/graceful", False, f"{wants_shutdown=}")
-        self.log_info("shutdown/graceful is a proposed feature and may not be supported.")
+            self.log_command(client_id, "shutdown/graceful", False, f"{wants_shutdown=}")
+            self.log_info("shutdown/graceful is a proposed feature and may not be supported.")
 
-        return True
+        return result
 
     def send_shutdown_immediate(
         self,
-        client_id: int,
+        client_id: int | None,
     ) -> bool:
         """Send a [shutdown/immediate](https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown) command.
 
@@ -917,21 +928,26 @@ class NeuroAPI(AbstractTrioNeuroServer):
         Some SDKs may not support it.
 
         """
-        client = self._get_client(client_id)
+        client_ids = [client_id] if client_id is not None else list(self._clients.keys())
+        result = True
+        for client_id in client_ids:
+            client = self._get_client(client_id)
 
-        if client is None:
-            return False
+            if client is None:
+                result = False
+                continue
 
-        if not self._submit_async_action(
-            client_id,
-            partial(client.send_immediate_shutdown_command),
-        ):
-            return False
+            if not self._submit_async_action(
+                client_id,
+                partial(client.send_immediate_shutdown_command),
+            ):
+                result = False
+                continue
 
-        self.log_command(client_id, "shutdown/immediate", False)
-        self.log_info("shutdown/immediate is a proposed feature and may not be supported.")
+            self.log_command(client_id, "shutdown/immediate", False)
+            self.log_info("shutdown/immediate is a proposed feature and may not be supported.")
 
-        return True
+        return result
 
 
 class StartupCommand(NamedTuple):
@@ -955,7 +971,7 @@ class ActionsRegisterCommand:
 
     __slots__ = ("actions",)
 
-    def __init__(self, actions: list[dict[str, Any]]) -> None:
+    def __init__(self, client_id: int, actions: list[dict[str, Any]]) -> None:
         """Initialize actions register command."""
         # 'schema' may be omitted, so get() is used
         self.actions = [
@@ -963,6 +979,7 @@ class ActionsRegisterCommand:
                 action["name"],
                 action["description"],
                 action.get("schema"),
+                client_id,
             )
             for action in actions
         ]

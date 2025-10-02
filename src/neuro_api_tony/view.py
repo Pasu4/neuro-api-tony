@@ -140,15 +140,15 @@ class TonyView:
 
         # Dependency injection
         # fmt: off
-        self.on_execute: Callable[[int, NeuroAction], bool] = lambda client_id, action: False
+        self.on_execute: Callable[[NeuroAction], bool] = lambda action: False
         self.on_delete_action: Callable[[int, str], None] = lambda client_id, name: None
-        self.on_delete_all_actions: Callable[[int], None] = lambda client_id: None
-        self.on_unlock: Callable[[int], None] = lambda client_id: None
-        self.on_clear_logs: Callable[[int], None] = lambda client_id: None
-        self.on_send_actions_reregister_all: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_graceful: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_graceful_cancel: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_immediate: Callable[[int], None] = lambda client_id: None
+        self.on_delete_all_actions: Callable[[int | None], None] = lambda client_id: None
+        self.on_unlock: Callable[[], None] = lambda: None
+        self.on_clear_logs: Callable[[], None] = lambda: None
+        self.on_send_actions_reregister_all: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_graceful: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_graceful_cancel: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_immediate: Callable[[int | None], None] = lambda client_id: None
         # fmt: on
 
     def on_close(self, event: wx.CloseEvent) -> None:
@@ -170,6 +170,7 @@ class TonyView:
         addition: str | None = None,
     ) -> None:
         """Log a command."""
+        # TODO: Log client ID
         tag = "Game --> Tony" if incoming else "Game <-- Tony"
         color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
 
@@ -358,9 +359,9 @@ class TonyView:
         """Add an action to the list."""
         self.frame.panel.action_list.add_action(action)
 
-    def remove_action_by_name(self, name: str) -> None:
-        """Remove an action from the list by name."""
-        self.frame.panel.action_list.remove_action_by_name(name)
+    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+        """Remove an action panel from the list by name and/or client_id."""
+        self.frame.panel.action_list.remove_actions(name, client_id)
 
     def enable_actions(self) -> None:
         """Enable executing actions."""
@@ -556,15 +557,15 @@ class ActionList(wx.Panel):  # type: ignore[misc]
             ],
         )
 
-    def remove_action_by_name(self, name: str) -> None:
-        """Remove an action panel from the list."""
-        self.actions = [action for action in self.actions if action.name != name]
+    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+        """Remove an action panel from the list by name and/or client_id."""
+        for i, action in enumerate(tuple(self.actions)):
+            name_match = name is None or action.name == name
+            client_id_match = client_id is None or action.client_id == client_id
+            if name_match and client_id_match:
+                self.actions.remove(action)
 
-        index = self.list.FindItem(-1, name)
-        if index != -1:
-            self.list.DeleteItem(index)
-        # else:
-        #     self.GetTopLevelParent().view.log_error(f'Action "{name}" not found in list.')
+                self.list.DeleteItem(i)
 
     def clear(self) -> None:
         """Clear the list of actions."""
@@ -590,9 +591,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        sent = top.view.on_execute(client_id, action)
+        sent = top.view.on_execute(action)
 
         if sent:
             self.GetEventHandler().ProcessEvent(ExecuteEvent(self.GetId(), action))
@@ -611,9 +610,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_delete_action(client_id, action.name)
+        top.view.on_delete_action(action.client_id, action.name)
 
     def on_delete_all(self, event: wx.CommandEvent) -> None:
         """Handle delete all command event."""
@@ -621,9 +618,8 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_delete_all_actions(client_id)
+        # TODO: Context menu to select client id or all clients
+        top.view.on_delete_all_actions(None)
 
     def on_unlock(self, event: wx.CommandEvent) -> None:
         """Handle unlock command event."""
@@ -631,9 +627,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_unlock(client_id)
+        top.view.on_unlock()
 
     def on_key_down(self, event: wx.ListEvent) -> None:
         """Handle key down event."""
@@ -778,9 +772,7 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_clear_logs(client_id)
+        top.view.on_clear_logs()
 
     def on_export(self, event: wx.CommandEvent) -> None:
         """Handle export command event."""
@@ -1039,33 +1031,29 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         """Handle send_actions_reregister_all command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_actions_reregister_all(client_id)
+        # TODO: Context menu to select client id or all clients
+        self.view.on_send_actions_reregister_all(None)
 
     def on_send_shutdown_graceful(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_graceful(client_id)
+        # TODO: Context menu to select client id or all clients
+        self.view.on_send_shutdown_graceful(None)
 
     def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful_cancel command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_graceful_cancel(client_id)
+        # TODO: Context menu to select client id or all clients
+        self.view.on_send_shutdown_graceful_cancel(None)
 
     def on_send_shutdown_immediate(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_immediate command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_immediate(client_id)
+        # TODO: Context menu to select client id or all clients
+        self.view.on_send_shutdown_immediate(None)
 
 
 class ActionDialog(wx.Dialog):  # type: ignore[misc]
