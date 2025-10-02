@@ -12,6 +12,7 @@ class NeuroAction(NamedTuple):
     description: str
     schema: dict[str, Any] | None
     client_id: int
+    game: str
 
 
 class TonyModel:
@@ -37,12 +38,13 @@ class TonyModel:
         """Remove an action from the list."""
         self.actions.remove(action)
 
-    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+    def remove_actions(self, name: str | None = None, client_id: int | None = None, game: str | None = None) -> None:
         """Remove actions from the list by name and/or client_id."""
         for action in tuple(self.actions):
             name_match = name is None or action.name == name
             client_id_match = client_id is None or action.client_id == client_id
-            if name_match and client_id_match:
+            game_match = game is None or action.game == game
+            if name_match and client_id_match and game_match:
                 self._remove_action(action)
 
     def clear_actions(self) -> None:

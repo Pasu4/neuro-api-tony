@@ -81,6 +81,8 @@ class TonyController:
         self.api.log_critical = self.view.log_critical
         self.api.log_raw = self.view.log_raw
         self.api.get_delay = lambda: float(self.view.controls.latency / 1000)
+        self.api.on_client_connect = self.on_client_connect
+        self.api.on_client_disconnect = self.on_client_disconnect
 
         self.view.on_execute = self.on_view_execute
         self.view.on_delete_action = self.on_view_delete_action
@@ -96,13 +98,19 @@ class TonyController:
     def on_any_command(self, client_id: int, cmd: Any) -> None:
         """Handle any command received from the API."""
 
+    def on_client_connect(self, client_id: int) -> None:
+        """Handle a client connect."""
+        self.view.log_info(f"Client {client_id} connected.")
+
+    def on_client_disconnect(self, client_id: int, game: str | None) -> None:
+        """Handle a client disconnect."""
+        self.view.log_info(f"Closing websocket connection for client id {client_id} ({game}).")
+        self.model.remove_actions(client_id=client_id)
+        self.view.remove_actions(client_id=client_id)
+
     def on_startup(self, client_id: int, cmd: StartupCommand) -> None:
         """Handle the startup command."""
-        # TODO: Change to trigger on client connection instead of startup message
         self.view.log_info(f'Started game "{cmd.game}"')
-
-        self.model.clear_actions()
-        self.view.clear_actions()
 
     def on_context(self, client_id: int, cmd: ContextCommand) -> None:
         """Handle the context command."""

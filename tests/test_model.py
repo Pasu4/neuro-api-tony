@@ -21,6 +21,7 @@ def test_add_action(model: TonyModel) -> None:
         description="A test action",
         schema=None,
         client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     assert model.actions == [action]
@@ -33,6 +34,7 @@ def test_remove_action(model: TonyModel) -> None:
         description="A test action",
         schema=None,
         client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     model._remove_action(action)
@@ -46,12 +48,14 @@ def test_remove_action_by_name(model: TonyModel) -> None:
         description="First action",
         schema=None,
         client_id=0,
+        game="test_game",
     )
     action2 = NeuroAction(
         name="action2",
         description="Second action",
         schema=None,
         client_id=0,
+        game="test_game",
     )
     model.add_action(action1)
     model.add_action(action2)
@@ -66,6 +70,7 @@ def test_clear_actions(model: TonyModel) -> None:
         description="A test action",
         schema=None,
         client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     model.clear_actions()
@@ -79,6 +84,7 @@ def test_has_action(model: TonyModel) -> None:
         description="A test action",
         schema=None,
         client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     assert model.has_action("test_action")
@@ -92,6 +98,7 @@ def test_get_action_by_name(model: TonyModel) -> None:
         description="A test action",
         schema=None,
         client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     retrieved_action = model.get_action_by_name("test_action")

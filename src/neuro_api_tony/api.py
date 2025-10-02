@@ -117,17 +117,19 @@ class NeuroAPIClient(AbstractNeuroServerClient):
     def check_game_title(self, game_title: str) -> None:
         """Log if game title is correct."""
         if self.game_title is None:
-            self.server.log_warning("No startup command received.")
+            self.server.log_warning(f"Game name for client {self._client_id} not registered.")
             return
         if self.game_title != game_title:
-            self.server.log_warning("Game name does not match the current game.")
+            self.server.log_warning(f"Game name does not match the registered name for client {self._client_id}.")
 
     async def handle_startup(  # noqa: D102
         self,
         game_title: str,
     ) -> None:
         if self.game_title is not None:
-            self.server.log_warning("Game name does not match the current game.")
+            self.server.log_warning(f"Startup command received multiple times for {self.game_title}, ignoring.")
+        if self.server.get_client_id_from_game(game_title) is not None:
+            raise ValueError(f"Another client is already registered as {game_title}.")
         self.game_title = game_title
         self.server.log_command(self._client_id, "startup", True, game_title)
         self.server.on_startup(self._client_id, StartupCommand(game_title))
@@ -227,7 +229,14 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             # Add the action to the list
             checked_actions.append(action._asdict())
 
-        self.server.on_actions_register(self._client_id, ActionsRegisterCommand(self._client_id, checked_actions))
+        self.server.on_actions_register(
+            self._client_id,
+            ActionsRegisterCommand(
+                self._client_id,
+                self.game_title or f"provisional_name_{self._client_id}",
+                checked_actions,
+            ),
+        )
 
     async def handle_actions_unregister(  # noqa: D102
         self,
@@ -485,6 +494,10 @@ class NeuroAPI(AbstractTrioNeuroServer):
         float
             The delay in seconds to wait before sending a message.
         """
+        self.on_client_connect: Callable[[int], None] = lambda client_id: None
+        """Callback that is called when a client connects."""
+        self.on_client_disconnect: Callable[[int, str | None], None] = lambda client_id, game: None
+        """Callback that is called when a client disconnects."""
         # fmt: on
 
         self._async_library_running = False
@@ -503,6 +516,20 @@ class NeuroAPI(AbstractTrioNeuroServer):
         value = self._next_command_id
         self._next_command_id += 1
         return f"tony_action_{value}"
+
+    def get_game_from_client_id(self, client_id: int) -> str | None:
+        """Get the game title of a client by its id."""
+        client = self._clients.get(client_id)
+        if client:
+            return client[0].game_title
+        return None
+
+    def get_client_id_from_game(self, game_title: str) -> int | None:
+        """Get the client id of a client by its game title."""
+        for client_id, (client, _) in self._clients.items():
+            if client.game_title == game_title:
+                return client_id
+        return None
 
     async def choose_force_action(  # noqa: D102
         self,
@@ -670,16 +697,6 @@ class NeuroAPI(AbstractTrioNeuroServer):
         request: WebSocketRequest,
     ) -> None:
         """Handle websocket connection request."""
-        # TODO: Remove this check once GUI supports multiple clients
-        if self.clients_connected:
-            # 503 is "service unavailable"
-            await request.reject(
-                503,
-                body=b"Server does not support multiple connections at once currently",
-            )
-            self.log_error("Another client attempted to connect, rejecting, server does not support multiple connections at once currently")  # fmt: skip
-            return
-
         # With block means connection closed once scope has been left
         async with await request.accept() as connection:
             await self._handle_client_connection(connection)
@@ -703,6 +720,8 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
         self._clients[client_id] = (client, send_channel)
 
+        self.on_client_connect(client_id)
+
         try:
             with send_channel, receive_channel:
                 async with trio.open_nursery() as nursery:
@@ -721,6 +740,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         except trio.Cancelled:
             self.log_info(f"Closing websocket connection for client id {client_id}.")
         finally:
+            self.on_client_disconnect(client_id, client.game_title)
             del self._clients[client_id]
 
     async def _handle_consumer(
@@ -745,6 +765,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
                 self.log_error(f"Error while reading/handling message: {exc}")
                 self.log_error("".join(traceback.format_exception(exc)))
                 traceback.print_exception(exc)
+                self.log_error("Closing websocket connection due to error.")
                 break
         # Cancel (stop) writing head
         cancel_scope.cancel()
@@ -971,16 +992,11 @@ class ActionsRegisterCommand:
 
     __slots__ = ("actions",)
 
-    def __init__(self, client_id: int, actions: list[dict[str, Any]]) -> None:
+    def __init__(self, client_id: int, game: str, actions: list[dict[str, Any]]) -> None:
         """Initialize actions register command."""
         # 'schema' may be omitted, so get() is used
         self.actions = [
-            NeuroAction(
-                action["name"],
-                action["description"],
-                action.get("schema"),
-                client_id,
-            )
+            NeuroAction(action["name"], action["description"], action.get("schema"), client_id, game)
             for action in actions
         ]
         """The list of actions to register."""
