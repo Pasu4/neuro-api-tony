@@ -1,0 +1,45 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "conflictPolicy": {
+            "default": "ignoreAlways",
+            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignoreAlways` is the correct behavior, but changing to `overwriteAlways` has been proposed.",
+            "enum": [
+                "ignoreAlways",
+                "overwriteAlways",
+                "ignoreIfSameGame",
+                "overwriteIfSameGame",
+                "allowAlways"
+            ],
+            "enumDescriptions": [
+                "Ignore the new action and keep the old action.",
+                "Overwrite the old action with the new action.",
+                "Ignore the new action if it is from the same game as the old action, otherwise register it as normal.",
+                "Overwrite the old action with the new action if both are from the same game, otherwise register it as normal.",
+                "Do not check for duplicate action names."
+            ]
+        },
+        "deleteActionsOnDisconnect": {
+            "default": true,
+            "description": "If true, deletes all actions associated with a client when it disconnects."
+        },
+        "logLevel": {
+            "default": "INFO",
+            "description": "Minimum log level to log. Log levels are DEBUG < INFO < WARNING < ERROR < CRITICAL.",
+            "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+            ],
+            "markdownEnumDescriptions": [
+                "Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.",
+                "Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).",
+                "Things that do not comply with the API specification, but which Tony can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.",
+                "Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.",
+                "Something went wrong and Tony will likely have to be restarted."
+            ]
+        }
+    }
+}

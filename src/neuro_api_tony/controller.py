@@ -81,6 +81,8 @@ class TonyController:
         self.api.log_critical = self.view.log_critical
         self.api.log_raw = self.view.log_raw
         self.api.get_delay = lambda: float(self.view.controls.latency / 1000)
+        self.api.on_client_connect = self.on_client_connect
+        self.api.on_client_disconnect = self.on_client_disconnect
 
         self.view.on_execute = self.on_view_execute
         self.view.on_delete_action = self.on_view_delete_action
@@ -96,13 +98,19 @@ class TonyController:
     def on_any_command(self, client_id: int, cmd: Any) -> None:
         """Handle any command received from the API."""
 
+    def on_client_connect(self, client_id: int) -> None:
+        """Handle a client connect."""
+        self.view.log_info(f"Client {client_id} connected.")
+
+    def on_client_disconnect(self, client_id: int, game: str | None) -> None:
+        """Handle a client disconnect."""
+        self.view.log_info(f"Closing websocket connection for client id {client_id} ({game}).")
+        self.model.remove_actions(client_id=client_id)
+        self.view.remove_actions(client_id=client_id)
+
     def on_startup(self, client_id: int, cmd: StartupCommand) -> None:
         """Handle the startup command."""
-        # TODO: Change to trigger on client connection instead of startup message
         self.view.log_info(f'Started game "{cmd.game}"')
-
-        self.model.clear_actions()
-        self.view.clear_actions()
 
     def on_context(self, client_id: int, cmd: ContextCommand) -> None:
         """Handle the context command."""
@@ -127,8 +135,8 @@ class TonyController:
         known_actions = [name for name in cmd.action_names if self.model.has_action(name)]
         unknown_actions = [name for name in cmd.action_names if not self.model.has_action(name)]
         for name in known_actions:
-            self.model.remove_action_by_name(name)
-            self.view.remove_action_by_name(name)
+            self.model.remove_actions(name=name)
+            self.view.remove_actions(name)
         s1 = "s" if len(cmd.action_names) != 1 else ""
         s2 = "s" if len(unknown_actions) != 1 else ""
         if known_actions:
@@ -200,11 +208,11 @@ class TonyController:
         # Disable the actions until the result is received
         self.view.disable_actions()
 
-    def send_actions_reregister_all(self, client_id: int) -> None:
+    def send_actions_reregister_all(self, client_id: int | None) -> None:
         """Send an actions/reregister_all command to the API."""
         self.api.send_actions_reregister_all(client_id)
 
-    def on_view_execute(self, client_id: int, action: NeuroAction) -> bool:
+    def on_view_execute(self, action: NeuroAction) -> bool:
         """Handle an action execution request from the view.
 
         Returns True if an action was sent, False if the action was cancelled.
@@ -212,7 +220,7 @@ class TonyController:
         if not action.schema:
             # No schema, so send the action immediately
             self.send_action(
-                client_id,
+                action.client_id,
                 next(self.id_generator),
                 action.name,
                 None,
@@ -225,47 +233,47 @@ class TonyController:
             return False  # User cancelled the dialog
 
         self.model.last_action_data[action.name] = result  # Store the last data in the action object
-        self.send_action(client_id, next(self.id_generator), action.name, result)
+        self.send_action(action.client_id, next(self.id_generator), action.name, result)
         return True
 
     def on_view_delete_action(self, client_id: int, name: str) -> None:
         """Handle a request to delete an action from the view."""
-        self.model.remove_action_by_name(name)
-        self.view.remove_action_by_name(name)
+        self.model.remove_actions(name=name, client_id=client_id)
+        self.view.remove_actions(name=name, client_id=client_id)
 
         self.view.log_info(f"Action deleted: {name}")
 
-    def on_view_delete_all_actions(self, client_id: int) -> None:
+    def on_view_delete_all_actions(self, client_id: int | None) -> None:
         """Handle a request to delete all actions from the view."""
-        self.model.clear_actions()
-        self.view.clear_actions()
+        self.model.remove_actions(client_id=client_id)
+        self.view.remove_actions(client_id=client_id)
         self.view.log_info("All actions deleted.")
 
-    def on_view_unlock(self, client_id: int) -> None:
+    def on_view_unlock(self) -> None:
         """Handle a request to unlock the view."""
         self.view.log_info("Stopped waiting for action result.")  # TODO: Make this configurable as warning?
         self.view.enable_actions()
 
-    def on_view_clear_logs(self, client_id: int) -> None:
+    def on_view_clear_logs(self) -> None:
         """Handle a request to clear the logs from the view."""
         self.view.clear_logs()
         self.view.log_info("Logs cleared.")
 
-    def on_view_send_actions_reregister_all(self, client_id: int) -> None:
+    def on_view_send_actions_reregister_all(self, client_id: int | None) -> None:
         """Handle a request to send an actions/reregister_all command from the view."""
         self.model.clear_actions()
         wx.CallAfter(self.view.clear_actions)
         self.send_actions_reregister_all(client_id)
 
-    def on_view_send_shutdown_graceful(self, client_id: int) -> None:
+    def on_view_send_shutdown_graceful(self, client_id: int | None) -> None:
         """Handle a request to send a shutdown/graceful command with wants_shutdown=true from the view."""
         self.api.send_shutdown_graceful(True, client_id)
 
-    def on_view_send_shutdown_graceful_cancel(self, client_id: int) -> None:
+    def on_view_send_shutdown_graceful_cancel(self, client_id: int | None) -> None:
         """Handle a request to send a shutdown/graceful with wants_shutdown=false command from the view."""
         self.api.send_shutdown_graceful(False, client_id)
 
-    def on_view_send_shutdown_immediate(self, client_id: int) -> None:
+    def on_view_send_shutdown_immediate(self, client_id: int | None) -> None:
         """Handle a request to send a shutdown/immediate command from the view."""
         self.api.send_shutdown_immediate(client_id)
 
