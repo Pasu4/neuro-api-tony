@@ -138,7 +138,7 @@ class TonyController:
         unknown_actions = [name for name in cmd.action_names if not self.model.has_action(name)]
         for name in known_actions:
             self.model.remove_actions(name=name)
-            self.view.remove_actions(name)
+            self.view.remove_actions(name=name)
         s1 = "s" if len(cmd.action_names) != 1 else ""
         s2 = "s" if len(unknown_actions) != 1 else ""
         if known_actions:
