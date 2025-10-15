@@ -531,6 +531,10 @@ class NeuroAPI(AbstractTrioNeuroServer):
                 return client_id
         return None
 
+    def get_clients(self) -> list[tuple[int, str | None]]:
+        """Get a list of connected clients as (client_id, game_title) tuples."""
+        return [(client_id, client.game_title) for client_id, (client, _) in self._clients.items()]
+
     async def choose_force_action(  # noqa: D102
         self,
         game_title: str | None,
@@ -879,8 +883,8 @@ class NeuroAPI(AbstractTrioNeuroServer):
                 continue
 
             self.log_command(client_id, "actions/reregister_all", False)
-            self.log_info("actions/reregister_all is a proposed feature and may not be supported.")
 
+        self.log_info("actions/reregister_all is a proposed feature and may not be supported.")
         return result
 
     def send_shutdown_graceful(
@@ -926,8 +930,8 @@ class NeuroAPI(AbstractTrioNeuroServer):
                 continue
 
             self.log_command(client_id, "shutdown/graceful", False, f"{wants_shutdown=}")
-            self.log_info("shutdown/graceful is a proposed feature and may not be supported.")
 
+        self.log_info("shutdown/graceful is a proposed feature and may not be supported.")
         return result
 
     def send_shutdown_immediate(
@@ -966,8 +970,8 @@ class NeuroAPI(AbstractTrioNeuroServer):
                 continue
 
             self.log_command(client_id, "shutdown/immediate", False)
-            self.log_info("shutdown/immediate is a proposed feature and may not be supported.")
 
+        self.log_info("shutdown/immediate is a proposed feature and may not be supported.")
         return result
 
 

@@ -149,6 +149,8 @@ class TonyView:
         self.on_send_shutdown_graceful: Callable[[int | None], None] = lambda client_id: None
         self.on_send_shutdown_graceful_cancel: Callable[[int | None], None] = lambda client_id: None
         self.on_send_shutdown_immediate: Callable[[int | None], None] = lambda client_id: None
+
+        self.get_clients: Callable[[], list[tuple[int, str | None]]] = list
         # fmt: on
 
     def on_close(self, event: wx.CloseEvent) -> None:
@@ -170,8 +172,8 @@ class TonyView:
         addition: str | None = None,
     ) -> None:
         """Log a command."""
-        # TODO: Log client ID
-        tag = "Game --> Tony" if incoming else "Game <-- Tony"
+        game = next((g for cid, g in self.get_clients() if cid == client_id), None)
+        tag = f"{game} --> Tony" if incoming else f"{game} <-- Tony"
         color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
 
         if addition is None:
@@ -520,7 +522,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_item_deselected, self.list)
 
         self.list.InsertColumn(0, "Name", width=150)
-        self.list.InsertColumn(1, "Description", width=200)
+        self.list.InsertColumn(1, "Game", width=150)
         self.list.InsertColumn(2, "Schema", width=60)
 
         self.execute_button.SetToolTip(
@@ -552,7 +554,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.list.Append(
             [
                 action.name,
-                action.description,
+                action.game,
                 "Yes" if action.schema is not None and action.schema != {} else "No",
             ],
         )
@@ -618,8 +620,9 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Context menu to select client id or all clients
-        top.view.on_delete_all_actions(None)
+        menu = ClientMenu(top.view, top.view.on_delete_all_actions)
+        self.delete_all_button.PopupMenu(menu)
+        menu.Destroy()
 
     def on_unlock(self, event: wx.CommandEvent) -> None:
         """Handle unlock command event."""
@@ -1031,29 +1034,33 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         """Handle send_actions_reregister_all command event."""
         event.Skip()
 
-        # TODO: Context menu to select client id or all clients
-        self.view.on_send_actions_reregister_all(None)
+        menu = ClientMenu(self.view, self.view.on_send_actions_reregister_all)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_graceful(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful command event."""
         event.Skip()
 
-        # TODO: Context menu to select client id or all clients
-        self.view.on_send_shutdown_graceful(None)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_graceful)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful_cancel command event."""
         event.Skip()
 
-        # TODO: Context menu to select client id or all clients
-        self.view.on_send_shutdown_graceful_cancel(None)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_graceful_cancel)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_immediate(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_immediate command event."""
         event.Skip()
 
-        # TODO: Context menu to select client id or all clients
-        self.view.on_send_shutdown_immediate(None)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_immediate)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
 
 class ActionDialog(wx.Dialog):  # type: ignore[misc]
@@ -1390,6 +1397,58 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         event.Skip()
 
         self.EndModal(wx.ID_OK)
+
+
+class ClientMenu(wx.Menu):  # type: ignore[misc]
+    """The context menu for selecting clients."""
+
+    def __init__(self, view: TonyView, callback: Callable[[int | None], None]) -> None:
+        """Initialize Client Menu."""
+        super().__init__()
+
+        self.view = view
+        self.callback = callback
+
+        self.client_menu_items: list[tuple[int, wx.MenuItem]] = []
+
+        clients = self.view.get_clients()
+
+        all_clients_item = wx.MenuItem(self, wx.ID_ANY, "All Clients")
+        all_clients_item.Enable(clients != [])
+        self.Append(all_clients_item)
+        if clients:
+            self.AppendSeparator()
+
+        self.Bind(wx.EVT_MENU, self.on_select_client, all_clients_item)
+
+        for client_id, game in clients:
+            item = wx.MenuItem(self, wx.ID_ANY, f"{game} (ID: {client_id})")
+            self.Append(item)
+            self.client_menu_items.append((client_id, item))
+            self.Bind(wx.EVT_MENU, self.on_select_client, item)
+
+        # self.update()
+
+    # def update(self) -> None:
+    #     """Update the client menu."""
+    #     for _, item in self.client_menu_items:
+    #         self.Unbind(wx.EVT_MENU, item)
+    #         self.Remove(item)
+    #         item.Destroy()
+    #     self.client_menu_items.clear()
+
+    #     for client_id, game in self.view.get_clients():
+    #         item = wx.MenuItem(self, wx.ID_ANY, f"{game} (ID: {client_id})")
+    #         self.Append(item)
+    #         self.client_menu_items.append((client_id, item))
+    #         self.Bind(wx.EVT_MENU, self.on_select_client, item)
+
+    def on_select_client(self, event: wx.CommandEvent) -> None:
+        """Handle select client command event."""
+        event.Skip()
+
+        client_id = next((cid for cid, item in self.client_menu_items if item.GetId() == event.GetId()), None)
+        self.callback(client_id)
 
 
 class Controls:

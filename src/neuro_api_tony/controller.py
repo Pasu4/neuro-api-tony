@@ -93,6 +93,8 @@ class TonyController:
         self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
         self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
         self.view.on_send_shutdown_immediate = self.on_view_send_shutdown_immediate
+
+        self.view.get_clients = self.api.get_clients
         # fmt: on
 
     def on_any_command(self, client_id: int, cmd: Any) -> None:
@@ -110,7 +112,7 @@ class TonyController:
 
     def on_startup(self, client_id: int, cmd: StartupCommand) -> None:
         """Handle the startup command."""
-        self.view.log_info(f'Started game "{cmd.game}"')
+        self.view.log_info(f'Client {client_id} started game "{cmd.game}"')
 
     def on_context(self, client_id: int, cmd: ContextCommand) -> None:
         """Handle the context command."""
@@ -247,7 +249,11 @@ class TonyController:
         """Handle a request to delete all actions from the view."""
         self.model.remove_actions(client_id=client_id)
         self.view.remove_actions(client_id=client_id)
-        self.view.log_info("All actions deleted.")
+        if client_id is not None:
+            game = self.api.get_game_from_client_id(client_id) or f"provisional_name_{client_id}"
+            self.view.log_info(f'All actions deleted for "{game}" (ID: {client_id}).')
+        else:
+            self.view.log_info("All actions deleted.")
 
     def on_view_unlock(self) -> None:
         """Handle a request to unlock the view."""
@@ -261,8 +267,8 @@ class TonyController:
 
     def on_view_send_actions_reregister_all(self, client_id: int | None) -> None:
         """Handle a request to send an actions/reregister_all command from the view."""
-        self.model.clear_actions()
-        wx.CallAfter(self.view.clear_actions)
+        self.model.remove_actions(client_id=client_id)
+        wx.CallAfter(self.view.remove_actions, client_id=client_id)
         self.send_actions_reregister_all(client_id)
 
     def on_view_send_shutdown_graceful(self, client_id: int | None) -> None:
