@@ -561,13 +561,18 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
     def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
         """Remove an action panel from the list by name and/or client_id."""
-        for i, action in enumerate(tuple(self.actions)):
+        # Collect indices to remove in reverse order to avoid index shifting issues
+        indices_to_remove = []
+        for i, action in enumerate(self.actions):
             name_match = name is None or action.name == name
             client_id_match = client_id is None or action.client_id == client_id
             if name_match and client_id_match:
-                self.actions.remove(action)
+                indices_to_remove.append(i)
 
-                self.list.DeleteItem(i)
+        # Remove in reverse order to maintain correct indices
+        for i in reversed(indices_to_remove):
+            self.actions.pop(i)
+            self.list.DeleteItem(i)
 
     def clear(self) -> None:
         """Clear the list of actions."""
