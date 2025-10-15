@@ -568,7 +568,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
             client_id_match = client_id is None or action.client_id == client_id
             if name_match and client_id_match:
                 indices_to_remove.append(i)
-        
+
         # Remove in reverse order to maintain correct indices
         for i in reversed(indices_to_remove):
             self.actions.pop(i)
