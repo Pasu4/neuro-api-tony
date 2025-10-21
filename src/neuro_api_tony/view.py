@@ -12,12 +12,12 @@ import wx
 import wx.stc
 from jsf import JSF
 
-from neuro_api_tony.constants import VERSION
+from .constants import VERSION
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from neuro_api_tony.model import NeuroAction, TonyModel
+    from .model import NeuroAction, TonyModel
 
 
 # region Events

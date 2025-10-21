@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 import wx
 from jsf import JSF
 
-from neuro_api_tony.api import (
+from .api import (
     ActionResultCommand,
     ActionsForceCommand,
     ActionsRegisterCommand,
@@ -19,9 +19,9 @@ from neuro_api_tony.api import (
     ShutdownReadyCommand,
     StartupCommand,
 )
-from neuro_api_tony.constants import VERSION
-from neuro_api_tony.model import NeuroAction, TonyModel
-from neuro_api_tony.view import TonyView
+from .constants import VERSION
+from .model import NeuroAction, TonyModel
+from .view import TonyView
 
 if TYPE_CHECKING:
     from collections.abc import Generator

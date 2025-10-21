@@ -11,7 +11,7 @@ import requests
 import semver
 import wx
 
-from .config import FILE_NAMES as CONFIG_FILE_NAMES, Config
+from .config import FILE_NAMES as CONFIG_FILE_NAMES, load_config_from_file
 from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
 from .controller import TonyController
 
@@ -152,7 +152,7 @@ def cli_run() -> None:
     # Load configuration from file if provided
     if config_file:
         try:
-            Config.load_from_file(config_file)
+            load_config_from_file(config_file)
         except Exception as exc:
             message(
                 message=f"Failed to load config file {config_file!r}:\n{exc}",

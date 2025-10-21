@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import dataclass
-from typing import ClassVar, Final
+from typing import Final
 
 from dataclass_wizard import JSONWizard
 
@@ -15,21 +15,21 @@ class Config(JSONWizard, key_case="AUTO"):
     delete_actions_on_disconnect: bool = True
     log_level: str = "INFO"
 
-    _instance: ClassVar["Config | None"] = None
 
-    @classmethod
-    def instance(cls) -> "Config":
-        """Get the global configuration instance."""
-        if cls._instance is None:
-            cls._instance = Config()
-        return cls._instance
+_config = Config()
 
-    @classmethod
-    def load_from_file(cls, file_path: str) -> None:
-        """Load configuration from a JSON file."""
-        with open(file_path, encoding="utf-8") as f:
-            config_data = json.load(f)
-        cls._instance = Config.from_dict(config_data)
+
+def config() -> Config:
+    """Get the global configuration instance."""
+    return _config
+
+
+def load_config_from_file(file_path: str) -> None:
+    """Load configuration from a JSON file."""
+    global _config
+    with open(file_path, encoding="utf-8") as f:
+        data = json.load(f)
+    _config = Config.from_dict(data)
 
 
 FILE_NAMES: Final = [

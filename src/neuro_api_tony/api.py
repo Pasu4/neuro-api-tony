@@ -24,6 +24,8 @@ from trio_websocket import (
     serve_websocket,
 )
 
+from .model import NeuroAction
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -32,8 +34,6 @@ if TYPE_CHECKING:
 from collections.abc import Coroutine
 
 from neuro_api.command import Action
-
-from neuro_api_tony.model import NeuroAction
 
 
 class LogCommandProtocol(Protocol):
