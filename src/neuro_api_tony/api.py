@@ -25,6 +25,7 @@ from trio_websocket import (
 )
 
 from .config import config
+from .constants import WarningID
 from .model import NeuroAction
 
 if TYPE_CHECKING:
@@ -118,17 +119,26 @@ class NeuroAPIClient(AbstractNeuroServerClient):
     def check_game_title(self, game_title: str) -> None:
         """Log if game title is correct."""
         if self.game_title is None:
-            self.server.log_warning(f"Game name for client {self._client_id} not registered.")
+            self.server.log_warning(
+                WarningID.GAME_NAME_NOT_REGISTERED,
+                f"Game name for client {self._client_id} not registered.",
+            )
             return
         if self.game_title != game_title:
-            self.server.log_warning(f"Game name does not match the registered name for client {self._client_id}.")
+            self.server.log_warning(
+                WarningID.GAME_NAME_MISMATCH,
+                f"Game name does not match the registered name for client {self._client_id}.",
+            )
 
     async def handle_startup(  # noqa: D102
         self,
         game_title: str,
     ) -> None:
         if self.game_title is not None:
-            self.server.log_warning(f"Startup command received multiple times for {self.game_title}, ignoring.")
+            self.server.log_warning(
+                WarningID.MULTIPLE_STARTUPS,
+                f"Startup command received multiple times for {self.game_title}, ignoring.",
+            )
         if self.server.get_client_id_from_game(game_title) is not None:
             raise ValueError(f"Another client is already registered as {game_title}.")
         self.game_title = game_title
@@ -210,6 +220,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
 
                 if len(invalid_keys) > 0:
                     self.server.log_warning(
+                        WarningID.ACTION_SCHEMA_UNSUPPORTED,
                         f"Found keys in schema that might be unsupported: {', '.join(invalid_keys)}",
                     )
 
@@ -223,10 +234,10 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             #     continue
 
             if not all(c in ACTION_NAME_ALLOWED_CHARS for c in action.name):
-                self.server.log_warning("Action name is not a lowercase string.")
+                self.server.log_warning(WarningID.ACTION_NAME_INVALID, "Action name is not a lowercase string.")
 
             if not action.name:
-                self.server.log_warning("Action name is empty.")
+                self.server.log_warning(WarningID.ACTION_NAME_INVALID, "Action name is empty.")
 
             # Add the action to the list
             checked_actions.append(action._asdict())
@@ -264,7 +275,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         data: dict[str, object] | None,
     ) -> None:
         self.server.log_command(self._client_id, command, True, "Unknown command")
-        self.server.log_warning(f"Unknown command: {command}")
+        self.server.log_warning(WarningID.UNKNOWN_COMMAND, f"Unknown command: {command}")
         self.server.on_unknown_command(self._client_id, (command, data))
 
     async def send_command_data(self, data: bytes) -> None:  # noqa: D102
@@ -310,7 +321,10 @@ class NeuroAPIClient(AbstractNeuroServerClient):
 
             if "schema" in raw_action:
                 if raw_action["schema"] is None:
-                    self.server.log_warning(f"Action schema is null: {raw_action['name']}")
+                    self.server.log_warning(
+                        WarningID.ACTION_SCHEMA_NULL,
+                        f"Action schema is null: {raw_action['name']}",
+                    )
                 elif isinstance(raw_action["schema"], bool):
                     self.server.log_error(f"Boolean schemas are not allowed: {raw_action['name']}")
                     continue
@@ -320,6 +334,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
 
             if raw_action.keys() - {"name", "description", "schema"}:
                 self.server.log_warning(
+                    WarningID.ACTION_ADDITIONAL_PROPERTIES,
                     f"Action has additional properties: {', '.join(raw_action.keys() - {'name', 'description', 'schema'})}",
                 )
 
@@ -448,7 +463,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
             The message to log.
 
         """
-        self.log_warning: Callable[[str], None] = lambda message: None  # type: ignore[assignment]
+        self.log_warning: Callable[[WarningID, str], None] = lambda warning_id, message: None  # type: ignore[assignment]
         """Logging callback that is called when a warning message should be logged.
 
         Parameters

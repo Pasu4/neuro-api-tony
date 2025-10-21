@@ -12,7 +12,8 @@ import wx
 import wx.stc
 from jsf import JSF
 
-from .constants import VERSION
+from .config import config, default_config
+from .constants import VERSION, WarningID
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -207,9 +208,11 @@ class TonyView:
                 LOG_COLOR_INFO,
             )
 
-    def log_warning(self, message: str) -> None:
+    def log_warning(self, warning_id: WarningID, message: str) -> None:
         """Log a warning message."""
-        if self.controls.get_log_level() <= LOG_LEVELS["WARNING"]:
+        warning_configured = config().warnings.get(warning_id, default_config().warnings.get(warning_id, True))
+
+        if self.controls.get_log_level() <= LOG_LEVELS["WARNING"] and warning_configured:
             self.add_export_log(message, "Warning", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,

@@ -11,7 +11,7 @@
                 "Check for matching action names across all games.",
                 "Check for matching action names only within the same game."
             ],
-            "markdownDescription": "In what scope to check for matching action names when registering or unregistering actions. According to the specification, `global` is the correct behavior. Has no effect if `conflictPolicy` is set to `allow`."
+            "markdownDescription": "In what scope to check for matching action names when registering or unregistering actions or for an `actions/force`. According to the specification, `global` is the correct behavior. Has no effect if `conflictPolicy` is set to `allow`."
         },
         "allowedSchemaKeys": {
             "default": [],
@@ -64,12 +64,12 @@
                 "overwrite",
                 "allow"
             ],
-            "enumDescriptions": [
+            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignore` is the correct behavior, but changing to `overwrite` has been proposed.",
+            "markdownEnumDescriptions": [
                 "Ignore the new action and keep the old action.",
                 "Overwrite the old action with the new action.",
-                "Do not check for duplicate action names."
-            ],
-            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignore` is the correct behavior, but changing to `overwrite` has been proposed."
+                "Do not check for duplicate action names. `actions/unregister` commands will unregister all actions with a matching name, and `actions/force` commands will allow all actions with a matching name (within the `actionScope`)."
+            ]
         },
         "deleteActionsOnDisconnect": {
             "default": true,
@@ -92,6 +92,73 @@
                 "Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.",
                 "Something went wrong and Tony will likely have to be restarted."
             ]
+        },
+        "warnings": {
+            "additionalProperties": false,
+            "markdownDescription": "Enable or disable warnings. Setting a warning to `true` enables it and setting it to `false` disables it.",
+            "properties": {
+                "actionAdditionalProperties": {
+                    "default": true,
+                    "description": "Warn if the action contains properties other than name, description and schema.",
+                    "type": "boolean"
+                },
+                "actionNameConflict": {
+                    "default": true,
+                    "description": "Warn if an action with the same name is already registered.",
+                    "type": "boolean"
+                },
+                "actionNameInvalid": {
+                    "default": true,
+                    "markdownDescription": "Warn if the action name is empty or contains [characters not allowed in the specification](https://github.com/VedalAI/neuro-sdk/blob/main/API/SPECIFICATION.md#parameters-1).",
+                    "type": "boolean"
+                },
+                "actionSchemaNull": {
+                    "default": true,
+                    "markdownDescription": "Warn if the action description is `null`.",
+                    "type": "boolean"
+                },
+                "actionSchemaUnsupported": {
+                    "default": true,
+                    "markdownDescription": "Warn if the action schema contains one or more unsupported schema keys. You can also configure for which schema keys to ignore this rule using `allowedSchemaKeys`.",
+                    "type": "boolean"
+                },
+                "actionsForceInvalid": {
+                    "default": true,
+                    "markdownDescription": "Warn if an `actions/force` specifies actions that are not registered, or if any of the specified actions are not registered when an `actions/force` is retried.",
+                    "type": "boolean"
+                },
+                "emptyUnregister": {
+                    "default": true,
+                    "markdownDescription": "Warn if an `actions/unregister` command without any action names is received.",
+                    "type": "boolean"
+                },
+                "gameNameMismatch": {
+                    "default": true,
+                    "markdownDescription": "Warn if a client specifies a different game name than in its `startup` command.",
+                    "type": "boolean"
+                },
+                "gameNameNotRegistered": {
+                    "default": true,
+                    "markdownDescription": "Warn if any other command is received before `startup`.",
+                    "type": "boolean"
+                },
+                "multipleStartups": {
+                    "default": true,
+                    "markdownDescription": "Warn if a client sends another `startup` command.",
+                    "type": "boolean"
+                },
+                "noErrorMessage": {
+                    "default": true,
+                    "markdownDescription": "Warn if a failed `action/result` contains no `message`.",
+                    "type": "boolean"
+                },
+                "unknownCommand": {
+                    "default": true,
+                    "description": "Warn if an unknown command is received.",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
         }
     }
 }

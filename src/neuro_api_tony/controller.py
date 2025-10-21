@@ -19,7 +19,7 @@ from .api import (
     ShutdownReadyCommand,
     StartupCommand,
 )
-from .constants import VERSION
+from .constants import VERSION, WarningID
 from .model import NeuroAction, TonyModel
 from .view import TonyView
 
@@ -123,7 +123,10 @@ class TonyController:
         for action in cmd.actions:
             # Check if an action with the same name already exists
             if self.model.has_action(action.name):
-                self.view.log_warning(f'Action "{action.name}" already exists. Ignoring.')
+                self.view.log_warning(
+                    WarningID.ACTION_NAME_CONFLICT,
+                    f'Action "{action.name}" already exists. Ignoring.',
+                )
                 continue
 
             self.model.add_action(action)
@@ -146,7 +149,7 @@ class TonyController:
         if unknown_actions:
             self.view.log_info(f"Ignoring unregistration of unknown action{s2}: {', '.join(unknown_actions)}")
         if not known_actions and not unknown_actions:
-            self.view.log_warning("No actions to unregister specified.")
+            self.view.log_warning(WarningID.EMPTY_UNREGISTER, "No actions to unregister specified.")
 
     def on_actions_force(self, client_id: int, cmd: ActionsForceCommand) -> None:
         """Handle the actions/force command."""
@@ -165,6 +168,7 @@ class TonyController:
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning(
+                WarningID.ACTIONS_FORCE_INVALID,
                 "actions/force with invalid actions received. Discarding.\nInvalid actions: "
                 + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)),
             )
@@ -189,7 +193,7 @@ class TonyController:
         elif cmd.success:
             self.view.log_info("Successful action result contains no message.")
         else:
-            self.view.log_warning("Failed action result contains no message.")
+            self.view.log_warning(WarningID.NO_ERROR_MESSAGE, "Failed action result contains no message.")
 
         wx.CallAfter(self.view.on_action_result, cmd.success, cmd.message)
 
@@ -324,13 +328,14 @@ class TonyController:
     def retry_actions_force(self, client_id: int, cmd: ActionsForceCommand) -> None:
         """Retry the actions/force command."""
         if self.view.controls.ignore_actions_force:
-            self.view.log_warning("Forced action ignored.")
+            self.view.log_info("Forced action ignored.")
             self.active_actions_force = None
             return
 
         # Check if all actions exist
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning(
+                WarningID.ACTIONS_FORCE_INVALID,
                 "Actions have been unregistered before retrying the forced action. Retry aborted.\nInvalid actions: "
                 + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)),
             )
