@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from getopt import GetoptError, getopt
 from typing import Any, Final
@@ -10,6 +11,7 @@ import requests
 import semver
 import wx
 
+from .config import FILE_NAMES as CONFIG_FILE_NAMES, Config
 from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
 from .controller import TonyController
 
@@ -27,6 +29,9 @@ Options:
 
     --host <HOST>:
         Alias for --addr.
+
+    -c, --config <CONFIG_FILE>:
+        The path to a configuration file to load.
 
     -l, --log, --log-level <LOG_LEVEL>:
         The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
@@ -70,6 +75,7 @@ def cli_run() -> None:
     port = 8000
     log_level = "INFO"
     init_message = ""
+    config_file: str | None = None
 
     for option, value in options:
         match option:
@@ -83,6 +89,9 @@ def cli_run() -> None:
 
             case "-a" | "--addr" | "--address" | "--host":
                 address = value
+
+            case "-c" | "--config":
+                config_file = value
 
             case "-l" | "--log" | "--log-level":
                 if value.upper() not in [
@@ -125,6 +134,32 @@ def cli_run() -> None:
                     style=wx.OK | wx.ICON_ERROR,
                 )
                 sys.exit(1)
+
+    # Try finding a config file in the current directory
+    if not config_file:
+        for file_name in CONFIG_FILE_NAMES:
+            if os.path.isfile(file_name):
+                config_file = file_name
+                break
+    # Try finding a config file in the user's home directory
+    if not config_file:
+        for file_name in CONFIG_FILE_NAMES:
+            home_file = os.path.join(os.path.expanduser("~"), file_name)
+            if os.path.isfile(home_file):
+                config_file = home_file
+                break
+
+    # Load configuration from file if provided
+    if config_file:
+        try:
+            Config.load_from_file(config_file)
+        except Exception as exc:
+            message(
+                message=f"Failed to load config file {config_file!r}:\n{exc}",
+                caption="Config File Error",
+                style=wx.OK | wx.ICON_ERROR,
+            )
+            sys.exit(1)
 
     # Check if there are updates available
     try:
