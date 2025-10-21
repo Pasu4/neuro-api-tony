@@ -1,7 +1,7 @@
 """Configuration for Tony."""
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Final
 
 from dataclass_wizard import JSONWizard
@@ -11,6 +11,7 @@ from dataclass_wizard import JSONWizard
 class Config(JSONWizard, key_case="AUTO"):
     """Tony configuration."""
 
+    allowed_schema_keys: list[str] = field(default_factory=list)
     conflict_policy: str = "ignoreAlways"
     delete_actions_on_disconnect: bool = True
     log_level: str = "INFO"

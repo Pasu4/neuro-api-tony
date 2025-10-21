@@ -24,6 +24,7 @@ from trio_websocket import (
     serve_websocket,
 )
 
+from .config import config
 from .model import NeuroAction
 
 if TYPE_CHECKING:
@@ -204,7 +205,8 @@ class NeuroAPIClient(AbstractNeuroServerClient):
                     )
                     continue
 
-                invalid_keys = check_invalid_keys_recursive(action.schema)
+                invalid_keys = set(check_invalid_keys_recursive(action.schema))
+                invalid_keys -= set(config().allowed_schema_keys)
 
                 if len(invalid_keys) > 0:
                     self.server.log_warning(

@@ -1,9 +1,52 @@
 {
     "$schema": "https://json-schema.org/draft-07/schema#",
     "properties": {
+        "allowedSchemaKeys": {
+            "default": [],
+            "description": "Schema keys marked as unsupported which Tony should not log warnings for.",
+            "items": {
+                "enum": [
+                    "$anchor",
+                    "$comment",
+                    "$defs",
+                    "$dynamicAnchor",
+                    "$dynamicRef",
+                    "$id",
+                    "$ref",
+                    "$schema",
+                    "$vocabulary",
+                    "additionalProperties",
+                    "allOf",
+                    "anyOf",
+                    "contentEncoding",
+                    "contentMediaType",
+                    "contentSchema",
+                    "dependentRequired",
+                    "dependentSchemas",
+                    "deprecated",
+                    "description",
+                    "else",
+                    "if",
+                    "maxProperties",
+                    "minProperties",
+                    "multipleOf",
+                    "not",
+                    "oneOf",
+                    "patternProperties",
+                    "readOnly",
+                    "then",
+                    "title",
+                    "unevaluatedItems",
+                    "unevaluatedProperties",
+                    "uniqueItems",
+                    "writeOnly"
+                ]
+            },
+            "type": "array",
+            "uniqueItems": true
+        },
         "conflictPolicy": {
             "default": "ignoreAlways",
-            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignoreAlways` is the correct behavior, but changing to `overwriteAlways` has been proposed.",
             "enum": [
                 "ignoreAlways",
                 "overwriteAlways",
@@ -17,7 +60,8 @@
                 "Ignore the new action if it is from the same game as the old action, otherwise register it as normal.",
                 "Overwrite the old action with the new action if both are from the same game, otherwise register it as normal.",
                 "Do not check for duplicate action names."
-            ]
+            ],
+            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignoreAlways` is the correct behavior, but changing to `overwriteAlways` has been proposed."
         },
         "deleteActionsOnDisconnect": {
             "default": true,
