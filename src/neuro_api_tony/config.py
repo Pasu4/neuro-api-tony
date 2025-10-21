@@ -11,8 +11,9 @@ from dataclass_wizard import JSONWizard
 class Config(JSONWizard, key_case="AUTO"):
     """Tony configuration."""
 
+    action_scope: str = "global"
     allowed_schema_keys: list[str] = field(default_factory=list)
-    conflict_policy: str = "ignoreAlways"
+    conflict_policy: str = "ignore"
     delete_actions_on_disconnect: bool = True
     log_level: str = "INFO"
 
