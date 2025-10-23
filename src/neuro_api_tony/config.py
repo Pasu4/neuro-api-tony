@@ -17,6 +17,7 @@ class Config(JSONWizard, key_case="AUTO"):
     allowed_schema_keys: list[str] = field(default_factory=list)
     conflict_policy: str = "ignore"
     delete_actions_on_disconnect: bool = True
+    log_action_descriptions: bool = True
     log_level: str = "INFO"
     warnings: dict[WarningID, bool] = field(
         default_factory=lambda: {

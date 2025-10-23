@@ -261,6 +261,8 @@ class TonyView:
 
     def log_description(self, message: str) -> None:
         """Log an action description."""
+        if not config().log_action_descriptions:
+            return
         self.add_export_log(message, "Action", "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
