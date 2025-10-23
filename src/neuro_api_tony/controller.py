@@ -19,6 +19,7 @@ from .api import (
     ShutdownReadyCommand,
     StartupCommand,
 )
+from .config import config
 from .constants import VERSION, WarningID
 from .model import NeuroAction, TonyModel
 from .view import TonyView
@@ -107,8 +108,9 @@ class TonyController:
     def on_client_disconnect(self, client_id: int, game: str | None) -> None:
         """Handle a client disconnect."""
         self.view.log_info(f"Closing websocket connection for client id {client_id} ({game}).")
-        self.model.remove_actions(client_id=client_id)
-        self.view.remove_actions(client_id=client_id)
+        if config().delete_actions_on_disconnect:
+            self.model.remove_actions(client_id=client_id)
+            self.view.remove_actions(client_id=client_id)
 
     def on_startup(self, client_id: int, cmd: StartupCommand) -> None:
         """Handle the startup command."""

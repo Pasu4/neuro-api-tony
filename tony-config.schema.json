@@ -72,8 +72,8 @@
             ]
         },
         "deleteActionsOnDisconnect": {
-            "default": true,
-            "description": "[NOT IMPLEMENTED] If true, deletes all actions associated with a client when it disconnects."
+            "default": false,
+            "markdownDescription": "If `true`, deletes all actions associated with a client when it disconnects. According to [a comment by Alex](https://github.com/VedalAI/neuro-sdk/discussions/58), this is assumed to be `false` for Neuro."
         },
         "logActionDescriptions": {
             "default": true,

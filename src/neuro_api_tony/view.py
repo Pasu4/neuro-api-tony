@@ -370,6 +370,10 @@ class TonyView:
         """Remove an action panel from the list by name and/or client_id."""
         self.frame.panel.action_list.remove_actions(name, client_id)
 
+    def get_actions(self) -> list[NeuroAction]:
+        """Get the list of actions."""
+        return list(self.frame.panel.action_list.actions)
+
     def enable_actions(self) -> None:
         """Enable executing actions."""
         self.frame.panel.action_list.enable_actions(True)
@@ -1422,6 +1426,11 @@ class ClientMenu(wx.Menu):  # type: ignore[misc]
         self.client_menu_items: list[tuple[int, wx.MenuItem]] = []
 
         clients = self.view.get_clients()
+        connected_client_ids = {client_id for client_id, _ in clients}
+        for action in self.view.get_actions():
+            if action.client_id not in connected_client_ids:
+                clients.append((action.client_id, "<Disconnected>"))
+                connected_client_ids.add(action.client_id)
 
         all_clients_item = wx.MenuItem(self, wx.ID_ANY, "All Clients")
         all_clients_item.Enable(clients != [])
