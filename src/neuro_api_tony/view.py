@@ -370,9 +370,22 @@ class TonyView:
         """Remove an action panel from the list by name and/or client_id."""
         self.frame.panel.action_list.remove_actions(name, client_id)
 
-    def get_actions(self) -> list[NeuroAction]:
+    def has_action(self, name: str | None = None, client_id: int | None = None) -> bool:
+        """Check if an action exists in the list by name and/or client_id."""
+        for action in self.frame.panel.action_list.actions:
+            name_match = name is None or action.name == name
+            client_id_match = client_id is None or action.client_id == client_id
+            if name_match and client_id_match:
+                return True
+        return False
+
+    def get_actions(self, name: str | None = None, client_id: int | None = None) -> list[NeuroAction]:
         """Get the list of actions."""
-        return list(self.frame.panel.action_list.actions)
+        return [
+            action
+            for action in self.frame.panel.action_list.actions
+            if (name is None or action.name == name) and (client_id is None or action.client_id == client_id)
+        ]
 
     def enable_actions(self) -> None:
         """Enable executing actions."""
@@ -387,11 +400,10 @@ class TonyView:
         state: str,
         query: str,
         ephemeral_context: bool,
-        action_names: list[str],
+        actions: list[NeuroAction],
         retry: bool = False,
     ) -> None:
         """Show a dialog for forcing actions."""
-        actions = [action for action in self.model.actions if action.name in action_names]
         actions_force_dialog = ActionsForceDialog(
             self.frame,
             self,

@@ -2,20 +2,41 @@
 
 import json
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Final
 
 from dataclass_wizard import JSONWizard
 
 from .constants import WarningID
 
+# region Enums
+
+
+class ActionScope(str, Enum):
+    """Action scopes."""
+
+    GLOBAL = "global"
+    GAME = "game"
+
+
+class ConflictPolicy(str, Enum):
+    """Conflict resolution policies for action names."""
+
+    IGNORE = "ignore"
+    OVERWRITE = "overwrite"
+    ALLOW_DUPLICATES = "allowDuplicates"
+
+
+# endregion
+
 
 @dataclass
 class Config(JSONWizard, key_case="AUTO"):
     """Tony configuration."""
 
-    action_scope: str = "global"
+    action_scope: ActionScope = ActionScope.GAME
     allowed_schema_keys: list[str] = field(default_factory=list)
-    conflict_policy: str = "ignore"
+    conflict_policy: ConflictPolicy = ConflictPolicy.IGNORE
     delete_actions_on_disconnect: bool = False
     log_action_descriptions: bool = True
     log_level: str = "INFO"

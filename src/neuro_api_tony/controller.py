@@ -19,7 +19,7 @@ from .api import (
     ShutdownReadyCommand,
     StartupCommand,
 )
-from .config import config
+from .config import ActionScope, ConflictPolicy, config
 from .constants import VERSION, WarningID
 from .model import NeuroAction, TonyModel
 from .view import TonyView
@@ -122,14 +122,34 @@ class TonyController:
 
     def on_actions_register(self, client_id: int, cmd: ActionsRegisterCommand) -> None:
         """Handle the actions/register command."""
+        # Check for actions with the same name
         for action in cmd.actions:
-            # Check if an action with the same name already exists
-            if self.model.has_action(action.name):
-                self.view.log_warning(
-                    WarningID.ACTION_NAME_CONFLICT,
-                    f'Action "{action.name}" already exists. Ignoring.',
-                )
-                continue
+            # Determine whether to check globally or per-client
+            check_id = client_id if config().action_scope == ActionScope.GLOBAL else None
+            if self.view.has_action(name=action.name, client_id=check_id):
+                if config().conflict_policy == ConflictPolicy.IGNORE:
+                    self.view.log_warning(
+                        WarningID.ACTION_NAME_CONFLICT,
+                        f'Action "{action.name}" already exists. Ignoring.',
+                    )
+                    continue
+                if config().conflict_policy == ConflictPolicy.OVERWRITE:
+                    self.view.log_warning(
+                        WarningID.ACTION_NAME_CONFLICT,
+                        f'Action "{action.name}" already exists. Overwriting.',
+                    )
+                    self.model.remove_actions(name=action.name, client_id=check_id)
+                    wx.CallAfter(self.view.remove_actions, name=action.name, client_id=check_id)
+                elif config().conflict_policy == ConflictPolicy.ALLOW_DUPLICATES:
+                    self.view.log_warning(
+                        WarningID.ACTION_NAME_CONFLICT,
+                        f'Action "{action.name}" already exists. Allowing duplicate.',
+                    )
+                else:
+                    self.view.log_error(
+                        f'Unknown conflict policy: {config().conflict_policy}. Cannot register action "{action.name}".',
+                    )
+                    continue
 
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
@@ -141,9 +161,10 @@ class TonyController:
         """Handle the actions/unregister command."""
         known_actions = [name for name in cmd.action_names if self.model.has_action(name)]
         unknown_actions = [name for name in cmd.action_names if not self.model.has_action(name)]
+        check_id = client_id if config().action_scope == ActionScope.GLOBAL else None
         for name in known_actions:
-            self.model.remove_actions(name=name)
-            self.view.remove_actions(name=name)
+            self.model.remove_actions(name=name, client_id=check_id)
+            self.view.remove_actions(name=name, client_id=check_id)
         s1 = "s" if len(cmd.action_names) != 1 else ""
         s2 = "s" if len(unknown_actions) != 1 else ""
         if known_actions:
@@ -168,11 +189,14 @@ class TonyController:
             return
 
         # Check if all actions exist
+        check_id = client_id if config().action_scope == ActionScope.GLOBAL else None
         if not all(self.model.has_action(name) for name in cmd.action_names):
             self.view.log_warning(
                 WarningID.ACTIONS_FORCE_INVALID,
                 "actions/force with invalid actions received. Discarding.\nInvalid actions: "
-                + ", ".join(name for name in cmd.action_names if not self.model.has_action(name)),
+                + ", ".join(
+                    name for name in cmd.action_names if not self.view.has_action(name=name, client_id=check_id)
+                ),
             )
             self.active_actions_force = None
             return
@@ -298,12 +322,16 @@ class TonyController:
         """Handle a request from the game to execute a forced action."""
         self.active_actions_force = cmd
 
+        check_id = client_id if config().action_scope == ActionScope.GLOBAL else None
+        actions: set[NeuroAction] = set()
+        for name in cmd.action_names:
+            actions.update(self.view.get_actions(name=name, client_id=check_id))
+
         if self.view.controls.auto_send:
             self.view.log_info("Automatically sending random action.")
-            actions = [action for action in self.model.actions if action.name in cmd.action_names]
             # S311 - Standard pseudo-random generators are not suitable for cryptographic purposes
             # Not using for cryptographic purposes so we should be fine
-            action = random.choice(actions)  # noqa: S311
+            action = random.choice(tuple(actions))  # noqa: S311
 
             if not action.schema:
                 self.send_action(client_id, next(self.id_generator), action.name, None)
@@ -323,7 +351,7 @@ class TonyController:
                 cmd.state or "",
                 cmd.query,
                 cmd.ephemeral_context,
-                cmd.action_names,
+                list(actions),
                 retry,
             )
 

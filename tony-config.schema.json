@@ -11,7 +11,7 @@
                 "Check for matching action names across all games.",
                 "Check for matching action names only within the same game."
             ],
-            "markdownDescription": "[NOT IMPLEMENTED] In what scope to check for matching action names when registering or unregistering actions or for an `actions/force`. According to the specification, `global` is the correct behavior. Has no effect if `conflictPolicy` is set to `allow`."
+            "markdownDescription": "[UNTESTED] In what scope to check for matching action names when registering or unregistering actions or for an `actions/force`. According to the specification, `global` is the correct behavior. Has no effect if `conflictPolicy` is set to `allow`."
         },
         "allowedSchemaKeys": {
             "default": [],
@@ -62,9 +62,9 @@
             "enum": [
                 "ignore",
                 "overwrite",
-                "allow"
+                "allowDuplicates"
             ],
-            "markdownDescription": "[NOT IMPLEMENTED] What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignore` is the correct behavior, but changing to `overwrite` has been proposed.",
+            "markdownDescription": "[UNTESTED] What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignore` is the correct behavior, but changing to `overwrite` has been proposed.",
             "markdownEnumDescriptions": [
                 "Ignore the new action and keep the old action.",
                 "Overwrite the old action with the new action.",
