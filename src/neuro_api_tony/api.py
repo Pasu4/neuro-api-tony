@@ -813,7 +813,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
     def _get_client(self, client_id: int) -> NeuroAPIClient | None:
         """Return NeuroAPIClient instance from given client id or None if not found."""
-        result = next(iter(self._clients.values())) if self._clients else None
+        result = self._clients.get(client_id)
         if result is None:
             self.log_error(f"Client id {client_id} not found!")
             return None
