@@ -81,7 +81,6 @@
         },
         "logLevel": {
             "default": "INFO",
-            "description": "[NOT IMPLEMENTED] The initial minimum log level to log. The log level can still be changed at runtime. Log levels are DEBUG < INFO < WARNING < ERROR < CRITICAL.",
             "enum": [
                 "DEBUG",
                 "INFO",
@@ -89,6 +88,7 @@
                 "ERROR",
                 "CRITICAL"
             ],
+            "markdownDescription": "The initial minimum log level to log. The log level can still be changed at runtime. Log levels are `DEBUG` < `INFO` < `WARNING` < `ERROR` < `CRITICAL`. If the log level is specified as a command line argument this setting is ignored.",
             "markdownEnumDescriptions": [
                 "Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.",
                 "Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).",

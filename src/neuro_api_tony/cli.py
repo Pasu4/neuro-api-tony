@@ -11,7 +11,7 @@ import requests
 import semver
 import wx
 
-from .config import FILE_NAMES as CONFIG_FILE_NAMES, load_config_from_file
+from .config import FILE_NAMES as CONFIG_FILE_NAMES, config, load_config_from_file
 from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
 from .controller import TonyController
 
@@ -73,7 +73,7 @@ def cli_run() -> None:
 
     address = "localhost"
     port = 8000
-    log_level = "INFO"
+    log_level: str | None = None
     init_message = ""
     config_file: str | None = None
 
@@ -160,6 +160,9 @@ def cli_run() -> None:
                 style=wx.OK | wx.ICON_ERROR,
             )
             sys.exit(1)
+
+    if not log_level:
+        log_level = config().log_level
 
     # Check if there are updates available
     try:
