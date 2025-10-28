@@ -34,7 +34,7 @@ class ConflictPolicy(str, Enum):
 class Config(JSONWizard, key_case="AUTO"):
     """Tony configuration."""
 
-    action_scope: ActionScope = ActionScope.GAME
+    action_scope: ActionScope = ActionScope.GLOBAL
     allowed_schema_keys: list[str] = field(default_factory=list)
     conflict_policy: ConflictPolicy = ConflictPolicy.IGNORE
     delete_actions_on_disconnect: bool = False
