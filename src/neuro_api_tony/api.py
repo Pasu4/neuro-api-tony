@@ -815,7 +815,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         """Return NeuroAPIClient instance from given client id or None if not found."""
         result = self._clients.get(client_id)
         if result is None:
-            self.log_error(f"Client id {client_id} not found!")
+            self.log_error(f"No client with ID {client_id} connected.")
             return None
         client, _send_channel = result
         return client

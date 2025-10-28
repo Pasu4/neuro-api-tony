@@ -16,7 +16,7 @@ class ActionScope(str, Enum):
     """Action scopes."""
 
     GLOBAL = "global"
-    GAME = "game"
+    CLIENT = "client"
 
 
 class ConflictPolicy(str, Enum):

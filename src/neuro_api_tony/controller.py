@@ -116,6 +116,17 @@ class TonyController:
         """Handle the startup command."""
         self.view.log_info(f'Client {client_id} started game "{cmd.game}"')
 
+        # Unregister all actions for this game if set to global
+        if config().action_scope == ActionScope.GLOBAL:
+            actions_to_remove = [action for action in self.view.get_actions() if action.game == cmd.game]
+            if actions_to_remove:
+                for action in actions_to_remove:
+                    self.model.remove_actions(name=action.name)
+                    self.view.remove_actions(name=action.name)
+                self.view.log_info(
+                    f'Removed {len(actions_to_remove)} action(s) previously registered for "{cmd.game}".',
+                )
+
     def on_context(self, client_id: int, cmd: ContextCommand) -> None:
         """Handle the context command."""
         self.view.log_context(cmd.message, silent=cmd.silent)
@@ -125,7 +136,7 @@ class TonyController:
         # Check for actions with the same name
         for action in cmd.actions:
             # Determine whether to check globally or per-client
-            check_id = client_id if config().action_scope == ActionScope.GLOBAL else None
+            check_id = client_id if config().action_scope == ActionScope.CLIENT else None
             if self.view.has_action(name=action.name, client_id=check_id):
                 if config().conflict_policy == ConflictPolicy.IGNORE:
                     self.view.log_warning(
@@ -161,7 +172,7 @@ class TonyController:
         """Handle the actions/unregister command."""
         known_actions = [name for name in cmd.action_names if self.model.has_action(name)]
         unknown_actions = [name for name in cmd.action_names if not self.model.has_action(name)]
-        check_id = client_id if config().action_scope == ActionScope.GLOBAL else None
+        check_id = client_id if config().action_scope == ActionScope.CLIENT else None
         for name in known_actions:
             self.model.remove_actions(name=name, client_id=check_id)
             self.view.remove_actions(name=name, client_id=check_id)
@@ -232,13 +243,15 @@ class TonyController:
 
         # self.view.log_warning(f'Unknown command received: {json_cmd['command']}')
 
-    def send_action(self, client_id: int, id_: str, name: str, data: str | None) -> None:
-        """Send an action command to the API."""
+    def send_action(self, client_id: int, id_: str, name: str, data: str | None) -> bool:
+        """Send an action command to the API. Returns True if sent successfully."""
         self.view.log_info(f"Sending action: {name}")
-        self.api.send_action(id_, name, data, client_id)
+        sent = self.api.send_action(id_, name, data, client_id)
 
         # Disable the actions until the result is received
-        self.view.disable_actions()
+        if sent:
+            self.view.disable_actions()
+        return sent
 
     def send_actions_reregister_all(self, client_id: int | None) -> None:
         """Send an actions/reregister_all command to the API."""
@@ -251,13 +264,12 @@ class TonyController:
         """
         if not action.schema:
             # No schema, so send the action immediately
-            self.send_action(
+            return self.send_action(
                 action.client_id,
                 next(self.id_generator),
                 action.name,
                 None,
             )
-            return True
 
         # If there is a schema, open a dialog to get the data
         result = self.view.show_action_dialog(action)
@@ -265,8 +277,7 @@ class TonyController:
             return False  # User cancelled the dialog
 
         self.model.last_action_data[action.name] = result  # Store the last data in the action object
-        self.send_action(action.client_id, next(self.id_generator), action.name, result)
-        return True
+        return self.send_action(action.client_id, next(self.id_generator), action.name, result)
 
     def on_view_delete_action(self, client_id: int, name: str) -> None:
         """Handle a request to delete an action from the view."""
@@ -322,10 +333,10 @@ class TonyController:
         """Handle a request from the game to execute a forced action."""
         self.active_actions_force = cmd
 
-        check_id = client_id if config().action_scope == ActionScope.GLOBAL else None
-        actions: set[NeuroAction] = set()
+        check_id = client_id if config().action_scope == ActionScope.CLIENT else None
+        actions: list[NeuroAction] = []
         for name in cmd.action_names:
-            actions.update(self.view.get_actions(name=name, client_id=check_id))
+            actions.extend(self.view.get_actions(name=name, client_id=check_id))
 
         if self.view.controls.auto_send:
             self.view.log_info("Automatically sending random action.")
