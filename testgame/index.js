@@ -40,6 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
             connectionStatusSpan.textContent = 'Status: Connected';
             connectionStatusSpan.classList.remove('connecting');
             connectionStatusSpan.classList.add('connected');
+
+            neuroClient.onAction(actionHandler);
         });
 
         connectionStatusSpan.textContent = 'Status: Connecting...';
@@ -88,6 +90,16 @@ function sendResult(data) {
 // function sendRaw(data) {
 //     console.log(data);
 // }
+
+/**
+ * @param {{ id: string; name: string; params: any;}} action
+ */
+function actionHandler(action) {
+    console.log('Received action:', action);
+    if(window.confirm(`Action received:\n${JSON.stringify(action, null, 2)}\n\nSend success result?`)) {
+        neuroClient?.sendActionResult(action.id, true, 'Action completed successfully.');
+    }
+}
 
 /**
  * @param {HTMLFormControlsCollection} formElements
