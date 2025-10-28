@@ -24,7 +24,7 @@ from trio_websocket import (
     serve_websocket,
 )
 
-from .config import config
+from .config import SendActionsTo, config
 from .constants import WarningID
 from .model import NeuroAction
 
@@ -848,20 +848,38 @@ class NeuroAPI(AbstractTrioNeuroServer):
             An arbitrary unique string that identifies the action. This is used to match the action with the result returned by the game.
 
         """
-        client = self._get_client(client_id)
-
-        if client is None:
+        # Determine which clients to send to based on configuration
+        clients: list[tuple[int, NeuroAPIClient]]
+        if config().send_actions_to == SendActionsTo.ALL:
+            clients = [(cid, client) for cid, (client, _) in self._clients.items()]
+        elif config().send_actions_to == SendActionsTo.REGISTRANT:
+            client = self._get_client(client_id)
+            clients = [(client_id, client)] if client else []
+        elif config().send_actions_to == SendActionsTo.FIRST_CONNECTED:
+            first_client_id = min(self._clients.keys())
+            client = self._get_client(first_client_id)
+            clients = [(first_client_id, client)] if client else []
+        elif config().send_actions_to == SendActionsTo.LAST_CONNECTED:
+            last_client_id = max(self._clients.keys())
+            client = self._get_client(last_client_id)
+            clients = [(last_client_id, client)] if client else []
+        else:
+            self.log_error("Invalid send_actions_to configuration.")
             return False
 
-        if not self._submit_async_action(
-            client_id,
-            partial(client.send_action_command, name, data),
-        ):
-            return False
+        sent = False
+        for cid, client in clients:
+            if not self._submit_async_action(
+                cid,
+                partial(client.send_action_command, name, data),
+            ):
+                continue
+            sent = True
 
-        self.log_command(client_id, "action", False, name + (" {...}" if data else ""))
+            self.log_command(client_id, "action", False, name + (" {...}" if data else ""))
 
-        return True
+        # Return true if sent to at least one client
+        return sent
 
     def send_actions_reregister_all(
         self,

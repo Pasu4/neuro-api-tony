@@ -27,6 +27,15 @@ class ConflictPolicy(str, Enum):
     ALLOW_DUPLICATES = "allowDuplicates"
 
 
+class SendActionsTo(str, Enum):
+    """Destinations to send actions to."""
+
+    ALL = "all"
+    REGISTRANT = "registrant"
+    FIRST_CONNECTED = "firstConnected"
+    LAST_CONNECTED = "lastConnected"
+
+
 # endregion
 
 
@@ -40,6 +49,7 @@ class Config(JSONWizard, key_case="AUTO"):
     delete_actions_on_disconnect: bool = False
     log_action_descriptions: bool = True
     log_level: str = "INFO"
+    send_actions_to: SendActionsTo = SendActionsTo.REGISTRANT
     warnings: dict[WarningID, bool] = field(
         default_factory=lambda: {
             WarningID.ACTION_ADDITIONAL_PROPERTIES: True,

@@ -97,6 +97,22 @@
                 "Something went wrong and Tony will likely have to be restarted."
             ]
         },
+        "sendActionsTo": {
+            "default": "registrant",
+            "enum": [
+                "all",
+                "registrant",
+                "firstConnected",
+                "lastConnected"
+            ],
+            "markdownDescription": "To which client(s) to send actions. According to an Outer Wilds integration dev, this is probably `firstConnected` or `lastConnected` for Neuro. To avoid confusion, the default setting for Tony is `registrant`.",
+            "markdownEnumDescriptions": [
+                "Send the action to all connected clients. Note that this still expects only one `action/result`. All simultaneous actions have the same action ID.",
+                "Send the action to the client that registered the action. Sending will fail if the client is no longer connected.",
+                "Send the action to the first connected client (i.e. the lowest connected client ID).",
+                "Send the action to the last connected client (i.e. the highest connected client ID)."
+            ]
+        },
         "warnings": {
             "additionalProperties": false,
             "markdownDescription": "Enable or disable warnings. Setting a warning to `true` enables it and setting it to `false` disables it.",
