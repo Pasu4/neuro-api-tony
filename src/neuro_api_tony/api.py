@@ -813,7 +813,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
     def _get_client(self, client_id: int) -> NeuroAPIClient | None:
         """Return NeuroAPIClient instance from given client id or None if not found."""
-        result = self._clients.get(client_id)
+        result = next(iter(self._clients.values())) if self._clients else None
         if result is None:
             self.log_error(f"No client with ID {client_id} connected.")
             return None
@@ -825,7 +825,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         if not self.clients_connected:
             self.log_error("No clients connected!")
             return False
-        _client, send_channel = self._clients[client_id]
+        _client, send_channel = next(iter(self._clients.values()))
         try:
             send_channel.send_nowait(async_partial)
         except trio.WouldBlock:
