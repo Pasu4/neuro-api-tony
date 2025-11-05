@@ -825,7 +825,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         if not self.clients_connected:
             self.log_error("No clients connected!")
             return False
-        _client, send_channel = next(iter(self._clients.values()))
+        _client, send_channel = self._clients[client_id]
         try:
             send_channel.send_nowait(async_partial)
         except trio.WouldBlock:
