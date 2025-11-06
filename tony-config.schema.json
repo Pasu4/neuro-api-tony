@@ -105,7 +105,7 @@
                 "firstConnected",
                 "lastConnected"
             ],
-            "markdownDescription": "To which client(s) to send actions. According to an Outer Wilds integration dev, this is probably `firstConnected` or `lastConnected` for Neuro. To avoid confusion, the default setting for Tony is `registrant`.",
+            "markdownDescription": "To which client(s) to send actions. According to Outer Wilds integration dev @DialingSpoon527, this is likely `lastConnected` for Neuro. To avoid confusion, the default setting for Tony is `registrant`.",
             "markdownEnumDescriptions": [
                 "Send the action to all connected clients. Note that this still expects only one `action/result`. All simultaneous actions have the same action ID.",
                 "Send the action to the client that registered the action. Sending will fail if the client is no longer connected.",
