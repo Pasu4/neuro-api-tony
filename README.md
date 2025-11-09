@@ -3,6 +3,9 @@
 Tony is a graphical implementation of the [Neuro API](https://github.com/VedalAI/neuro-game-sdk) in python.
 Like [Randy](https://github.com/VedalAI/neuro-game-sdk/blob/main/Randy), he can answer `actions/force` commands automatically, but also allows the user to formulate the response Neuro would send themselves, as well as send non-forced actions whenever.
 
+> [!WARNING]
+> Due to some incomplete features making it into the master branch, Tony may currently be unstable. This will be fixed in v2.0.0. If you encounter any issues with the newest version, please try switching to `neuro-api-tony==1.6.2` and see if that fixes it.
+
 > [!Note]
 > I cannot guarantee that this implementation perfectly emulates what Neuro could/would do, or that it is error-free.
 > There might be [some things](https://github.com/VedalAI/neuro-game-sdk/issues/51) that I have overlooked.
