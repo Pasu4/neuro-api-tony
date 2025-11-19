@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime as dt
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import jsonschema
 import wx
@@ -1152,7 +1152,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             else:
                 raise e
 
-    def _generate_from_schema(self, schema: dict) -> dict:
+    def _generate_from_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
         """Generate a sample JSON object based on the schema without JSF."""
         if not schema or schema.get("type") != "object":
             return {}
