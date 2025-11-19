@@ -1153,7 +1153,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
                 raise e
             
     def _generate_from_schema(self, schema: dict) -> dict:
-        """Custom schema generator that doesn't use JSF."""
+        """Generate a sample JSON object based on the schema without JSF."""
         if not schema or schema.get('type') != 'object':
             return {}
         
@@ -1168,7 +1168,8 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
                 result[prop_name] = f"sample_{prop_name}"
             elif prop_schema.get('type') == 'number':
                 min_val = prop_schema.get('minimum', 1)
-                max_val = prop_schema.get('maximum', min_val + 10)
+                # max_val = prop_schema.get('maximum', min_val + 10)
+                # TODO: Handle more complex cases, here we only use minimum
                 result[prop_name] = min_val
             elif prop_schema.get('type') == 'boolean':
                 result[prop_name] = False
