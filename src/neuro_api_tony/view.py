@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime as dt
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import jsonschema
 import wx
@@ -1141,8 +1141,52 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
     def regenerate(self) -> None:
         """Regenerate the JSON data."""
-        sample = self.faker.generate()
-        self.text.SetValue(json.dumps(sample, indent=2))
+        try:
+            sample = self.faker.generate()
+            self.text.SetValue(json.dumps(sample, indent=2))
+        except (TypeError, Exception) as e:
+            if "cannot pickle" in str(e):
+                self.view.log_warning(f"JSF failed for {self.action.name}, using custom generator: {e}")
+                sample = self._generate_from_schema(self.action.schema or {})
+                self.text.SetValue(json.dumps(sample, indent=2))
+            else:
+                raise e
+
+    def _generate_from_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
+        """Generate a sample JSON object based on the schema without JSF."""
+        if not schema or schema.get("type") != "object":
+            return {}
+
+        properties = schema.get("properties", {})
+        required = schema.get("required", [])
+        result = {}
+
+        for prop_name, prop_schema in properties.items():
+            if "enum" in prop_schema:
+                result[prop_name] = prop_schema["enum"][0] if prop_schema["enum"] else ""
+            elif prop_schema.get("type") == "string":
+                result[prop_name] = f"sample_{prop_name}"
+            elif prop_schema.get("type") in ("number", "integer"):
+                min_val = prop_schema.get("minimum", 1)
+                # max_val = prop_schema.get("maximum", min_val + 10)
+                # TODO: Handle more complex cases, here we only use minimum
+                result[prop_name] = min_val
+            elif prop_schema.get("type") == "boolean":
+                result[prop_name] = False
+            elif prop_schema.get("type") == "object":
+                result[prop_name] = self._generate_from_schema(prop_schema)
+            elif prop_schema.get("type") == "array":
+                result[prop_name] = []
+            else:
+                # Default fallback
+                result[prop_name] = None
+
+        # Ensure required fields are present
+        for req_field in required:
+            if req_field not in result:
+                result[req_field] = f"required_{req_field}"
+
+        return result
 
     def on_value_change(self, event: wx.CommandEvent) -> None:
         """Handle text change."""
