@@ -1166,7 +1166,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
                 result[prop_name] = prop_schema["enum"][0] if prop_schema["enum"] else ""
             elif prop_schema.get("type") == "string":
                 result[prop_name] = f"sample_{prop_name}"
-            elif prop_schema.get("type") == "number":
+            elif prop_schema.get("type") in ("number", "integer"):
                 min_val = prop_schema.get("minimum", 1)
                 # max_val = prop_schema.get("maximum", min_val + 10)
                 # TODO: Handle more complex cases, here we only use minimum
