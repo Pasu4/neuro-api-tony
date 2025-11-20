@@ -1174,7 +1174,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             elif prop_schema.get("type") == "boolean":
                 result[prop_name] = False
             elif prop_schema.get("type") == "object":
-                result[prop_name] = {}
+                result[prop_name] = self._generate_from_schema(prop_schema)
             elif prop_schema.get("type") == "array":
                 result[prop_name] = []
             else:
