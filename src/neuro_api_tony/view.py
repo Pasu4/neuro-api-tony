@@ -6,16 +6,19 @@ import json
 from datetime import datetime as dt
 from typing import TYPE_CHECKING, Any
 
+import json_source_map as jsm
 import jsonschema
 import wx
+import wx.stc
 from jsf import JSF
 
-from neuro_api_tony.constants import VERSION
+from .config import config, default_config
+from .constants import VERSION, WarningID
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from neuro_api_tony.model import NeuroAction, TonyModel
+    from .model import NeuroAction, TonyModel
 
 
 # region Events
@@ -138,15 +141,17 @@ class TonyView:
 
         # Dependency injection
         # fmt: off
-        self.on_execute: Callable[[int, NeuroAction], bool] = lambda client_id, action: False
+        self.on_execute: Callable[[NeuroAction], bool] = lambda action: False
         self.on_delete_action: Callable[[int, str], None] = lambda client_id, name: None
-        self.on_delete_all_actions: Callable[[int], None] = lambda client_id: None
-        self.on_unlock: Callable[[int], None] = lambda client_id: None
-        self.on_clear_logs: Callable[[int], None] = lambda client_id: None
-        self.on_send_actions_reregister_all: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_graceful: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_graceful_cancel: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_immediate: Callable[[int], None] = lambda client_id: None
+        self.on_delete_all_actions: Callable[[int | None], None] = lambda client_id: None
+        self.on_unlock: Callable[[], None] = lambda: None
+        self.on_clear_logs: Callable[[], None] = lambda: None
+        self.on_send_actions_reregister_all: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_graceful: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_graceful_cancel: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_immediate: Callable[[int | None], None] = lambda client_id: None
+
+        self.get_clients: Callable[[], list[tuple[int, str | None]]] = list
         # fmt: on
 
     def on_close(self, event: wx.CloseEvent) -> None:
@@ -168,7 +173,8 @@ class TonyView:
         addition: str | None = None,
     ) -> None:
         """Log a command."""
-        tag = "Game --> Tony" if incoming else "Game <-- Tony"
+        game = next((g for cid, g in self.get_clients() if cid == client_id), None)
+        tag = f"{game} --> Tony" if incoming else f"{game} <-- Tony"
         color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
 
         if addition is None:
@@ -202,9 +208,11 @@ class TonyView:
                 LOG_COLOR_INFO,
             )
 
-    def log_warning(self, message: str) -> None:
+    def log_warning(self, warning_id: WarningID, message: str) -> None:
         """Log a warning message."""
-        if self.controls.get_log_level() <= LOG_LEVELS["WARNING"]:
+        warning_configured = config().warnings.get(warning_id, default_config().warnings.get(warning_id, True))
+
+        if self.controls.get_log_level() <= LOG_LEVELS["WARNING"] and warning_configured:
             self.add_export_log(message, "Warning", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
@@ -253,6 +261,8 @@ class TonyView:
 
     def log_description(self, message: str) -> None:
         """Log an action description."""
+        if not config().log_action_descriptions:
+            return
         self.add_export_log(message, "Action", "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
@@ -356,9 +366,26 @@ class TonyView:
         """Add an action to the list."""
         self.frame.panel.action_list.add_action(action)
 
-    def remove_action_by_name(self, name: str) -> None:
-        """Remove an action from the list by name."""
-        self.frame.panel.action_list.remove_action_by_name(name)
+    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+        """Remove an action panel from the list by name and/or client_id."""
+        self.frame.panel.action_list.remove_actions(name, client_id)
+
+    def has_action(self, name: str | None = None, client_id: int | None = None) -> bool:
+        """Check if an action exists in the list by name and/or client_id."""
+        for action in self.frame.panel.action_list.actions:
+            name_match = name is None or action.name == name
+            client_id_match = client_id is None or action.client_id == client_id
+            if name_match and client_id_match:
+                return True
+        return False
+
+    def get_actions(self, name: str | None = None, client_id: int | None = None) -> list[NeuroAction]:
+        """Get the list of actions."""
+        return [
+            action
+            for action in self.frame.panel.action_list.actions
+            if (name is None or action.name == name) and (client_id is None or action.client_id == client_id)
+        ]
 
     def enable_actions(self) -> None:
         """Enable executing actions."""
@@ -373,11 +400,10 @@ class TonyView:
         state: str,
         query: str,
         ephemeral_context: bool,
-        action_names: list[str],
+        actions: list[NeuroAction],
         retry: bool = False,
     ) -> None:
         """Show a dialog for forcing actions."""
-        actions = [action for action in self.model.actions if action.name in action_names]
         actions_force_dialog = ActionsForceDialog(
             self.frame,
             self,
@@ -517,7 +543,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_item_deselected, self.list)
 
         self.list.InsertColumn(0, "Name", width=150)
-        self.list.InsertColumn(1, "Description", width=200)
+        self.list.InsertColumn(1, "Game", width=150)
         self.list.InsertColumn(2, "Schema", width=60)
 
         self.execute_button.SetToolTip(
@@ -549,20 +575,25 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.list.Append(
             [
                 action.name,
-                action.description,
+                action.game,
                 "Yes" if action.schema is not None and action.schema != {} else "No",
             ],
         )
 
-    def remove_action_by_name(self, name: str) -> None:
-        """Remove an action panel from the list."""
-        self.actions = [action for action in self.actions if action.name != name]
+    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+        """Remove an action panel from the list by name and/or client_id."""
+        # Collect indices to remove in reverse order to avoid index shifting issues
+        indices_to_remove = []
+        for i, action in enumerate(self.actions):
+            name_match = name is None or action.name == name
+            client_id_match = client_id is None or action.client_id == client_id
+            if name_match and client_id_match:
+                indices_to_remove.append(i)
 
-        index = self.list.FindItem(-1, name)
-        if index != -1:
-            self.list.DeleteItem(index)
-        # else:
-        #     self.GetTopLevelParent().view.log_error(f'Action "{name}" not found in list.')
+        # Remove in reverse order to maintain correct indices
+        for i in reversed(indices_to_remove):
+            self.actions.pop(i)
+            self.list.DeleteItem(i)
 
     def clear(self) -> None:
         """Clear the list of actions."""
@@ -588,9 +619,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        sent = top.view.on_execute(client_id, action)
+        sent = top.view.on_execute(action)
 
         if sent:
             self.GetEventHandler().ProcessEvent(ExecuteEvent(self.GetId(), action))
@@ -609,9 +638,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_delete_action(client_id, action.name)
+        top.view.on_delete_action(action.client_id, action.name)
 
     def on_delete_all(self, event: wx.CommandEvent) -> None:
         """Handle delete all command event."""
@@ -619,9 +646,9 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_delete_all_actions(client_id)
+        menu = ClientMenu(top.view, top.view.on_delete_all_actions)
+        self.delete_all_button.PopupMenu(menu)
+        menu.Destroy()
 
     def on_unlock(self, event: wx.CommandEvent) -> None:
         """Handle unlock command event."""
@@ -629,9 +656,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_unlock(client_id)
+        top.view.on_unlock()
 
     def on_key_down(self, event: wx.ListEvent) -> None:
         """Handle key down event."""
@@ -776,9 +801,7 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_clear_logs(client_id)
+        top.view.on_clear_logs()
 
     def on_export(self, event: wx.CommandEvent) -> None:
         """Handle export command event."""
@@ -1037,33 +1060,33 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         """Handle send_actions_reregister_all command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_actions_reregister_all(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_actions_reregister_all)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_graceful(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_graceful(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_graceful)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful_cancel command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_graceful_cancel(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_graceful_cancel)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_immediate(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_immediate command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_immediate(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_immediate)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
 
 class ActionDialog(wx.Dialog):  # type: ignore[misc]
@@ -1086,8 +1109,9 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.is_error = False
 
         self.content_splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
-        self.text = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL)
-        self.info = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL | wx.TE_READONLY)
+        self.text = wx.stc.StyledTextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL)
+        self.info = wx.stc.StyledTextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL | wx.TE_READONLY)
+        self.error_text = wx.StaticText(self, label="Invalid JSON data")
         self.allow_invalid_checkbox = wx.CheckBox(self, label="Don't validate")
         button_panel = wx.Panel(self)
         self.send_button = wx.Button(button_panel, label="Send")
@@ -1104,12 +1128,13 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.content_splitter, 1, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.error_text, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.allow_invalid_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(button_panel, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
         # Bind events
-        self.Bind(wx.EVT_TEXT, self.on_value_change, self.text)
+        self.Bind(wx.stc.EVT_STC_MODIFIED, self.on_value_change, self.text)
         self.Bind(wx.EVT_CHECKBOX, self.on_allow_invalid, self.allow_invalid_checkbox)
         self.Bind(wx.EVT_BUTTON, self.on_send, self.send_button)
         self.Bind(wx.EVT_BUTTON, self.on_show_schema, self.show_schema_button)
@@ -1136,6 +1161,14 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             self.text.SetValue(view.model.last_action_data[action.name])
         else:
             self.regenerate()
+
+        # TODO: Dark mode
+        setup_json_editor(self.text, False)
+        setup_json_editor(self.info, False)
+
+        self.info.SetReadOnly(True)
+
+        self.error_text.SetForegroundColour(wx.Colour(255, 0, 0))
 
         self.SetSize(600, 400)
 
@@ -1188,24 +1221,78 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         return result
 
-    def on_value_change(self, event: wx.CommandEvent) -> None:
+    def on_value_change(self, event: wx.stc.StyledTextEvent) -> None:
         """Handle text change."""
         event.Skip()
+        mod = event.GetModificationType()
+        if not mod & (wx.stc.STC_MOD_INSERTTEXT | wx.stc.STC_MOD_DELETETEXT):
+            return
+
+        # TODO: Configurable
+        if event.GetText() == "\n" and mod & wx.stc.STC_MOD_INSERTTEXT and not (mod & wx.stc.STC_PERFORMED_REDO):
+            position = event.GetPosition()
+            line = self.text.LineFromPosition(position)
+            # line_content = self.text.GetLine(line)
+            indent = self.text.GetLineIndentation(line)
+            wx.CallAfter(self.text.SetLineIndentation, line + 1, indent)
+            wx.CallAfter(self.text.GotoPos, position + 1 + indent)
+            # event.SetText("\n" + " " * indent)
+            return
+
+        self.text.SetIndicatorCurrent(0)
+        self.text.IndicatorClearRange(0, self.text.GetLength())
+
+        json_str = self.text.GetValue()
 
         try:
-            json_str = self.text.GetValue()
             json_cmd = json.loads(json_str)
             jsonschema.validate(json_cmd, self.action.schema or {})
 
             self.is_error = False
-            self.text.SetToolTip("")
-            self.text.SetBackgroundColour(wx.NullColour)
-            self.Refresh()
+            self.error_text.Hide()
+            self.error_text.SetLabel("")
+            self.error_text.SetToolTip("")
         except Exception as exc:
             self.is_error = True
-            self.text.SetToolTip(str(exc))
-            self.text.SetBackgroundColour(UI_COLOR_ERROR)
-            self.Refresh()
+            self.error_text.Show()
+            split = list(map(str.strip, (str(exc) or "Unknown error").split("\n", maxsplit=1)))
+            self.error_text.SetLabel(split[0])
+            self.error_text.SetToolTip(split[1] if len(split) > 1 and split[1] else "No further information.")
+
+            if isinstance(exc, json.JSONDecodeError):
+                line, col = exc.lineno, exc.colno
+                length = 1
+                start = self.text.PositionFromLine(line - 1) + col - 1
+                length = self.text.WordEndPosition(start, False) - start
+                while start + length < len(json_str) and json_str[start + length - 1] == "\n":
+                    length += 1
+                self.text.IndicatorFillRange(start, length)
+            elif isinstance(exc, jsonschema.ValidationError):
+                source_map = jsm.calculate(json_str)
+                path = "/" + "/".join(map(str, exc.path)) if exc.path else ""
+                if path in source_map:
+                    entry = source_map.get(path, None)
+                    if entry is not None:
+                        start = entry.value_start.position
+                        end = entry.value_end.position
+                        self.text.IndicatorFillRange(start, end - start)
+
+        self.text.SetScrollWidth(self.GetClientSize().width)
+
+        self.Refresh()
+        self.error_text.Wrap(self.GetClientSize().width - 10)
+        self.Layout()
+
+        # TODO: Auto-completion?
+
+        # TODO: Folding (if I figure it out)
+        # # Folding
+        # for i, line in enumerate(json_str.splitlines()):
+        #     level = (len(line) - len(line.lstrip())) // 2  # TODO: Configurable?
+        #     if line.rstrip().endswith(('{', '[')):
+        #         self.text.SetFoldLevel(i, level | wx.stc.STC_FOLDLEVELHEADERFLAG)
+        #     else:
+        #         self.text.SetFoldLevel(i, level)
 
         self.send_button.Enable(self.allow_invalid or not self.is_error)
 
@@ -1382,6 +1469,63 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.EndModal(wx.ID_OK)
 
 
+class ClientMenu(wx.Menu):  # type: ignore[misc]
+    """The context menu for selecting clients."""
+
+    def __init__(self, view: TonyView, callback: Callable[[int | None], None]) -> None:
+        """Initialize Client Menu."""
+        super().__init__()
+
+        self.view = view
+        self.callback = callback
+
+        self.client_menu_items: list[tuple[int, wx.MenuItem]] = []
+
+        clients = self.view.get_clients()
+        connected_client_ids = {client_id for client_id, _ in clients}
+        for action in self.view.get_actions():
+            if action.client_id not in connected_client_ids:
+                clients.append((action.client_id, "<Disconnected>"))
+                connected_client_ids.add(action.client_id)
+
+        all_clients_item = wx.MenuItem(self, wx.ID_ANY, "All Clients")
+        all_clients_item.Enable(clients != [])
+        self.Append(all_clients_item)
+        if clients:
+            self.AppendSeparator()
+
+        self.Bind(wx.EVT_MENU, self.on_select_client, all_clients_item)
+
+        for client_id, game in clients:
+            item = wx.MenuItem(self, wx.ID_ANY, f"{game} (ID: {client_id})")
+            self.Append(item)
+            self.client_menu_items.append((client_id, item))
+            self.Bind(wx.EVT_MENU, self.on_select_client, item)
+
+        # self.update()
+
+    # def update(self) -> None:
+    #     """Update the client menu."""
+    #     for _, item in self.client_menu_items:
+    #         self.Unbind(wx.EVT_MENU, item)
+    #         self.Remove(item)
+    #         item.Destroy()
+    #     self.client_menu_items.clear()
+
+    #     for client_id, game in self.view.get_clients():
+    #         item = wx.MenuItem(self, wx.ID_ANY, f"{game} (ID: {client_id})")
+    #         self.Append(item)
+    #         self.client_menu_items.append((client_id, item))
+    #         self.Bind(wx.EVT_MENU, self.on_select_client, item)
+
+    def on_select_client(self, event: wx.CommandEvent) -> None:
+        """Handle select client command event."""
+        event.Skip()
+
+        client_id = next((cid for cid, item in self.client_menu_items if item.GetId() == event.GetId()), None)
+        self.callback(client_id)
+
+
 class Controls:
     """The content of the control panel."""
 
@@ -1407,3 +1551,94 @@ class Controls:
     def get_log_level_str(self) -> str:
         """Get the log level as a string."""
         return self.__log_level_str
+
+
+# region Helper functions
+
+
+def setup_json_editor(editor: wx.stc.StyledTextCtrl, dark: bool) -> None:
+    """Set up a JSON editor with syntax highlighting.
+
+    Parameters
+    ----------
+    editor : wx.stc.StyledTextCtrl
+        The editor to set up.
+    dark : bool
+        Whether to use a dark theme.
+
+    """
+    editor.SetLexer(wx.stc.STC_LEX_JSON)
+    editor.SetKeyWords(0, "true false null")
+
+    editor.SetPasteConvertEndings(True)
+    editor.SetEOLMode(wx.stc.STC_EOL_LF)
+
+    editor.SetMultipleSelection(True)
+    editor.SetAdditionalSelectionTyping(True)
+    editor.SetMultiPaste(wx.stc.STC_MULTIPASTE_EACH)
+
+    # editor.SetViewWhiteSpace(wx.stc.STC_WS_VISIBLEALWAYS)
+
+    editor.SetBackSpaceUnIndents(True)
+    # editor.SetHighlightGuide(1)  # Idk what this does
+    editor.SetIndent(2)
+    editor.SetIndentationGuides(wx.stc.STC_IV_LOOKBOTH)
+    editor.SetTabWidth(2)
+    editor.SetUseTabs(False)
+
+    editor.IndicatorSetStyle(0, wx.stc.STC_INDIC_SQUIGGLE)
+    editor.IndicatorSetForeground(0, wx.RED)
+
+    # editor.SetAutomaticFold(wx.stc.STC_AUTOMATICFOLD_SHOW | wx.stc.STC_AUTOMATICFOLD_CLICK | wx.stc.STC_AUTOMATICFOLD_CHANGE)
+    # editor.SetFoldFlags(wx.stc.STC_FOLDFLAG_LEVELNUMBERS)
+
+    editor.SetWrapMode(wx.stc.STC_WRAP_WORD)
+    editor.SetWrapIndentMode(wx.stc.STC_WRAPINDENT_INDENT)
+    editor.SetWrapVisualFlags(wx.stc.STC_WRAPVISUALFLAG_END)
+
+    if dark:
+        editor.SetCaretForeground("white")
+
+        editor.StyleSetSpec(wx.stc.STC_STYLE_DEFAULT, "fore:white,back:#1E1E1E,face:Courier New")
+        editor.StyleClearAll()
+
+        # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
+
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:white,back:red")  # We have squiggles for this
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange")  # Doesn't seem to work
+        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
+        editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, "fore:blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, "fore:sky blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, "fore:slate blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_STRING, "fore:coral")
+        editor.StyleSetSpec(wx.stc.STC_JSON_URI, "fore:coral,underline")
+        editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, "fore:pale green")
+    else:
+        editor.SetCaretForeground("black")
+
+        editor.StyleSetSpec(wx.stc.STC_STYLE_DEFAULT, "fore:black,back:white,face:Courier New")
+        editor.StyleClearAll()
+
+        # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
+
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:black,back:red")  # We have squiggles for this
+        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange red")  # Doesn't seem to work
+        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
+        editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, "fore:blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, "fore:cornflower blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, "fore:medium blue")
+        editor.StyleSetSpec(wx.stc.STC_JSON_STRING, "fore:sienna")
+        editor.StyleSetSpec(wx.stc.STC_JSON_URI, "fore:sienna,underline")
+        editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, "fore:sea green")
+
+        # Other styles to consider (background colors for visibility testing)
+        # editor.StyleSetSpec(wx.stc.STC_JSON_DEFAULT,            "back:wheat")  # Spaces
+        # editor.StyleSetSpec(wx.stc.STC_JSON_OPERATOR,           "back:magenta")  # Punctuation
+
+        # Idk what these do
+        # editor.StyleSetSpec(wx.stc.STC_JSON_BLOCKCOMMENT, "back:green")
+        # editor.StyleSetSpec(wx.stc.STC_JSON_LDKEYWORD, "back:cyan")
+        # editor.StyleSetSpec(wx.stc.STC_JSON_LINECOMMENT, "back:dim grey")
+
+
+# endregion

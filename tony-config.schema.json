@@ -1,0 +1,184 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "actionScope": {
+            "default": "global",
+            "enum": [
+                "global",
+                "client"
+            ],
+            "enumDescriptions": [
+                "Check for matching action names across all clients.",
+                "Check for matching action names registered by the same client."
+            ],
+            "markdownDescription": "In what scope to check for matching action names when registering or unregistering actions, or when selecting actions for an `actions/force`. If set to `global`, the `startup` command will unregister all actions with a matching game name. According to the specification, `global` is the correct behavior."
+        },
+        "allowedSchemaKeys": {
+            "default": [],
+            "description": "Schema keys marked as unsupported which Tony should not log warnings for.",
+            "items": {
+                "enum": [
+                    "$anchor",
+                    "$comment",
+                    "$defs",
+                    "$dynamicAnchor",
+                    "$dynamicRef",
+                    "$id",
+                    "$ref",
+                    "$schema",
+                    "$vocabulary",
+                    "additionalProperties",
+                    "allOf",
+                    "anyOf",
+                    "contentEncoding",
+                    "contentMediaType",
+                    "contentSchema",
+                    "dependentRequired",
+                    "dependentSchemas",
+                    "deprecated",
+                    "description",
+                    "else",
+                    "if",
+                    "maxProperties",
+                    "minProperties",
+                    "multipleOf",
+                    "not",
+                    "oneOf",
+                    "patternProperties",
+                    "readOnly",
+                    "then",
+                    "title",
+                    "unevaluatedItems",
+                    "unevaluatedProperties",
+                    "uniqueItems",
+                    "writeOnly"
+                ]
+            },
+            "type": "array",
+            "uniqueItems": true
+        },
+        "conflictPolicy": {
+            "default": "ignore",
+            "enum": [
+                "ignore",
+                "overwrite",
+                "allowDuplicates"
+            ],
+            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignore` is the correct behavior, but changing to `overwrite` has been proposed.",
+            "markdownEnumDescriptions": [
+                "Ignore the new action and keep the old action.",
+                "Overwrite the old action with the new action.",
+                "Do not check for duplicate action names. `actions/unregister` commands will unregister all actions with a matching name, and `actions/force` commands will allow all actions with a matching name (within the `actionScope`)."
+            ]
+        },
+        "deleteActionsOnDisconnect": {
+            "default": false,
+            "markdownDescription": "If `true`, deletes all actions associated with a client when it disconnects. According to [a comment by Alex](https://github.com/VedalAI/neuro-sdk/discussions/58), this is assumed to be `false` for Neuro."
+        },
+        "logActionDescriptions": {
+            "default": true,
+            "description": "Whether to log action descriptions to the context log panel."
+        },
+        "logLevel": {
+            "default": "INFO",
+            "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+            ],
+            "markdownDescription": "The initial minimum log level to log. The log level can still be changed at runtime. Log levels are `DEBUG` < `INFO` < `WARNING` < `ERROR` < `CRITICAL`. If the log level is specified as a command line argument this setting is ignored.",
+            "markdownEnumDescriptions": [
+                "Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.",
+                "Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).",
+                "Things that do not comply with the API specification, but which Tony can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.",
+                "Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.",
+                "Something went wrong and Tony will likely have to be restarted."
+            ]
+        },
+        "sendActionsTo": {
+            "default": "registrant",
+            "enum": [
+                "all",
+                "registrant",
+                "firstConnected",
+                "lastConnected"
+            ],
+            "markdownDescription": "To which client(s) to send actions. According to Outer Wilds integration dev @DialingSpoon527, this is likely `lastConnected` for Neuro. To avoid confusion, the default setting for Tony is `registrant`.",
+            "markdownEnumDescriptions": [
+                "Send the action to all connected clients. Note that this still expects only one `action/result`. All simultaneous actions have the same action ID.",
+                "Send the action to the client that registered the action. Sending will fail if the client is no longer connected.",
+                "Send the action to the first connected client (i.e. the lowest connected client ID).",
+                "Send the action to the last connected client (i.e. the highest connected client ID)."
+            ]
+        },
+        "warnings": {
+            "additionalProperties": false,
+            "markdownDescription": "Enable or disable warnings. Setting a warning to `true` enables it and setting it to `false` disables it.",
+            "properties": {
+                "actionAdditionalProperties": {
+                    "default": true,
+                    "description": "Warn if the action contains properties other than name, description and schema.",
+                    "type": "boolean"
+                },
+                "actionNameConflict": {
+                    "default": true,
+                    "description": "Warn if an action with the same name is already registered.",
+                    "type": "boolean"
+                },
+                "actionNameInvalid": {
+                    "default": true,
+                    "markdownDescription": "Warn if the action name is empty or contains [characters not allowed in the specification](https://github.com/VedalAI/neuro-sdk/blob/main/API/SPECIFICATION.md#parameters-1).",
+                    "type": "boolean"
+                },
+                "actionSchemaNull": {
+                    "default": true,
+                    "markdownDescription": "Warn if the action description is `null`.",
+                    "type": "boolean"
+                },
+                "actionSchemaUnsupported": {
+                    "default": true,
+                    "markdownDescription": "Warn if the action schema contains one or more unsupported schema keys. You can also configure for which schema keys to ignore this rule using `allowedSchemaKeys`.",
+                    "type": "boolean"
+                },
+                "actionsForceInvalid": {
+                    "default": true,
+                    "markdownDescription": "Warn if an `actions/force` specifies actions that are not registered, or if any of the specified actions are not registered when an `actions/force` is retried.",
+                    "type": "boolean"
+                },
+                "emptyUnregister": {
+                    "default": true,
+                    "markdownDescription": "Warn if an `actions/unregister` command without any action names is received.",
+                    "type": "boolean"
+                },
+                "gameNameMismatch": {
+                    "default": true,
+                    "markdownDescription": "Warn if a client specifies a different game name than in its `startup` command.",
+                    "type": "boolean"
+                },
+                "gameNameNotRegistered": {
+                    "default": true,
+                    "markdownDescription": "Warn if any other command is received before `startup`.",
+                    "type": "boolean"
+                },
+                "multipleStartups": {
+                    "default": true,
+                    "markdownDescription": "Warn if a client sends another `startup` command.",
+                    "type": "boolean"
+                },
+                "noErrorMessage": {
+                    "default": true,
+                    "markdownDescription": "Warn if a failed `action/result` contains no `message`.",
+                    "type": "boolean"
+                },
+                "unknownCommand": {
+                    "default": true,
+                    "description": "Warn if an unknown command is received.",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        }
+    }
+}
