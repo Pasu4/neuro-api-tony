@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.10', '3.11', '3.12', '3.13']
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
         arch: ['x86', 'x64']
     continue-on-error: >-
       ${{
@@ -62,11 +62,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.10', '3.11', '3.12', '3.13']
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
         check_formatting: ['0']
         extra_name: ['']
         include:
-          - python: '3.12'
+          - python: '3.14'
             check_formatting: '1'
             extra_name: ', check formatting'
     continue-on-error: >-
@@ -107,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.11', '3.12', '3.13']
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
     continue-on-error: >-
       ${{
         (
