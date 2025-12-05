@@ -15,6 +15,7 @@ from functools import partial
 
 from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
+from neuro_api.server import ActionSchema
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -245,7 +246,7 @@ def test_run_start_failure(api: NeuroAPI) -> None:
 
 
 def test_actions_register_command() -> None:
-    actions: list[dict[str, Any]] = [
+    actions: list[ActionSchema] = [
         {
             "name": "jerald",
             "description": "jerald action",

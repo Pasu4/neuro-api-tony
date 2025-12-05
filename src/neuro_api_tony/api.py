@@ -16,7 +16,7 @@ import jsonschema.exceptions
 import orjson
 import trio
 from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, check_invalid_keys_recursive
-from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer
+from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer, ActionSchema
 from trio_websocket import (
     ConnectionClosed,
     WebSocketConnection,
@@ -1031,7 +1031,7 @@ class ActionsRegisterCommand:
 
     __slots__ = ("actions",)
 
-    def __init__(self, client_id: int, game: str, actions: list[dict[str, Action]]) -> None:
+    def __init__(self, client_id: int, game: str, actions: list[ActionSchema]) -> None:
         """Initialize actions register command."""
         # 'schema' may be omitted, so get() is used
         self.actions = [
