@@ -54,9 +54,14 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     # Get the Ubuntu version
     UBUNTU_VERSION=$(lsb_release -rs)
     PYTHON_VERSION=$(python -c 'import sys; print("".join(map(str, sys.version_info[:2])))')
-    # For some reason mark as requires >=3.11 to get uv to work properly?
-    python -m pip install -U pip tomli tomli_w
-    python -c 'import tomli, tomli_w; from pathlib import Path; path=Path("pyproject.toml"); file=tomli.loads(path.read_text()); file["project"]["requires-python"]=">=3.11"; path.write_text(tomli_w.dumps(file))'
+    if [[ "$PYTHON_VERSION" == "310" ]]; then
+        # Can't install for wxpython 4.2.4 on python 3.10 because of see below, revert to wxpython 4.2.3
+        WXPYTHON_VERSION="4.2.3"
+    else
+        uv pip install tomli tomli_w
+        # For some reason wxpython 4.2.4 wheels need mark as requires >=3.11 to get uv to work properly?
+        python -c 'import tomli, tomli_w; from pathlib import Path; path=Path("pyproject.toml"); file=tomli.loads(path.read_text()); file["project"]["requires-python"]=">=3.11"; path.write_text(tomli_w.dumps(file))'
+    fi
     # Install wxPython from binaries
     uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
     # Make sure installation was successful
@@ -65,11 +70,15 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
         echo "::error:: wxPython linux installation failed, version does not match expected."
         exit 1
     fi
+    if [[ "$PYTHON_VERSION" == "310" ]]; then
+        # See above
+        uv add "wxPython~=$WXPYTHON_VERSION"
+    fi
     echo "::endgroup::"
 fi
 
 if [ "$CHECK_FORMATTING" = "1" ]; then
-    python -m uv sync --extra tests --extra tools
+    uv sync --extra tests --extra tools
     echo "::endgroup::"
     # Restore files to original state on Linux
     if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
@@ -81,11 +90,11 @@ else
     # expands to 0 != 1 if NO_TEST_REQUIREMENTS is not set, if set the `-0` has no effect
     # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
     if [ "${NO_TEST_REQUIREMENTS-0}" == 1 ]; then
-        python -m uv sync --extra tests
+        uv sync --extra tests
         flags=""
         #"--skip-optional-imports"
     else
-        python -m uv sync --extra tests --extra tools
+        uv sync --extra tests --extra tools
         flags=""
     fi
 
