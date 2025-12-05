@@ -55,7 +55,7 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     UBUNTU_VERSION=$(lsb_release -rs)
     PYTHON_VERSION=$(python -c 'import sys; print("".join(map(str, sys.version_info[:2])))')
     # For some reason mark as requires >=3.11 to get uv to work properly?
-    python -m pip install -U pip tomli, tomli_w
+    python -m pip install -U pip tomli tomli_w
     python -c 'import tomli, tomli_w; from pathlib import Path; path=Path("pyproject.toml"); file=tomli.loads(path.read_text()); file["project"]["requires-python"]=">=3.11"; path.write_text(tomli_w.dumps(file))'
     # Install wxPython from binaries
     uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
