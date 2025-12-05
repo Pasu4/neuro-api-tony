@@ -65,7 +65,7 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     # Install wxPython from binaries
     WX_WHEEL_URL="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
     if [[ "$PYTHON_VERSION" == "310" ]]; then
-        uv add "wxPython @ ${WX_WHEEL_URL}" --frozen
+        uv pip install "wxPython @ ${WX_WHEEL_URL}"
     else
         uv add "wxPython @ ${WX_WHEEL_URL}"
     fi
