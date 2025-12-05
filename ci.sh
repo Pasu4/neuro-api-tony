@@ -77,7 +77,7 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     fi
     if [[ "$PYTHON_VERSION" == "310" ]]; then
         # See above
-        uv add "wxPython~=$WXPYTHON_VERSION"
+        uv add "wxPython==$WXPYTHON_VERSION"
     fi
     echo "::endgroup::"
 fi
