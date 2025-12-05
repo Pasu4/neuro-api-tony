@@ -63,7 +63,12 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
         python -c 'import tomli, tomli_w; from pathlib import Path; path=Path("pyproject.toml"); file=tomli.loads(path.read_text()); file["project"]["requires-python"]=">=3.11"; path.write_text(tomli_w.dumps(file))'
     fi
     # Install wxPython from binaries
-    uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
+    WX_WHEEL_URL="wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
+    if [[ "$PYTHON_VERSION" == "310" ]]; then
+        uv add $WX_WHEEL_URL --frozen
+    else
+        uv add $WX_WHEEL_URL
+    fi
     # Make sure installation was successful
     WX_RUN_VERSION=$(python -c "import wx; print(wx.__version__)")
     if [[ "${WX_RUN_VERSION}" != "${WXPYTHON_VERSION}" ]]; then
