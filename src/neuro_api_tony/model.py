@@ -10,7 +10,7 @@ class NeuroAction(NamedTuple):
 
     name: str
     description: str
-    schema: dict[str, Any] | None # TODO: use schema object from Neuro-API instead of Any
+    schema: dict[str, Any] | None  # TODO: use schema object from Neuro-API instead of Any
     client_id: int
     game: str
 
