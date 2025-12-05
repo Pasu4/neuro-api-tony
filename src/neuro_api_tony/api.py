@@ -1031,7 +1031,7 @@ class ActionsRegisterCommand:
 
     __slots__ = ("actions",)
 
-    def __init__(self, client_id: int, game: str, actions: list[dict[str, Any]]) -> None:
+    def __init__(self, client_id: int, game: str, actions: list[dict[str, Action]]) -> None:
         """Initialize actions register command."""
         # 'schema' may be omitted, so get() is used
         self.actions = [

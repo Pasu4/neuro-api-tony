@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from neuro_api.command import Action
 
 
-class NeuroAction(NamedTuple):
+class NeuroAction(Action):
     """Neuro Action Object."""
 
-    name: str
-    description: str
-    schema: dict[str, Any] | None
     client_id: int
     game: str
 
