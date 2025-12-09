@@ -193,7 +193,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             ", ".join(action.name for action in actions),
         )
 
-        checked_actions = []
+        checked_actions: list[ActionSchema] = []
 
         # Check the actions
         for action in actions:
@@ -240,7 +240,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
                 self.server.log_warning(WarningID.ACTION_NAME_INVALID, "Action name is empty.")
 
             # Add the action to the list
-            checked_actions.append(action._asdict())
+            checked_actions.append(action._asdict())  # type: ignore[arg-type]
 
         self.server.on_actions_register(
             self._client_id,
