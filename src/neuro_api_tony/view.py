@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime as dt
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, TypedDict
 
 import json_source_map as jsm
 import jsonschema
@@ -17,6 +17,8 @@ from .constants import VERSION, WarningID
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from typing_extensions import NotRequired
 
     from .model import NeuroAction, TonyModel
 
@@ -1089,6 +1091,14 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         menu.Destroy()
 
 
+class SchemaDict(TypedDict):
+    """Schema dictionary."""
+
+    type: NotRequired[str]
+    properties: NotRequired[dict[str, dict[str, str]]]
+    required: NotRequired[list[str]]
+
+
 class ActionDialog(wx.Dialog):  # type: ignore[misc]
     """Action dialog."""
 
@@ -1183,19 +1193,31 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
                     WarningID.JSF_FAILED,
                     f"JSF failed for {self.action.name}, using custom generator: {e}",
                 )
-                sample = self._generate_from_schema(self.action.schema or {})
+                schema = self.action.schema or {}
+                type_ = schema.get("type")
+                sample = {}
+                if type_ is not None:
+                    sample = self._generate_from_schema(
+                        SchemaDict(
+                            {
+                                "type": type_,
+                                "properties": schema.get("properties", {}),
+                                "required": schema.get("required", []),
+                            },
+                        ),
+                    )
                 self.text.SetValue(json.dumps(sample, indent=2))
             else:
                 raise e
 
-    def _generate_from_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
+    def _generate_from_schema(self, schema: SchemaDict) -> dict[str, object]:
         """Generate a sample JSON object based on the schema without JSF."""
         if not schema or schema.get("type") != "object":
             return {}
 
         properties = schema.get("properties", {})
         required = schema.get("required", [])
-        result = {}
+        result: dict[str, object] = {}
 
         for prop_name, prop_schema in properties.items():
             if "enum" in prop_schema:
@@ -1210,7 +1232,15 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             elif prop_schema.get("type") == "boolean":
                 result[prop_name] = False
             elif prop_schema.get("type") == "object":
-                result[prop_name] = self._generate_from_schema(prop_schema)
+                result[prop_name] = self._generate_from_schema(
+                    SchemaDict(
+                        {
+                            "type": prop_schema.get("type", "object"),
+                            "properties": schema.get("properties", {}),
+                            "required": schema.get("required", []),
+                        },
+                    ),
+                )
             elif prop_schema.get("type") == "array":
                 result[prop_name] = []
             else:
