@@ -19,6 +19,8 @@ from neuro_api_tony.model import NeuroAction
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
+    from neuro_api.server import ActionSchema
+
 
 @pytest.fixture
 def api() -> NeuroAPI:
@@ -245,7 +247,7 @@ def test_run_start_failure(api: NeuroAPI) -> None:
 
 
 def test_actions_register_command() -> None:
-    actions: list[dict[str, Any]] = [
+    actions: list[ActionSchema] = [
         {
             "name": "jerald",
             "description": "jerald action",
