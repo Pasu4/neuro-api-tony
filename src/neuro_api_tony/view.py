@@ -1179,7 +1179,10 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             self.text.SetValue(json.dumps(sample, indent=2))
         except (TypeError, Exception) as e:
             if "cannot pickle" in str(e):
-                self.view.log_warning(f"JSF failed for {self.action.name}, using custom generator: {e}")
+                self.view.log_warning(
+                    WarningID.JSF_FAILED,
+                    f"JSF failed for {self.action.name}, using custom generator: {e}",
+                )
                 sample = self._generate_from_schema(self.action.schema or {})
                 self.text.SetValue(json.dumps(sample, indent=2))
             else:

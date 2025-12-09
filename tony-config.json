@@ -1,5 +1,5 @@
 {
-    "$schema": "https://raw.githubusercontent.com/Pasu4/neuro-api-tony/refs/heads/dev/tony-config.schema.json",
+    "$schema": "tony-config.schema.json",
     "allowedSchemaKeys": [
         "additionalProperties"
     ],

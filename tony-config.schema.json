@@ -162,6 +162,11 @@
                     "markdownDescription": "Warn if any other command is received before `startup`.",
                     "type": "boolean"
                 },
+                "jsfFailed": {
+                    "default": true,
+                    "markdownDescription": "Warn if JSON Schema Faker fails to generate a sample for an action schema.",
+                    "type": "boolean"
+                },
                 "multipleStartups": {
                     "default": true,
                     "markdownDescription": "Warn if a client sends another `startup` command.",

@@ -23,6 +23,7 @@ class WarningID(str, Enum):
     EMPTY_UNREGISTER = "emptyUnregister"
     GAME_NAME_MISMATCH = "gameNameMismatch"
     GAME_NAME_NOT_REGISTERED = "gameNameNotRegistered"
+    JSF_FAILED = "jsfFailed"
     MULTIPLE_STARTUPS = "multipleStartups"
     NO_ERROR_MESSAGE = "noErrorMessage"
     UNKNOWN_COMMAND = "unknownCommand"
