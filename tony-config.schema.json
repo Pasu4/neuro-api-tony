@@ -1,5 +1,11 @@
 {
     "$schema": "https://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "editorColor": {
+            "pattern": "^#[0-9A-F]{6}$",
+            "type": "string"
+        }
+    },
     "properties": {
         "actionScope": {
             "default": "global",
@@ -74,6 +80,89 @@
         "deleteActionsOnDisconnect": {
             "default": false,
             "markdownDescription": "If `true`, deletes all actions associated with a client when it disconnects. According to [a comment by Alex](https://github.com/VedalAI/neuro-sdk/discussions/58), this is assumed to be `false` for Neuro."
+        },
+        "editorColorTheme": {
+            "anyOf": [
+                {
+                    "enum": [
+                        "auto",
+                        "darkPlus",
+                        "lightPlus"
+                    ],
+                    "enumDescriptions": [
+                        "Decide based on the system theme (uses 'darkPlus' for dark system theme and 'lightPlus' for light system theme).",
+                        "Similar to VS Code's Dark+ theme.",
+                        "Similar to VS Code's Light+ theme."
+                    ]
+                },
+                {
+                    "examples": [
+                        {
+                            "background": "#1E1E1E",
+                            "caret": "#FFFFFF",
+                            "compactIRI": "#9CDCFE",
+                            "default": "#D4D4D4",
+                            "keyword": "#4FC1FF",
+                            "number": "#B5CEA8",
+                            "propertyName": "#9CDCFE",
+                            "string": "#CE9178",
+                            "uri": "#CE9178"
+                        },
+                        {
+                            "background": "#FFFFFF",
+                            "caret": "#000000",
+                            "compactIRI": "#9CDCFE",
+                            "default": "#000000",
+                            "keyword": "#0000FF",
+                            "number": "#098658",
+                            "propertyName": "#0451A5",
+                            "string": "#A31515",
+                            "uri": "#A31515"
+                        }
+                    ],
+                    "properties": {
+                        "background": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The background color."
+                        },
+                        "caret": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color of the caret."
+                        },
+                        "compactIRI": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for JSON-LD properties."
+                        },
+                        "default": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for normal text (e.g. punctuation)."
+                        },
+                        "keyword": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for keywords (null, true, false)"
+                        },
+                        "number": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for numbers."
+                        },
+                        "propertyName": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for property names."
+                        },
+                        "string": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for strings."
+                        },
+                        "uri": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for URIs within strings."
+                        }
+                    },
+                    "type": "object"
+                }
+            ],
+            "default": "auto",
+            "description": "The color theme used in the text editor. Can be either a pre-defined or a custom theme."
         },
         "logActionDescriptions": {
             "default": true,

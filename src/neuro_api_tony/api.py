@@ -24,8 +24,7 @@ from trio_websocket import (
     serve_websocket,
 )
 
-from .config import SendActionsTo, config
-from .constants import WarningID
+from .config import SendActionsTo, WarningID, config
 from .model import NeuroAction
 
 if TYPE_CHECKING:

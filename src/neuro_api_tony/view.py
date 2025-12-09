@@ -12,8 +12,8 @@ import wx
 import wx.stc
 from jsf import JSF
 
-from .config import config, default_config
-from .constants import VERSION, WarningID
+from .config import EditorThemeColor, WarningID, config, default_config, get_editor_theme_colors
+from .constants import VERSION
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -1173,8 +1173,8 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             self.regenerate()
 
         # TODO: Dark mode
-        setup_json_editor(self.text, False)
-        setup_json_editor(self.info, False)
+        setup_json_editor(self.text)
+        setup_json_editor(self.info)
 
         self.info.SetReadOnly(True)
 
@@ -1191,7 +1191,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             if "cannot pickle" in str(e):
                 self.view.log_warning(
                     WarningID.JSF_FAILED,
-                    f"JSF failed for {self.action.name}, using custom generator: {e}",
+                    f"JSF failed for {self.action.name}, using fallback generator: {e}",
                 )
                 schema = self.action.schema or {}
                 type_ = schema.get("type")
@@ -1589,7 +1589,7 @@ class Controls:
 # region Helper functions
 
 
-def setup_json_editor(editor: wx.stc.StyledTextCtrl, dark: bool) -> None:
+def setup_json_editor(editor: wx.stc.StyledTextCtrl) -> None:
     """Set up a JSON editor with syntax highlighting.
 
     Parameters
@@ -1629,49 +1629,36 @@ def setup_json_editor(editor: wx.stc.StyledTextCtrl, dark: bool) -> None:
     editor.SetWrapIndentMode(wx.stc.STC_WRAPINDENT_INDENT)
     editor.SetWrapVisualFlags(wx.stc.STC_WRAPVISUALFLAG_END)
 
-    if dark:
-        editor.SetCaretForeground("white")
+    theme = get_editor_theme_colors()
 
-        editor.StyleSetSpec(wx.stc.STC_STYLE_DEFAULT, "fore:white,back:#1E1E1E,face:Courier New")
-        editor.StyleClearAll()
+    editor.SetCaretForeground(theme[EditorThemeColor.CARET])
 
-        # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
+    editor.StyleSetSpec(
+        wx.stc.STC_STYLE_DEFAULT,
+        f"fore:{theme[EditorThemeColor.DEFAULT]},back:{theme[EditorThemeColor.BACKGROUND]},face:Courier New",
+    )
+    editor.StyleClearAll()
 
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:white,back:red")  # We have squiggles for this
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange")  # Doesn't seem to work
-        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
-        editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, "fore:blue")
-        editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, "fore:sky blue")
-        editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, "fore:slate blue")
-        editor.StyleSetSpec(wx.stc.STC_JSON_STRING, "fore:coral")
-        editor.StyleSetSpec(wx.stc.STC_JSON_URI, "fore:coral,underline")
-        editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, "fore:pale green")
-    else:
-        editor.SetCaretForeground("black")
+    # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
 
-        editor.StyleSetSpec(wx.stc.STC_STYLE_DEFAULT, "fore:black,back:white,face:Courier New")
-        editor.StyleClearAll()
+    # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:white,back:red")  # We have squiggles for this
+    # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange")  # Doesn't seem to work
+    # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
+    editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, f"fore:{theme[EditorThemeColor.KEYWORD]}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, f"fore:{theme[EditorThemeColor.PROPERTYNAME]}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, f"fore:{theme[EditorThemeColor.COMPACTIRI]}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_STRING, f"fore:{theme[EditorThemeColor.STRING]}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_URI, f"fore:{theme[EditorThemeColor.URI]},underline")
+    editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, f"fore:{theme[EditorThemeColor.NUMBER]}")
 
-        # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
+    # Other styles to consider (background colors for visibility testing)
+    # editor.StyleSetSpec(wx.stc.STC_JSON_DEFAULT,            "back:wheat")  # Spaces
+    # editor.StyleSetSpec(wx.stc.STC_JSON_OPERATOR,           "back:magenta")  # Punctuation
 
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:black,back:red")  # We have squiggles for this
-        # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange red")  # Doesn't seem to work
-        # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
-        editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, "fore:blue")
-        editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, "fore:cornflower blue")
-        editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, "fore:medium blue")
-        editor.StyleSetSpec(wx.stc.STC_JSON_STRING, "fore:sienna")
-        editor.StyleSetSpec(wx.stc.STC_JSON_URI, "fore:sienna,underline")
-        editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, "fore:sea green")
-
-        # Other styles to consider (background colors for visibility testing)
-        # editor.StyleSetSpec(wx.stc.STC_JSON_DEFAULT,            "back:wheat")  # Spaces
-        # editor.StyleSetSpec(wx.stc.STC_JSON_OPERATOR,           "back:magenta")  # Punctuation
-
-        # Idk what these do
-        # editor.StyleSetSpec(wx.stc.STC_JSON_BLOCKCOMMENT, "back:green")
-        # editor.StyleSetSpec(wx.stc.STC_JSON_LDKEYWORD, "back:cyan")
-        # editor.StyleSetSpec(wx.stc.STC_JSON_LINECOMMENT, "back:dim grey")
+    # Idk what these do
+    # editor.StyleSetSpec(wx.stc.STC_JSON_BLOCKCOMMENT, "back:green")
+    # editor.StyleSetSpec(wx.stc.STC_JSON_LDKEYWORD, "back:cyan")
+    # editor.StyleSetSpec(wx.stc.STC_JSON_LINECOMMENT, "back:dim grey")
 
 
 # endregion

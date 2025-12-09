@@ -19,8 +19,8 @@ from .api import (
     ShutdownReadyCommand,
     StartupCommand,
 )
-from .config import ActionScope, ConflictPolicy, config
-from .constants import VERSION, WarningID
+from .config import ActionScope, ConflictPolicy, WarningID, config
+from .constants import VERSION
 from .model import NeuroAction, TonyModel
 from .view import TonyView
 
