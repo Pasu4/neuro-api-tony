@@ -13,13 +13,13 @@ if sys.version_info < (3, 11):
 from collections.abc import Coroutine
 from functools import partial
 
-from neuro_api.server import ActionSchema
-
 from neuro_api_tony.api import ActionsRegisterCommand, NeuroAPI
 from neuro_api_tony.model import NeuroAction
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
+
+    from neuro_api.server import ActionSchema
 
 
 @pytest.fixture
