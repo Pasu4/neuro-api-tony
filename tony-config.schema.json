@@ -4,6 +4,10 @@
         "editorColor": {
             "pattern": "^#[0-9A-F]{6}$",
             "type": "string"
+        },
+        "logColor": {
+            "pattern": "^#[0-9A-F]{6}$",
+            "type": "string"
         }
     },
     "properties": {
@@ -135,7 +139,7 @@
                         },
                         "default": {
                             "$ref": "#/definitions/editorColor",
-                            "description": "The color for normal text (e.g. punctuation)."
+                            "description": "The default text color (e.g. punctuation uses this)."
                         },
                         "keyword": {
                             "$ref": "#/definitions/editorColor",
@@ -158,6 +162,17 @@
                             "description": "The color for URIs within strings."
                         }
                     },
+                    "required": [
+                        "background",
+                        "caret",
+                        "compactIRI",
+                        "default",
+                        "keyword",
+                        "number",
+                        "propertyName",
+                        "string",
+                        "uri"
+                    ],
                     "type": "object"
                 }
             ],
@@ -167,6 +182,156 @@
         "logActionDescriptions": {
             "default": true,
             "description": "Whether to log action descriptions to the context log panel."
+        },
+        "logColorTheme": {
+            "anyOf": [
+                {
+                    "enum": [
+                        "auto",
+                        "dark",
+                        "light"
+                    ],
+                    "enumDescriptions": [
+                        "Decide based on the system theme.",
+                        "Log colors for dark system theme (main text is white).",
+                        "Log colors for light system theme (main text is black)."
+                    ]
+                },
+                {
+                    "examples": [
+                        {
+                            "commandAddition": "#808080",
+                            "contextAction": "#0000FF",
+                            "contextActionResultFailure": "#FF0000",
+                            "contextActionResultSuccess": "#008000",
+                            "contextEphemeral": "#80C0FF",
+                            "contextQuery": "#FF00FF",
+                            "contextSilent": "#808080",
+                            "contextState": "#80FF80",
+                            "critical": "#C00000",
+                            "debug": "#808080",
+                            "default": "#FFFFFF",
+                            "error": "#FF0000",
+                            "incoming": "#0000FF",
+                            "info": "#80C0FF",
+                            "outgoing": "#FF0080",
+                            "timestamp": "#008000",
+                            "warning": "#FFC000"
+                        },
+                        {
+                            "commandAddition": "#808080",
+                            "contextAction": "#0000FF",
+                            "contextActionResultFailure": "#FF0000",
+                            "contextActionResultSuccess": "#008000",
+                            "contextEphemeral": "#80C0FF",
+                            "contextQuery": "#FF00FF",
+                            "contextSilent": "#808080",
+                            "contextState": "#80FF80",
+                            "critical": "#C00000",
+                            "debug": "#808080",
+                            "default": "#000000",
+                            "error": "#FF0000",
+                            "incoming": "#0000FF",
+                            "info": "#80C0FF",
+                            "outgoing": "#FF0080",
+                            "timestamp": "#008000",
+                            "warning": "#FFC000"
+                        }
+                    ],
+                    "properties": {
+                        "commandAddition": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for additional info on commands in the command panel."
+                        },
+                        "contextAction": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Action] tag in the context panel."
+                        },
+                        "contextActionResultFailure": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Result] tag in the context panel if the action/result indicates failure."
+                        },
+                        "contextActionResultSuccess": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Result] tag in the context panel if the action/result indicates success."
+                        },
+                        "contextEphemeral": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Ephemeral] tag in the context panel."
+                        },
+                        "contextQuery": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Query] tag of an actions/force context."
+                        },
+                        "contextSilent": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Silent] tag in the context panel."
+                        },
+                        "contextState": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [State] tag of an actions/force context."
+                        },
+                        "critical": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Critical] tag in the System panel."
+                        },
+                        "debug": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Debug] tag in the System panel."
+                        },
+                        "default": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The default color of text."
+                        },
+                        "error": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Error] tag in the System panel."
+                        },
+                        "incoming": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Game --> Tony] tag in the raw panel for incoming messages."
+                        },
+                        "info": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Info] tag in the System panel."
+                        },
+                        "outgoing": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Game <-- Tony] tag in the raw panel for outgoing messages."
+                        },
+                        "timestamp": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of timestamps."
+                        },
+                        "warning": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Warning] tag in the System panel."
+                        }
+                    },
+                    "required": [
+                        "commandAddition",
+                        "contextAction",
+                        "contextActionResultFailure",
+                        "contextActionResultSuccess",
+                        "contextEphemeral",
+                        "contextQuery",
+                        "contextSilent",
+                        "contextState",
+                        "critical",
+                        "debug",
+                        "default",
+                        "error",
+                        "incoming",
+                        "info",
+                        "outgoing",
+                        "timestamp",
+                        "warning"
+                    ],
+                    "type": "object"
+                }
+            ],
+            "default": "auto",
+            "description": "The color theme used in the log window. Can be either a predefined or a custom theme."
         },
         "logLevel": {
             "default": "INFO",

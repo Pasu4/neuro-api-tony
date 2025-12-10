@@ -1,7 +1,6 @@
 """Configuration for Tony."""
 
 import json
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Final
@@ -49,6 +48,36 @@ class EditorThemeColor(str, Enum):
     URI = "uri"
 
 
+class LogTheme(str, Enum):
+    """Log themes."""
+
+    AUTO = "auto"
+    DARK = "dark"
+    LIGHT = "light"
+
+
+class LogThemeColor(str, Enum):
+    """Log theme colors."""
+
+    DEFAULT = "default"
+    TIMESTAMP = "timestamp"
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+    CONTEXT_QUERY = "contextQuery"
+    CONTEXT_STATE = "contextState"
+    CONTEXT_SILENT = "contextSilent"
+    CONTEXT_EPHEMERAL = "contextEphemeral"
+    CONTEXT_ACTION = "contextAction"
+    CONTEXT_ACTION_RESULT_SUCCESS = "contextActionResultSuccess"
+    CONTEXT_ACTION_RESULT_FAILURE = "contextActionResultFailure"
+    INCOMING = "incoming"
+    OUTGOING = "outgoing"
+    COMMAND_ADDITION = "commandAddition"
+
+
 class SendActionsTo(str, Enum):
     """Destinations to send actions to."""
 
@@ -82,7 +111,7 @@ class WarningID(str, Enum):
 # region String aliases
 
 
-THEMES: Final = {
+EDITOR_THEMES: Final = {
     EditorTheme.DARK_PLUS: {
         EditorThemeColor.BACKGROUND: "#1E1E1E",
         EditorThemeColor.CARET: "#FFFFFF",
@@ -108,6 +137,58 @@ THEMES: Final = {
 }
 
 
+LOG_THEMES: Final = {
+    LogTheme.DARK: {
+        LogThemeColor.DEFAULT: "#FFFFFF",
+        LogThemeColor.TIMESTAMP: "#008000",
+        LogThemeColor.DEBUG: "#808080",
+        LogThemeColor.INFO: "#80C0FF",
+        LogThemeColor.WARNING: "#FFC000",
+        LogThemeColor.ERROR: "#FF0000",
+        LogThemeColor.CRITICAL: "#C00000",
+        LogThemeColor.CONTEXT_QUERY: "#FF00FF",
+        LogThemeColor.CONTEXT_STATE: "#80FF80",
+        LogThemeColor.CONTEXT_SILENT: "#808080",
+        LogThemeColor.CONTEXT_EPHEMERAL: "#80C0FF",
+        LogThemeColor.CONTEXT_ACTION: "#0000FF",
+        LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS: "#008000",
+        LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE: "#FF0000",
+        LogThemeColor.INCOMING: "#0000FF",
+        LogThemeColor.OUTGOING: "#FF0080",
+        LogThemeColor.COMMAND_ADDITION: "#808080",
+    },
+    LogTheme.LIGHT: {
+        LogThemeColor.DEFAULT: "#000000",
+        LogThemeColor.TIMESTAMP: "#008000",
+        LogThemeColor.DEBUG: "#808080",
+        LogThemeColor.INFO: "#80C0FF",
+        LogThemeColor.WARNING: "#FFC000",
+        LogThemeColor.ERROR: "#FF0000",
+        LogThemeColor.CRITICAL: "#C00000",
+        LogThemeColor.CONTEXT_QUERY: "#FF00FF",
+        LogThemeColor.CONTEXT_STATE: "#80FF80",
+        LogThemeColor.CONTEXT_SILENT: "#808080",
+        LogThemeColor.CONTEXT_EPHEMERAL: "#80C0FF",
+        LogThemeColor.CONTEXT_ACTION: "#0000FF",
+        LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS: "#008000",
+        LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE: "#FF0000",
+        LogThemeColor.INCOMING: "#0000FF",
+        LogThemeColor.OUTGOING: "#FF0080",
+        LogThemeColor.COMMAND_ADDITION: "#808080",
+    },
+}
+
+
+# endregion
+
+
+# region Cache
+
+
+_editor_theme_colors: dict[EditorThemeColor, str] | None = None
+_log_theme_colors: dict[str, wx.Colour] | None = None
+
+
 # endregion
 
 
@@ -121,6 +202,7 @@ class Config(JSONWizard, key_case="AUTO"):
     delete_actions_on_disconnect: bool = False
     editor_color_theme: dict[EditorThemeColor, str] | EditorTheme = EditorTheme.AUTO
     log_action_descriptions: bool = True
+    log_color_theme: dict[LogThemeColor, str] | LogTheme = LogTheme.AUTO
     log_level: str = "INFO"
     send_actions_to: SendActionsTo = SendActionsTo.REGISTRANT
     warnings: dict[WarningID, bool] = field(
@@ -162,17 +244,48 @@ def load_config_from_file(file_path: str) -> None:
         data = json.load(f)
     _config = Config.from_dict(data)
 
+    # Invalidate cache
+    global _editor_theme_colors
+    _editor_theme_colors = None
+    global _log_theme_colors
+    _log_theme_colors = None
 
-def get_editor_theme_colors() -> Mapping[EditorThemeColor, str]:
+
+def get_editor_theme_color(key: EditorThemeColor) -> str:
     """Get the editor theme colors based on the current configuration."""
+    global _editor_theme_colors
+    if _editor_theme_colors is not None:
+        return _editor_theme_colors[key]
+
+    # Cache the theme colors
     cfg = config().editor_color_theme
     if cfg == EditorTheme.AUTO:
         if wx.SystemSettings.GetAppearance().IsDark():
-            return THEMES[EditorTheme.DARK_PLUS]
-        return THEMES[EditorTheme.LIGHT_PLUS]
-    if isinstance(cfg, EditorTheme):
-        return THEMES[cfg]
-    return cfg
+            cfg = EDITOR_THEMES[EditorTheme.DARK_PLUS]
+        else:
+            cfg = EDITOR_THEMES[EditorTheme.LIGHT_PLUS]
+    elif isinstance(cfg, EditorTheme):
+        cfg = EDITOR_THEMES[cfg]
+    _editor_theme_colors = cfg
+    return _editor_theme_colors[key]
+
+
+def get_log_theme_color(key: LogThemeColor) -> wx.Colour:
+    """Get the log theme colors based on the current configuration."""
+    global _log_theme_colors
+    if _log_theme_colors is not None:
+        return _log_theme_colors[key]
+
+    # Cache the theme colors
+    cfg = config().log_color_theme
+    if cfg == LogTheme.AUTO:
+        cfg = LOG_THEMES[LogTheme.DARK] if wx.SystemSettings.GetAppearance().IsDark() else LOG_THEMES[LogTheme.LIGHT]
+    elif isinstance(cfg, LogTheme):
+        cfg = LOG_THEMES[cfg]
+    _log_theme_colors = {k: wx.Colour() for k in cfg}
+    for k, v in cfg.items():
+        _log_theme_colors[k].Set(v)
+    return _log_theme_colors[key]
 
 
 FILE_NAMES: Final = [

@@ -12,7 +12,15 @@ import wx
 import wx.stc
 from jsf import JSF
 
-from .config import EditorThemeColor, WarningID, config, default_config, get_editor_theme_colors
+from .config import (
+    EditorThemeColor,
+    LogThemeColor,
+    WarningID,
+    config,
+    default_config,
+    get_editor_theme_color,
+    get_log_theme_color,
+)
 from .constants import VERSION
 
 if TYPE_CHECKING:
@@ -74,28 +82,6 @@ class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
 # endregion
 
 # region Constants
-
-# Colors
-# fmt: off
-LOG_COLOR_DEFAULT                       = wx.Colour(  0,   0,   0)
-LOG_COLOR_TIMESTAMP                     = wx.Colour(  0, 128,   0)
-LOG_COLOR_DEBUG                         = wx.Colour(128, 128, 128)
-LOG_COLOR_INFO                          = wx.Colour(128, 192, 255)
-LOG_COLOR_WARNING                       = wx.Colour(255, 192,   0)
-LOG_COLOR_ERROR                         = wx.Colour(255,   0,   0)
-LOG_COLOR_CRITICAL                      = wx.Colour(192,   0,   0)
-LOG_COLOR_CONTEXT                       = LOG_COLOR_DEFAULT
-LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255,   0, 255)
-LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
-LOG_COLOR_CONTEXT_SILENT                = wx.Colour(128, 128, 128)
-LOG_COLOR_CONTEXT_EPHEMERAL             = wx.Colour(128, 192, 255)
-LOG_COLOR_CONTEXT_ACTION                = wx.Colour(  0,   0, 255)
-LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
-LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
-LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
-LOG_COLOR_OUTGOING                      = wx.Colour(255,   0, 128)
-LOG_COLOR_COMMAND_ADDITION              = wx.Colour(128, 128, 128)
-# fmt: on
 
 UI_COLOR_WARNING = wx.Colour(255, 255, 128)
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
@@ -177,7 +163,9 @@ class TonyView:
         """Log a command."""
         game = next((g for cid, g in self.get_clients() if cid == client_id), None)
         tag = f"{game} --> Tony" if incoming else f"{game} <-- Tony"
-        color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
+        color = (
+            get_log_theme_color(LogThemeColor.INCOMING) if incoming else get_log_theme_color(LogThemeColor.OUTGOING)
+        )
 
         if addition is None:
             self.add_export_log(command, tag, "Commands")
@@ -185,7 +173,10 @@ class TonyView:
         else:
             self.add_export_log(f"{command}: {addition}", tag, "Commands")
             self.frame.panel.log_notebook.command_log_panel.log(
-                [(command + ": ", LOG_COLOR_DEFAULT), (addition, LOG_COLOR_COMMAND_ADDITION)],
+                [
+                    (command + ": ", get_log_theme_color(LogThemeColor.DEFAULT)),
+                    (addition, get_log_theme_color(LogThemeColor.COMMAND_ADDITION)),
+                ],
                 tag,
                 color,
             )
@@ -197,7 +188,7 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Debug",
-                LOG_COLOR_DEBUG,
+                get_log_theme_color(LogThemeColor.DEBUG),
             )
 
     def log_info(self, message: str) -> None:
@@ -207,7 +198,7 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Info",
-                LOG_COLOR_INFO,
+                get_log_theme_color(LogThemeColor.INFO),
             )
 
     def log_warning(self, warning_id: WarningID, message: str) -> None:
@@ -219,7 +210,7 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Warning",
-                LOG_COLOR_WARNING,
+                get_log_theme_color(LogThemeColor.WARNING),
             )
             self.frame.panel.log_notebook.highlight(LOG_LEVELS["WARNING"])
 
@@ -230,7 +221,7 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Error",
-                LOG_COLOR_ERROR,
+                get_log_theme_color(LogThemeColor.ERROR),
             )
             self.frame.panel.log_notebook.highlight(LOG_LEVELS["ERROR"])
 
@@ -241,7 +232,7 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Critical",
-                LOG_COLOR_CRITICAL,
+                get_log_theme_color(LogThemeColor.CRITICAL),
             )
             self.frame.panel.log_notebook.highlight(LOG_LEVELS["CRITICAL"])
 
@@ -252,7 +243,7 @@ class TonyView:
 
         if silent:
             tags.append("silent")
-            colors.append(LOG_COLOR_CONTEXT_SILENT)
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_SILENT))
 
         self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
@@ -269,18 +260,17 @@ class TonyView:
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             "Action",
-            LOG_COLOR_CONTEXT_ACTION,
+            get_log_theme_color(LogThemeColor.CONTEXT_ACTION),
         )
 
     def log_query(self, message: str, ephemeral: bool = False) -> None:
         """Log an actions/force query."""
         tags = ["Query"]
-        colors = [LOG_COLOR_CONTEXT_QUERY]
+        colors = [get_log_theme_color(LogThemeColor.CONTEXT_QUERY)]
 
         if ephemeral:
             tags.append("ephemeral")
-            colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
-
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_EPHEMERAL))
         self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
@@ -291,12 +281,11 @@ class TonyView:
     def log_state(self, message: str, ephemeral: bool = False) -> None:
         """Log an actions/force state."""
         tags = ["State"]
-        colors = [LOG_COLOR_CONTEXT_STATE]
+        colors = [get_log_theme_color(LogThemeColor.CONTEXT_STATE)]
 
         if ephemeral:
             tags.append("Ephemeral")
-            colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
-
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_EPHEMERAL))
         self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
@@ -310,13 +299,18 @@ class TonyView:
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
             "Result",
-            LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS if success else LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE,
+            get_log_theme_color(LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS)
+            if success
+            else get_log_theme_color(LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE),
         )
 
     def log_raw(self, message: str, incoming: bool) -> None:
         """Log raw data."""
+        # TODO: Game name
         tag = "Game --> Tony" if incoming else "Game <-- Tony"
-        color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
+        color = (
+            get_log_theme_color(LogThemeColor.INCOMING) if incoming else get_log_theme_color(LogThemeColor.OUTGOING)
+        )
 
         self.add_export_log(message, tag, "Raw")
         self.frame.panel.log_notebook.raw_log_panel.log(message, tag, color)
@@ -871,13 +865,13 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         tag_colors = tag_colors or []
 
         # Add default color for tags without color
-        tag_colors += [LOG_COLOR_DEFAULT] * (len(tags) - len(tag_colors))
+        tag_colors += [get_log_theme_color(LogThemeColor.DEFAULT)] * (len(tags) - len(tag_colors))
 
         # Log timestamp
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame)
         fmt = "%H:%M:%S.%f" if top.view.controls.microsecond_precision else "%H:%M:%S"
-        self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
+        self.text.SetDefaultStyle(wx.TextAttr(get_log_theme_color(LogThemeColor.TIMESTAMP)))
         self.text.AppendText(f"[{dt.now().strftime(fmt)}] ")
 
         # Log tags
@@ -887,7 +881,7 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
 
         # Log message
         if isinstance(message, str):
-            self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
+            self.text.SetDefaultStyle(wx.TextAttr(get_log_theme_color(LogThemeColor.DEFAULT)))
             self.text.AppendText(f"{message}\n")
         else:
             for msg, color in message:
@@ -1629,13 +1623,11 @@ def setup_json_editor(editor: wx.stc.StyledTextCtrl) -> None:
     editor.SetWrapIndentMode(wx.stc.STC_WRAPINDENT_INDENT)
     editor.SetWrapVisualFlags(wx.stc.STC_WRAPVISUALFLAG_END)
 
-    theme = get_editor_theme_colors()
-
-    editor.SetCaretForeground(theme[EditorThemeColor.CARET])
+    editor.SetCaretForeground(get_editor_theme_color(EditorThemeColor.CARET))
 
     editor.StyleSetSpec(
         wx.stc.STC_STYLE_DEFAULT,
-        f"fore:{theme[EditorThemeColor.DEFAULT]},back:{theme[EditorThemeColor.BACKGROUND]},face:Courier New",
+        f"fore:{get_editor_theme_color(EditorThemeColor.DEFAULT)},back:{get_editor_theme_color(EditorThemeColor.BACKGROUND)},face:Courier New",
     )
     editor.StyleClearAll()
 
@@ -1644,12 +1636,12 @@ def setup_json_editor(editor: wx.stc.StyledTextCtrl) -> None:
     # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:white,back:red")  # We have squiggles for this
     # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange")  # Doesn't seem to work
     # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
-    editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, f"fore:{theme[EditorThemeColor.KEYWORD]}")
-    editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, f"fore:{theme[EditorThemeColor.PROPERTYNAME]}")
-    editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, f"fore:{theme[EditorThemeColor.COMPACTIRI]}")
-    editor.StyleSetSpec(wx.stc.STC_JSON_STRING, f"fore:{theme[EditorThemeColor.STRING]}")
-    editor.StyleSetSpec(wx.stc.STC_JSON_URI, f"fore:{theme[EditorThemeColor.URI]},underline")
-    editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, f"fore:{theme[EditorThemeColor.NUMBER]}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, f"fore:{get_editor_theme_color(EditorThemeColor.KEYWORD)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, f"fore:{get_editor_theme_color(EditorThemeColor.PROPERTYNAME)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, f"fore:{get_editor_theme_color(EditorThemeColor.COMPACTIRI)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_STRING, f"fore:{get_editor_theme_color(EditorThemeColor.STRING)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_URI, f"fore:{get_editor_theme_color(EditorThemeColor.URI)},underline")
+    editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, f"fore:{get_editor_theme_color(EditorThemeColor.NUMBER)}")
 
     # Other styles to consider (background colors for visibility testing)
     # editor.StyleSetSpec(wx.stc.STC_JSON_DEFAULT,            "back:wheat")  # Spaces
