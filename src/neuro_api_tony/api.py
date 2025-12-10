@@ -105,13 +105,14 @@ class NeuroAPIClient(AbstractNeuroServerClient):
                     orjson.loads(response),
                     option=orjson.OPT_INDENT_2,
                 ).decode("utf-8"),
+                self._client_id,
                 True,
             )
         except orjson.JSONDecodeError:
             if isinstance(response, bytes):
-                self.server.log_raw(response.decode("utf-8"), True)
+                self.server.log_raw(response.decode("utf-8"), self._client_id, True)
             else:
-                self.server.log_raw(response, True)  # pyright: ignore[reportArgumentType]
+                self.server.log_raw(response, self._client_id, True)  # pyright: ignore[reportArgumentType]
 
         return response
 
@@ -286,10 +287,11 @@ class NeuroAPIClient(AbstractNeuroServerClient):
                     orjson.loads(data),
                     option=orjson.OPT_INDENT_2,
                 ).decode("utf-8"),
+                self._client_id,
                 False,
             )
         except orjson.JSONDecodeError:
-            self.server.log_raw(data.decode("utf-8"), False)
+            self.server.log_raw(data.decode("utf-8"), self._client_id, False)
 
     def deserialize_actions(  # type: ignore[override]  # noqa: D102
         self,
@@ -491,13 +493,15 @@ class NeuroAPI(AbstractTrioNeuroServer):
             The message to log.
 
         """
-        self.log_raw: Callable[[str, bool], None] = lambda message, incoming: None
+        self.log_raw: Callable[[str, int, bool], None] = lambda message, client_id, incoming: None
         """Logging callback that is called when any message is received or sent.
 
         Parameters
         ----------
         message : str
             The raw JSON data received or sent.
+        client_id : int
+            The client id that sent or received the message.
         incoming : bool
             If `True`, the message was received from the client. If `False`, the message was sent to the client.
 

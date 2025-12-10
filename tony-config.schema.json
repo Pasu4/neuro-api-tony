@@ -205,6 +205,7 @@
                             "contextActionResultFailure": "#FF0000",
                             "contextActionResultSuccess": "#008000",
                             "contextEphemeral": "#80C0FF",
+                            "contextOrigin": "#808080",
                             "contextQuery": "#FF00FF",
                             "contextSilent": "#808080",
                             "contextState": "#80FF80",
@@ -224,6 +225,7 @@
                             "contextActionResultFailure": "#FF0000",
                             "contextActionResultSuccess": "#008000",
                             "contextEphemeral": "#80C0FF",
+                            "contextOrigin": "#808080",
                             "contextQuery": "#FF00FF",
                             "contextSilent": "#808080",
                             "contextState": "#80FF80",
@@ -258,6 +260,10 @@
                         "contextEphemeral": {
                             "$ref": "#/definitions/logColor",
                             "description": "The color of the [Ephemeral] tag in the context panel."
+                        },
+                        "contextOrigin": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the game name / client ID tag in the context panel."
                         },
                         "contextQuery": {
                             "$ref": "#/definitions/logColor",
@@ -314,6 +320,7 @@
                         "contextActionResultFailure",
                         "contextActionResultSuccess",
                         "contextEphemeral",
+                        "contextOrigin",
                         "contextQuery",
                         "contextSilent",
                         "contextState",
@@ -365,6 +372,19 @@
                 "Send the action to the client that registered the action. Sending will fail if the client is no longer connected.",
                 "Send the action to the first connected client (i.e. the lowest connected client ID).",
                 "Send the action to the last connected client (i.e. the highest connected client ID)."
+            ]
+        },
+        "showOriginAs": {
+            "description": "How to show which client sent which context in the context panel.",
+            "enum": [
+                "none",
+                "clientId",
+                "gameName"
+            ],
+            "enumDescriptions": [
+                "Do not show the origin of context.",
+                "Show origin as the client ID.",
+                "Show origin as the game name."
             ]
         },
         "warnings": {

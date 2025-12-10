@@ -15,6 +15,7 @@ from jsf import JSF
 from .config import (
     EditorThemeColor,
     LogThemeColor,
+    ShowOriginAs,
     WarningID,
     config,
     default_config,
@@ -236,10 +237,17 @@ class TonyView:
             )
             self.frame.panel.log_notebook.highlight(LOG_LEVELS["CRITICAL"])
 
-    def log_context(self, message: str, silent: bool = False) -> None:
+    def log_context(self, message: str, client_id: int, silent: bool = False) -> None:
         """Log a context message."""
         tags = []
         colors = []
+
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.append(f"{client_id}")
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.append(self._get_client_game(client_id))
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
 
         if silent:
             tags.append("silent")
@@ -252,25 +260,21 @@ class TonyView:
             colors,
         )
 
-    def log_description(self, message: str) -> None:
+    def log_description(self, message: str, client_id: int) -> None:
         """Log an action description."""
         if not config().log_action_descriptions:
             return
-        self.add_export_log(message, "Action", "Context")
-        self.frame.panel.log_notebook.context_log_panel.log(
-            message,
-            "Action",
-            get_log_theme_color(LogThemeColor.CONTEXT_ACTION),
-        )
 
-    def log_query(self, message: str, ephemeral: bool = False) -> None:
-        """Log an actions/force query."""
-        tags = ["Query"]
-        colors = [get_log_theme_color(LogThemeColor.CONTEXT_QUERY)]
+        tags = ["Action"]
+        colors = [get_log_theme_color(LogThemeColor.CONTEXT_ACTION)]
 
-        if ephemeral:
-            tags.append("ephemeral")
-            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_EPHEMERAL))
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+
         self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
@@ -278,10 +282,39 @@ class TonyView:
             colors,
         )
 
-    def log_state(self, message: str, ephemeral: bool = False) -> None:
+    def log_query(self, message: str, client_id: int, ephemeral: bool = False) -> None:
+        """Log an actions/force query."""
+        tags = ["Query"]
+        colors = [get_log_theme_color(LogThemeColor.CONTEXT_QUERY)]
+
+        if ephemeral:
+            tags.append("Ephemeral")
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_EPHEMERAL))
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+
+        self.add_export_log(message, tags, "Context")
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            tags,
+            colors,
+        )
+
+    def log_state(self, message: str, client_id: int, ephemeral: bool = False) -> None:
         """Log an actions/force state."""
         tags = ["State"]
         colors = [get_log_theme_color(LogThemeColor.CONTEXT_STATE)]
+
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
 
         if ephemeral:
             tags.append("Ephemeral")
@@ -293,21 +326,35 @@ class TonyView:
             colors,
         )
 
-    def log_action_result(self, success: bool, message: str) -> None:
+    def log_action_result(self, success: bool, message: str, client_id: int) -> None:
         """Log an action result message."""
-        self.add_export_log(message, ["Result", "Success" if success else "Failure"], "Context")
-        self.frame.panel.log_notebook.context_log_panel.log(
-            message,
-            "Result",
+        tags = ["Result", "Success" if success else "Failure"]
+        colors = [
             get_log_theme_color(LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS)
             if success
             else get_log_theme_color(LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE),
+        ]
+
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+
+        self.add_export_log(message, tags, "Context")
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            tags,
+            colors,
         )
 
-    def log_raw(self, message: str, incoming: bool) -> None:
+    def log_raw(self, message: str, client_id: int, incoming: bool) -> None:
         """Log raw data."""
-        # TODO: Game name
-        tag = "Game --> Tony" if incoming else "Game <-- Tony"
+        game = self._get_client_game(client_id)
+        if f"(ID: {client_id})" not in game:
+            game = f"{game} (ID: {client_id})"
+        tag = f"{game} --> Tony" if incoming else f"{game} <-- Tony"
         color = (
             get_log_theme_color(LogThemeColor.INCOMING) if incoming else get_log_theme_color(LogThemeColor.OUTGOING)
         )
@@ -426,6 +473,11 @@ class TonyView:
         Enables the execute button.
         """
         self.enable_actions()
+
+    def _get_client_game(self, client_id: int) -> str:
+        """Get the game name for a client ID."""
+        game = next((g for cid, g in self.get_clients() if cid == client_id), None)
+        return game or f"<Unregistered> (ID: {client_id})"
 
 
 class MainFrame(wx.Frame):  # type: ignore[misc]

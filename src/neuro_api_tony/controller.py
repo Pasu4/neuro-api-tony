@@ -129,7 +129,7 @@ class TonyController:
 
     def on_context(self, client_id: int, cmd: ContextCommand) -> None:
         """Handle the context command."""
-        self.view.log_context(cmd.message, silent=cmd.silent)
+        self.view.log_context(cmd.message, client_id, silent=cmd.silent)
 
     def on_actions_register(self, client_id: int, cmd: ActionsRegisterCommand) -> None:
         """Handle the actions/register command."""
@@ -164,7 +164,7 @@ class TonyController:
 
             self.model.add_action(action)
             wx.CallAfter(self.view.add_action, action)
-            self.view.log_description(f"{action.name}: {action.description}")
+            self.view.log_description(f"{action.name}: {action.description}", client_id)
         s = "s" if len(cmd.actions) != 1 else ""
         self.view.log_info(f"Action{s} registered: {', '.join(action.name for action in cmd.actions)}")
 
@@ -188,11 +188,11 @@ class TonyController:
     def on_actions_force(self, client_id: int, cmd: ActionsForceCommand) -> None:
         """Handle the actions/force command."""
         if cmd.state is not None and cmd.state != "":
-            self.view.log_state(cmd.state, cmd.ephemeral_context)
+            self.view.log_state(cmd.state, client_id, cmd.ephemeral_context)
         else:
             self.view.log_info("actions/force command contains no state.")
 
-        self.view.log_query(cmd.query, cmd.ephemeral_context)
+        self.view.log_query(cmd.query, client_id, cmd.ephemeral_context)
 
         if self.view.controls.ignore_actions_force:
             self.view.log_info("Forced action ignored.")  # TODO: Make this configurable as warning?
@@ -226,7 +226,7 @@ class TonyController:
             self.active_actions_force = None
 
         if cmd.message is not None:
-            self.view.log_action_result(cmd.success, cmd.message)
+            self.view.log_action_result(cmd.success, cmd.message, client_id)
         elif cmd.success:
             self.view.log_info("Successful action result contains no message.")
         else:

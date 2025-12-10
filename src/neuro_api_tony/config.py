@@ -73,6 +73,7 @@ class LogThemeColor(str, Enum):
     CONTEXT_ACTION = "contextAction"
     CONTEXT_ACTION_RESULT_SUCCESS = "contextActionResultSuccess"
     CONTEXT_ACTION_RESULT_FAILURE = "contextActionResultFailure"
+    CONTEXT_ORIGIN = "contextOrigin"
     INCOMING = "incoming"
     OUTGOING = "outgoing"
     COMMAND_ADDITION = "commandAddition"
@@ -85,6 +86,14 @@ class SendActionsTo(str, Enum):
     REGISTRANT = "registrant"
     FIRST_CONNECTED = "firstConnected"
     LAST_CONNECTED = "lastConnected"
+
+
+class ShowOriginAs(str, Enum):
+    """How to show origin of actions, context, etc. in log panels."""
+
+    NONE = "none"
+    CLIENT_ID = "clientId"
+    GAME_NAME = "gameName"
 
 
 class WarningID(str, Enum):
@@ -153,6 +162,7 @@ LOG_THEMES: Final = {
         LogThemeColor.CONTEXT_ACTION: "#0000FF",
         LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS: "#008000",
         LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE: "#FF0000",
+        LogThemeColor.CONTEXT_ORIGIN: "#808080",
         LogThemeColor.INCOMING: "#0000FF",
         LogThemeColor.OUTGOING: "#FF0080",
         LogThemeColor.COMMAND_ADDITION: "#808080",
@@ -172,6 +182,7 @@ LOG_THEMES: Final = {
         LogThemeColor.CONTEXT_ACTION: "#0000FF",
         LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS: "#008000",
         LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE: "#FF0000",
+        LogThemeColor.CONTEXT_ORIGIN: "#808080",
         LogThemeColor.INCOMING: "#0000FF",
         LogThemeColor.OUTGOING: "#FF0080",
         LogThemeColor.COMMAND_ADDITION: "#808080",
@@ -205,6 +216,7 @@ class Config(JSONWizard, key_case="AUTO"):
     log_color_theme: dict[LogThemeColor, str] | LogTheme = LogTheme.AUTO
     log_level: str = "INFO"
     send_actions_to: SendActionsTo = SendActionsTo.REGISTRANT
+    show_origin_as: ShowOriginAs = ShowOriginAs.NONE
     warnings: dict[WarningID, bool] = field(
         default_factory=lambda: {
             WarningID.ACTION_ADDITIONAL_PROPERTIES: True,
