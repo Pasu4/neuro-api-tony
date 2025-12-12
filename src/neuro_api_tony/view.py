@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime as dt
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 import json_source_map as jsm
 import jsonschema
@@ -31,6 +31,7 @@ from .constants import VERSION
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from neuro_api.json_schema_types import CoreSchemaMetaSchema
     from typing_extensions import NotRequired
 
     from .model import NeuroAction, TonyModel
@@ -1157,8 +1158,11 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 class SchemaDict(TypedDict):
     """Schema dictionary."""
 
-    type: NotRequired[str]
-    properties: NotRequired[dict[str, dict[str, str]]]
+    type: NotRequired[
+        Literal["array", "boolean", "integer", "null", "number", "object", "string"]
+        | list[Literal["array", "boolean", "integer", "null", "number", "object", "string"]]
+    ]
+    properties: NotRequired[dict[str, CoreSchemaMetaSchema]]
     required: NotRequired[list[str]]
 
 
@@ -1283,6 +1287,10 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         result: dict[str, object] = {}
 
         for prop_name, prop_schema in properties.items():
+            # Skip if prop_schema is False
+            if prop_schema is False:
+                continue
+
             if "enum" in prop_schema:
                 result[prop_name] = prop_schema["enum"][0] if prop_schema["enum"] else ""
             elif prop_schema.get("type") == "string":
