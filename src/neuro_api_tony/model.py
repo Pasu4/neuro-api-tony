@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
+
+if TYPE_CHECKING:
+    from neuro_api.json_schema_types import SchemaObject
 
 
 class NeuroAction(NamedTuple):
@@ -10,7 +13,7 @@ class NeuroAction(NamedTuple):
 
     name: str
     description: str
-    schema: dict[str, Any] | None  # TODO: use schema object from Neuro-API instead of Any
+    schema: SchemaObject | None  # TODO: use schema object from Neuro-API instead of Any
     client_id: int
     game: str
 
