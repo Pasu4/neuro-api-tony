@@ -200,7 +200,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             # Check the schema
             if action.schema != {} and action.schema is not None:
                 # Neuro API does not allow boolean schemas
-                if isinstance(action.schema, bool):  # type: ignore[unreachable]
+                if isinstance(action.schema, bool):
                     self.server.log_error(f"Boolean schemas are not allowed: {action.name}")  # type: ignore[unreachable]
                     continue
 
