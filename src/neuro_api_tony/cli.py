@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from getopt import GetoptError, getopt
 from typing import Any, Final
@@ -11,7 +10,7 @@ import requests
 import semver
 import wx
 
-from .config import FILE_NAMES as CONFIG_FILE_NAMES, config, load_config_from_file
+from .config import config, detect_config_file, load_config_from_file
 from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
 from .controller import TonyController
 
@@ -137,17 +136,7 @@ def cli_run() -> None:
 
     # Try finding a config file in the current directory
     if not config_file:
-        for file_name in CONFIG_FILE_NAMES:
-            if os.path.isfile(file_name):
-                config_file = file_name
-                break
-    # Try finding a config file in the user's home directory
-    if not config_file:
-        for file_name in CONFIG_FILE_NAMES:
-            home_file = os.path.join(os.path.expanduser("~"), file_name)
-            if os.path.isfile(home_file):
-                config_file = home_file
-                break
+        config_file = detect_config_file()
 
     # Load configuration from file if provided
     if config_file:

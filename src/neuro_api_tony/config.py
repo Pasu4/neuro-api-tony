@@ -1,6 +1,7 @@
 """Configuration for Tony."""
 
 import json
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Final
@@ -237,6 +238,7 @@ class Config(JSONWizard, key_case="AUTO"):
 
 _config = Config()
 _DEFAULT_CONFIG: Final = Config()
+_current_config_file: str | None = None
 
 
 def config() -> Config:
@@ -249,12 +251,19 @@ def default_config() -> Config:
     return _DEFAULT_CONFIG
 
 
-def load_config_from_file(file_path: str) -> None:
+def load_config_from_file(file_path: str | None = None) -> None:
     """Load configuration from a JSON file."""
-    global _config
+    global _config, _current_config_file
+    new_config = Config()
+    if file_path is None:
+        file_path = _current_config_file
+    if file_path is None:
+        return
     with open(file_path, encoding="utf-8") as f:
         data = json.load(f)
-    _config = Config.from_dict(data)
+    new_config = Config.from_dict(data)
+    _config = new_config
+    _current_config_file = file_path
 
     # Invalidate cache
     global _editor_theme_colors
@@ -298,6 +307,25 @@ def get_log_theme_color(key: LogThemeColor) -> wx.Colour:
     for k, v in cfg.items():
         _log_theme_colors[k].Set(v)
     return _log_theme_colors[key]
+
+
+def get_config_file_path() -> str | None:
+    """Get the absolute path to the configuration file if it exists."""
+    return _current_config_file
+
+
+def detect_config_file() -> str | None:
+    """Detect if a configuration file exists and return its path."""
+    # Check in the current directory
+    for name in FILE_NAMES:
+        if os.path.isfile(name):
+            return os.path.abspath(name)
+    # Check in home directory
+    for name in FILE_NAMES:
+        file = os.path.join(os.path.expanduser("~"), name)
+        if os.path.isfile(file):
+            return os.path.abspath(file)
+    return None
 
 
 FILE_NAMES: Final = [

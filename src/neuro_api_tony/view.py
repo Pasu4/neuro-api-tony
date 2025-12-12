@@ -3,22 +3,26 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime as dt
 from typing import TYPE_CHECKING, TypedDict
 
 import json_source_map as jsm
 import jsonschema
 import wx
+import wx.adv
 import wx.stc
 from jsf import JSF
 
 from .config import (
+    FILE_NAMES as CONFIG_FILE_NAMES,
     EditorThemeColor,
     LogThemeColor,
     ShowOriginAs,
     WarningID,
     config,
     default_config,
+    get_config_file_path,
     get_editor_theme_color,
     get_log_theme_color,
 )
@@ -135,6 +139,7 @@ class TonyView:
         self.on_delete_all_actions: Callable[[int | None], None] = lambda client_id: None
         self.on_unlock: Callable[[], None] = lambda: None
         self.on_clear_logs: Callable[[], None] = lambda: None
+        self.on_load_config: Callable[[str | None], None] = lambda config_path: None
         self.on_send_actions_reregister_all: Callable[[int | None], None] = lambda client_id: None
         self.on_send_shutdown_graceful: Callable[[int | None], None] = lambda client_id: None
         self.on_send_shutdown_graceful_cancel: Callable[[int | None], None] = lambda client_id: None
@@ -955,6 +960,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Create controls
 
+        self.config_button = wx.Button(self, label="Configure Tony")
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
         self.auto_send_checkbox = wx.CheckBox(self, label="Auto-answer")
         self.microsecond_precision_checkbox = wx.CheckBox(self, label="Log microseconds")
@@ -995,6 +1001,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         button_panel.SetSizer(button_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.config_button, 0, wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.microsecond_precision_checkbox, 0, wx.EXPAND | wx.ALL, 2)
@@ -1007,6 +1014,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Bind events
 
+        self.Bind(wx.EVT_BUTTON, self.on_config, self.config_button)
         self.Bind(wx.EVT_CHECKBOX, self.on_ignore_actions_force, self.ignore_actions_force_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_auto_send, self.auto_send_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_microsecond_precision, self.microsecond_precision_checkbox)
@@ -1029,6 +1037,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Add tooltips
 
+        self.config_button.SetToolTip("Open the configuration.")
         self.ignore_actions_force_checkbox.SetToolTip("Ignore forced actions.")
         self.auto_send_checkbox.SetToolTip(
             "Automatically answer forced actions with randomly generated data (like Randy).",
@@ -1059,6 +1068,14 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             "Request an immediate shutdown from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
+
+    def on_config(self, event: wx.CommandEvent) -> None:
+        """Handle config command event."""
+        event.Skip()
+
+        with ConfigDialog(self, self.view) as dialog:
+            assert isinstance(dialog, ConfigDialog)
+            dialog.ShowModal()
 
     def on_ignore_actions_force(self, event: wx.CommandEvent) -> None:
         """Handle ignore_actions_force command event."""
@@ -1545,6 +1562,139 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         """Handle execute command event."""
         event.Skip()
 
+        self.EndModal(wx.ID_OK)
+
+
+class ConfigDialog(wx.Dialog):  # type: ignore[misc]
+    """Configuration Dialog."""
+
+    def __init__(self, parent: wx.Window, view: TonyView) -> None:
+        """Initialize Configuration Dialog."""
+        super().__init__(
+            parent,
+            title="Config",
+            style=wx.DEFAULT_DIALOG_STYLE,
+        )
+
+        self.view = view
+
+        config_file = get_config_file_path()
+
+        rtc = wx.StaticText(
+            self,
+            label=(
+                "Configuration UI is not implemented yet."
+                " You can create a config file instead using the button below."
+                " It is recommended to open it in an editor that supports JSON schema validation / autocompletion, such as VS Code."
+                f"\n\nThe following file names are recognized: [{', '.join(CONFIG_FILE_NAMES)}]."
+                " Tony will look for config files in the current working directory first, then in the home directory."
+                + (
+                    f" It appears there is already an active config file at {config_file}."
+                    if config_file is not None
+                    else ""
+                )
+                + "\n\nNote: Some changes to the config file will only take effect after restarting Tony."
+                "\n\nYou can also find the schema here:"
+            ),
+        )
+        link_label = wx.adv.HyperlinkCtrl(
+            self,
+            label=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
+            url=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
+        )
+
+        button_panel = wx.Panel(self)
+        create_button = wx.Button(button_panel, label="New config file...")
+        reload_button = wx.Button(button_panel, label="Reload current file")
+        load_button = wx.Button(button_panel, label="Load from file...")
+
+        button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_panel_sizer.Add(create_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(reload_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(load_button, 0, wx.ALL, 2)
+        button_panel.SetSizer(button_panel_sizer)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(rtc, 0, wx.ALL, 10)
+        sizer.Add(link_label, 0, wx.ALL, 10)
+        sizer.Add(button_panel, 0, wx.EXPAND | wx.ALL, 10)
+        self.SetSizer(sizer)
+
+        self.SetSize(600, 400)
+
+        rtc.Wrap(rtc.GetSize()[0])
+        self.Layout()
+        sizer.Fit(self)
+
+        # Bind events
+        self.Bind(wx.EVT_BUTTON, self.on_create, create_button)
+        self.Bind(wx.EVT_BUTTON, self.on_reload, reload_button)
+        self.Bind(wx.EVT_BUTTON, self.on_load, load_button)
+
+        # Set tooltips
+        create_button.SetToolTip("Create a new config file.")
+        reload_button.SetToolTip("Reload the current config file.")
+        load_button.SetToolTip("Load an existing config file.")
+
+        # Setup
+        if config_file is None:
+            reload_button.Disable()
+            create_button.SetFocus()
+        else:
+            reload_button.SetFocus()
+
+    def on_create(self, event: wx.CommandEvent) -> None:
+        """Handle create command event."""
+        event.Skip()
+
+        with wx.FileDialog(
+            self,
+            "Create Config File",
+            wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            defaultDir=os.getcwd(),
+            defaultFile="tony-config.json",
+        ) as file_dialog:
+            assert isinstance(file_dialog, wx.FileDialog)
+            if file_dialog.ShowModal() == wx.ID_OK:
+                path = file_dialog.GetPath()
+                with open(path, "w") as file:
+                    file.write(
+                        json.dumps(
+                            {
+                                "$schema": f"https://raw.githubusercontent.com/Pasu4/neuro-api-tony/refs/tags/v{VERSION}/tony-config.schema.json",
+                            },
+                            indent=2,
+                        ),
+                    )
+        self.EndModal(wx.ID_OK)
+
+    def on_reload(self, event: wx.CommandEvent) -> None:
+        """Handle reload command event."""
+        event.Skip()
+
+        self.view.on_load_config(None)
+        self.EndModal(wx.ID_OK)
+
+    def on_load(self, event: wx.CommandEvent) -> None:
+        """Handle load command event."""
+        event.Skip()
+
+        with wx.FileDialog(
+            self,
+            "Load Config File",
+            wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+            defaultDir=os.getcwd(),
+        ) as file_dialog:
+            assert isinstance(file_dialog, wx.FileDialog)
+            if file_dialog.ShowModal() == wx.ID_OK:
+                path = file_dialog.GetPath()
+                try:
+                    self.view.on_load_config(path)
+                except Exception as e:
+                    self.view.log_error(f"Failed to load config file from {path}: {e}")
+                    wx.MessageBox(f"Failed to load config file: {e}", "Error", wx.ICON_ERROR, self)
         self.EndModal(wx.ID_OK)
 
 

@@ -19,7 +19,7 @@ from .api import (
     ShutdownReadyCommand,
     StartupCommand,
 )
-from .config import ActionScope, ConflictPolicy, WarningID, config
+from .config import ActionScope, ConflictPolicy, WarningID, config, get_config_file_path, load_config_from_file
 from .constants import VERSION
 from .model import NeuroAction, TonyModel
 from .view import TonyView
@@ -57,6 +57,9 @@ class TonyController:
         # Schedule the API start to run after the main loop starts
         wx.CallAfter(self.api.start, address, port)
         wx.CallAfter(self.view.log_info, f"Running version {VERSION}")
+        config_file = get_config_file_path()
+        if config_file:
+            wx.CallAfter(self.view.log_info, f"Loaded configuration from {config_file}")
         if init_message:
             wx.CallAfter(self.view.log_info, init_message)
 
@@ -90,6 +93,7 @@ class TonyController:
         self.view.on_delete_all_actions = self.on_view_delete_all_actions
         self.view.on_unlock = self.on_view_unlock
         self.view.on_clear_logs = self.on_view_clear_logs
+        self.view.on_load_config = self.on_view_load_config
         self.view.on_send_actions_reregister_all = self.on_view_send_actions_reregister_all
         self.view.on_send_shutdown_graceful = self.on_view_send_shutdown_graceful
         self.view.on_send_shutdown_graceful_cancel = self.on_view_send_shutdown_graceful_cancel
@@ -323,6 +327,21 @@ class TonyController:
     def on_view_send_shutdown_immediate(self, client_id: int | None) -> None:
         """Handle a request to send a shutdown/immediate command from the view."""
         self.api.send_shutdown_immediate(client_id)
+
+    def on_view_load_config(self, file_path: str | None = None) -> None:
+        """Handle a request to load a configuration file from the view.
+
+        If no file_path is provided, reload the current config file.
+        """
+        if file_path is None:
+            current_file_path = get_config_file_path()
+            if current_file_path is None:
+                self.view.log_info("No configuration to reload.")
+            else:
+                self.view.log_info(f"Reloading configuration from {current_file_path}.")
+        else:
+            self.view.log_info(f"Loading configuration from {file_path}.")
+        load_config_from_file(file_path)
 
     def execute_actions_force(
         self,
