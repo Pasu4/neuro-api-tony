@@ -13,7 +13,7 @@ class NeuroAction(NamedTuple):
 
     name: str
     description: str
-    schema: SchemaObject | None  # TODO: use schema object from Neuro-API instead of Any
+    schema: SchemaObject | None
     client_id: int
     game: str
 
