@@ -30,7 +30,9 @@ Options:
         Alias for --addr.
 
     -c, --config <CONFIG_FILE>:
-        The path to a configuration file to load.
+        The path to a configuration file to load. If not provided, Tony will
+        look for a config file in the current directory and in the user's home
+        directory.
 
     -l, --log, --log-level <LOG_LEVEL>:
         The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
