@@ -70,8 +70,8 @@ def cli_run() -> None:
         )
         sys.exit(1)
 
-    address = "localhost"
-    port = 8000
+    address: str | None = None
+    port: int | None = None
     log_level: str | None = None
     init_message = ""
     config_file: str | None = None
@@ -150,8 +150,15 @@ def cli_run() -> None:
             )
             sys.exit(1)
 
+    # Use config values as defaults for missing CLI options
     if not log_level:
         log_level = config().log_level
+
+    if not address:
+        address = config().address
+
+    if not port:
+        port = config().port
 
     # Check if there are updates available
     try:

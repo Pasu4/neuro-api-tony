@@ -209,6 +209,7 @@ class Config(JSONWizard, key_case="AUTO"):
     """Tony configuration."""
 
     action_scope: ActionScope = ActionScope.GLOBAL
+    address: str = "localhost"
     allowed_schema_keys: list[str] = field(default_factory=list)
     conflict_policy: ConflictPolicy = ConflictPolicy.IGNORE
     delete_actions_on_disconnect: bool = False
@@ -216,6 +217,7 @@ class Config(JSONWizard, key_case="AUTO"):
     log_action_descriptions: bool = True
     log_color_theme: dict[LogThemeColor, str] | LogTheme = LogTheme.LIGHT
     log_level: str = "INFO"
+    port: int = 8000
     send_actions_to: SendActionsTo = SendActionsTo.REGISTRANT
     show_origin_as: ShowOriginAs = ShowOriginAs.NONE
     warnings: dict[WarningID, bool] = field(
