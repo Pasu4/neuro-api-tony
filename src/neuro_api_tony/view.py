@@ -334,7 +334,7 @@ class TonyView:
 
     def log_action_result(self, success: bool, message: str, client_id: int) -> None:
         """Log an action result message."""
-        tags = ["Result", "Success" if success else "Failure"]
+        tags = ["Result"]
         colors = [
             get_log_theme_color(LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS)
             if success
