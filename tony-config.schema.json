@@ -191,8 +191,8 @@
                         "dark",
                         "light"
                     ],
-                    "enumDescriptions": [
-                        "Decide based on the system theme.",
+                    "markdownEnumDescriptions": [
+                        "Decide based on the system theme. May not work correctly for all people due to [an issue](https://github.com/Pasu4/neuro-api-tony/issues/40) with system theme detection.",
                         "Log colors for dark system theme (main text is white).",
                         "Log colors for light system theme (main text is black)."
                     ]
@@ -337,8 +337,8 @@
                     "type": "object"
                 }
             ],
-            "default": "auto",
-            "description": "The color theme used in the log window. Can be either a predefined or a custom theme."
+            "default": "light",
+            "description": "The color theme used in the log window. Can be either a predefined or a custom theme. Due to issues with theme detection, the default for this is currently 'light'."
         },
         "logLevel": {
             "default": "INFO",
