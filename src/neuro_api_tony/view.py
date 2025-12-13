@@ -1233,7 +1233,7 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.info.SetValue(json.dumps(self.action.schema, indent=2))
         self.allow_invalid_checkbox.SetValue(self.allow_invalid)
 
-        self.faker = JSF(action.schema or {})
+        self.faker = JSF(action.schema or {})  # pyright: ignore[reportArgumentType]
         if action.name in view.model.last_action_data:
             self.text.SetValue(view.model.last_action_data[action.name])
         else:

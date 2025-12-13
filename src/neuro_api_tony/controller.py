@@ -366,7 +366,7 @@ class TonyController:
             if not action.schema:
                 self.send_action(client_id, next(self.id_generator), action.name, None)
             else:
-                faker = JSF(action.schema)
+                faker = JSF(action.schema)  # pyright: ignore[reportArgumentType]
                 sample = faker.generate()
                 self.send_action(
                     client_id,
