@@ -20,6 +20,8 @@ def test_add_action(model: TonyModel) -> None:
         name="test_action",
         description="A test action",
         schema=None,
+        client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     assert model.actions == [action]
@@ -31,9 +33,11 @@ def test_remove_action(model: TonyModel) -> None:
         name="test_action",
         description="A test action",
         schema=None,
+        client_id=0,
+        game="test_game",
     )
     model.add_action(action)
-    model.remove_action(action)
+    model._remove_action(action)
     assert not model.actions
 
 
@@ -43,15 +47,19 @@ def test_remove_action_by_name(model: TonyModel) -> None:
         name="action1",
         description="First action",
         schema=None,
+        client_id=0,
+        game="test_game",
     )
     action2 = NeuroAction(
         name="action2",
         description="Second action",
         schema=None,
+        client_id=0,
+        game="test_game",
     )
     model.add_action(action1)
     model.add_action(action2)
-    model.remove_action_by_name("action1")
+    model.remove_actions(name="action1")
     assert model.actions == [action2]
 
 
@@ -61,6 +69,8 @@ def test_clear_actions(model: TonyModel) -> None:
         name="test_action",
         description="A test action",
         schema=None,
+        client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     model.clear_actions()
@@ -73,6 +83,8 @@ def test_has_action(model: TonyModel) -> None:
         name="test_action",
         description="A test action",
         schema=None,
+        client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     assert model.has_action("test_action")
@@ -85,6 +97,8 @@ def test_get_action_by_name(model: TonyModel) -> None:
         name="test_action",
         description="A test action",
         schema=None,
+        client_id=0,
+        game="test_game",
     )
     model.add_action(action)
     retrieved_action = model.get_action_by_name("test_action")

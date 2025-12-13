@@ -3,19 +3,38 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime as dt
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Literal, TypedDict
 
+import json_source_map as jsm
 import jsonschema
 import wx
+import wx.adv
+import wx.stc
 from jsf import JSF
 
-from neuro_api_tony.constants import VERSION
+from .config import (
+    FILE_NAMES as CONFIG_FILE_NAMES,
+    EditorThemeColor,
+    LogThemeColor,
+    ShowOriginAs,
+    WarningID,
+    config,
+    default_config,
+    get_config_file_path,
+    get_editor_theme_color,
+    get_log_theme_color,
+)
+from .constants import VERSION
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from neuro_api_tony.model import NeuroAction, TonyModel
+    from neuro_api.json_schema_types import CoreSchemaMetaSchema
+    from typing_extensions import NotRequired
+
+    from .model import NeuroAction, TonyModel
 
 
 # region Events
@@ -70,28 +89,6 @@ class ExecuteEvent(wx.PyCommandEvent):  # type: ignore[misc]
 
 # region Constants
 
-# Colors
-# fmt: off
-LOG_COLOR_DEFAULT                       = wx.Colour(  0,   0,   0)
-LOG_COLOR_TIMESTAMP                     = wx.Colour(  0, 128,   0)
-LOG_COLOR_DEBUG                         = wx.Colour(128, 128, 128)
-LOG_COLOR_INFO                          = wx.Colour(128, 192, 255)
-LOG_COLOR_WARNING                       = wx.Colour(255, 192,   0)
-LOG_COLOR_ERROR                         = wx.Colour(255,   0,   0)
-LOG_COLOR_CRITICAL                      = wx.Colour(192,   0,   0)
-LOG_COLOR_CONTEXT                       = LOG_COLOR_DEFAULT
-LOG_COLOR_CONTEXT_QUERY                 = wx.Colour(255,   0, 255)
-LOG_COLOR_CONTEXT_STATE                 = wx.Colour(128, 255, 128)
-LOG_COLOR_CONTEXT_SILENT                = wx.Colour(128, 128, 128)
-LOG_COLOR_CONTEXT_EPHEMERAL             = wx.Colour(128, 192, 255)
-LOG_COLOR_CONTEXT_ACTION                = wx.Colour(  0,   0, 255)
-LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS = wx.Colour(  0, 128,   0)
-LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE = wx.Colour(255,   0,   0)
-LOG_COLOR_INCOMING                      = wx.Colour(  0,   0, 255)
-LOG_COLOR_OUTGOING                      = wx.Colour(255,   0, 128)
-LOG_COLOR_COMMAND_ADDITION              = wx.Colour(128, 128, 128)
-# fmt: on
-
 UI_COLOR_WARNING = wx.Colour(255, 255, 128)
 UI_COLOR_ERROR = wx.Colour(255, 192, 192)
 
@@ -138,15 +135,18 @@ class TonyView:
 
         # Dependency injection
         # fmt: off
-        self.on_execute: Callable[[int, NeuroAction], bool] = lambda client_id, action: False
+        self.on_execute: Callable[[NeuroAction], bool] = lambda action: False
         self.on_delete_action: Callable[[int, str], None] = lambda client_id, name: None
-        self.on_delete_all_actions: Callable[[int], None] = lambda client_id: None
-        self.on_unlock: Callable[[int], None] = lambda client_id: None
-        self.on_clear_logs: Callable[[int], None] = lambda client_id: None
-        self.on_send_actions_reregister_all: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_graceful: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_graceful_cancel: Callable[[int], None] = lambda client_id: None
-        self.on_send_shutdown_immediate: Callable[[int], None] = lambda client_id: None
+        self.on_delete_all_actions: Callable[[int | None], None] = lambda client_id: None
+        self.on_unlock: Callable[[], None] = lambda: None
+        self.on_clear_logs: Callable[[], None] = lambda: None
+        self.on_load_config: Callable[[str | None], None] = lambda config_path: None
+        self.on_send_actions_reregister_all: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_graceful: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_graceful_cancel: Callable[[int | None], None] = lambda client_id: None
+        self.on_send_shutdown_immediate: Callable[[int | None], None] = lambda client_id: None
+
+        self.get_clients: Callable[[], list[tuple[int, str | None]]] = list
         # fmt: on
 
     def on_close(self, event: wx.CloseEvent) -> None:
@@ -168,8 +168,11 @@ class TonyView:
         addition: str | None = None,
     ) -> None:
         """Log a command."""
-        tag = "Game --> Tony" if incoming else "Game <-- Tony"
-        color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
+        game = next((g for cid, g in self.get_clients() if cid == client_id), None)
+        tag = f"{game} --> Tony" if incoming else f"{game} <-- Tony"
+        color = (
+            get_log_theme_color(LogThemeColor.INCOMING) if incoming else get_log_theme_color(LogThemeColor.OUTGOING)
+        )
 
         if addition is None:
             self.add_export_log(command, tag, "Commands")
@@ -177,7 +180,10 @@ class TonyView:
         else:
             self.add_export_log(f"{command}: {addition}", tag, "Commands")
             self.frame.panel.log_notebook.command_log_panel.log(
-                [(command + ": ", LOG_COLOR_DEFAULT), (addition, LOG_COLOR_COMMAND_ADDITION)],
+                [
+                    (command + ": ", get_log_theme_color(LogThemeColor.DEFAULT)),
+                    (addition, get_log_theme_color(LogThemeColor.COMMAND_ADDITION)),
+                ],
                 tag,
                 color,
             )
@@ -189,7 +195,7 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Debug",
-                LOG_COLOR_DEBUG,
+                get_log_theme_color(LogThemeColor.DEBUG),
             )
 
     def log_info(self, message: str) -> None:
@@ -199,17 +205,19 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Info",
-                LOG_COLOR_INFO,
+                get_log_theme_color(LogThemeColor.INFO),
             )
 
-    def log_warning(self, message: str) -> None:
+    def log_warning(self, warning_id: WarningID, message: str) -> None:
         """Log a warning message."""
-        if self.controls.get_log_level() <= LOG_LEVELS["WARNING"]:
+        warning_configured = config().warnings.get(warning_id, default_config().warnings.get(warning_id, True))
+
+        if self.controls.get_log_level() <= LOG_LEVELS["WARNING"] and warning_configured:
             self.add_export_log(message, "Warning", "System")
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Warning",
-                LOG_COLOR_WARNING,
+                get_log_theme_color(LogThemeColor.WARNING),
             )
             self.frame.panel.log_notebook.highlight(LOG_LEVELS["WARNING"])
 
@@ -220,7 +228,7 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Error",
-                LOG_COLOR_ERROR,
+                get_log_theme_color(LogThemeColor.ERROR),
             )
             self.frame.panel.log_notebook.highlight(LOG_LEVELS["ERROR"])
 
@@ -231,18 +239,25 @@ class TonyView:
             self.frame.panel.log_notebook.system_log_panel.log(
                 message,
                 "Critical",
-                LOG_COLOR_CRITICAL,
+                get_log_theme_color(LogThemeColor.CRITICAL),
             )
             self.frame.panel.log_notebook.highlight(LOG_LEVELS["CRITICAL"])
 
-    def log_context(self, message: str, silent: bool = False) -> None:
+    def log_context(self, message: str, client_id: int, silent: bool = False) -> None:
         """Log a context message."""
         tags = []
         colors = []
 
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.append(f"{client_id}")
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.append(self._get_client_game(client_id))
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+
         if silent:
             tags.append("silent")
-            colors.append(LOG_COLOR_CONTEXT_SILENT)
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_SILENT))
 
         self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
@@ -251,39 +266,42 @@ class TonyView:
             colors,
         )
 
-    def log_description(self, message: str) -> None:
+    def log_description(self, message: str, client_id: int) -> None:
         """Log an action description."""
-        self.add_export_log(message, "Action", "Context")
+        if not config().log_action_descriptions:
+            return
+
+        tags = ["Action"]
+        colors = [get_log_theme_color(LogThemeColor.CONTEXT_ACTION)]
+
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+
+        self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
-            "Action",
-            LOG_COLOR_CONTEXT_ACTION,
+            tags,
+            colors,
         )
 
-    def log_query(self, message: str, ephemeral: bool = False) -> None:
+    def log_query(self, message: str, client_id: int, ephemeral: bool = False) -> None:
         """Log an actions/force query."""
         tags = ["Query"]
-        colors = [LOG_COLOR_CONTEXT_QUERY]
-
-        if ephemeral:
-            tags.append("ephemeral")
-            colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
-
-        self.add_export_log(message, tags, "Context")
-        self.frame.panel.log_notebook.context_log_panel.log(
-            message,
-            tags,
-            colors,
-        )
-
-    def log_state(self, message: str, ephemeral: bool = False) -> None:
-        """Log an actions/force state."""
-        tags = ["State"]
-        colors = [LOG_COLOR_CONTEXT_STATE]
+        colors = [get_log_theme_color(LogThemeColor.CONTEXT_QUERY)]
 
         if ephemeral:
             tags.append("Ephemeral")
-            colors.append(LOG_COLOR_CONTEXT_EPHEMERAL)
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_EPHEMERAL))
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
 
         self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
@@ -292,19 +310,60 @@ class TonyView:
             colors,
         )
 
-    def log_action_result(self, success: bool, message: str) -> None:
-        """Log an action result message."""
-        self.add_export_log(message, ["Result", "Success" if success else "Failure"], "Context")
+    def log_state(self, message: str, client_id: int, ephemeral: bool = False) -> None:
+        """Log an actions/force state."""
+        tags = ["State"]
+        colors = [get_log_theme_color(LogThemeColor.CONTEXT_STATE)]
+
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+
+        if ephemeral:
+            tags.append("Ephemeral")
+            colors.append(get_log_theme_color(LogThemeColor.CONTEXT_EPHEMERAL))
+        self.add_export_log(message, tags, "Context")
         self.frame.panel.log_notebook.context_log_panel.log(
             message,
-            "Result",
-            LOG_COLOR_CONTEXT_ACTION_RESULT_SUCCESS if success else LOG_COLOR_CONTEXT_ACTION_RESULT_FAILURE,
+            tags,
+            colors,
         )
 
-    def log_raw(self, message: str, incoming: bool) -> None:
+    def log_action_result(self, success: bool, message: str, client_id: int) -> None:
+        """Log an action result message."""
+        tags = ["Result", "Success" if success else "Failure"]
+        colors = [
+            get_log_theme_color(LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS)
+            if success
+            else get_log_theme_color(LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE),
+        ]
+
+        if config().show_origin_as == ShowOriginAs.CLIENT_ID:
+            tags.insert(0, f"{client_id}")
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+        elif config().show_origin_as == ShowOriginAs.GAME_NAME:
+            tags.insert(0, self._get_client_game(client_id))
+            colors.insert(0, get_log_theme_color(LogThemeColor.CONTEXT_ORIGIN))
+
+        self.add_export_log(message, tags, "Context")
+        self.frame.panel.log_notebook.context_log_panel.log(
+            message,
+            tags,
+            colors,
+        )
+
+    def log_raw(self, message: str, client_id: int, incoming: bool) -> None:
         """Log raw data."""
-        tag = "Game --> Tony" if incoming else "Game <-- Tony"
-        color = LOG_COLOR_INCOMING if incoming else LOG_COLOR_OUTGOING
+        game = self._get_client_game(client_id)
+        if f"(ID: {client_id})" not in game:
+            game = f"{game} (ID: {client_id})"
+        tag = f"{game} --> Tony" if incoming else f"{game} <-- Tony"
+        color = (
+            get_log_theme_color(LogThemeColor.INCOMING) if incoming else get_log_theme_color(LogThemeColor.OUTGOING)
+        )
 
         self.add_export_log(message, tag, "Raw")
         self.frame.panel.log_notebook.raw_log_panel.log(message, tag, color)
@@ -356,9 +415,26 @@ class TonyView:
         """Add an action to the list."""
         self.frame.panel.action_list.add_action(action)
 
-    def remove_action_by_name(self, name: str) -> None:
-        """Remove an action from the list by name."""
-        self.frame.panel.action_list.remove_action_by_name(name)
+    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+        """Remove an action panel from the list by name and/or client_id."""
+        self.frame.panel.action_list.remove_actions(name, client_id)
+
+    def has_action(self, name: str | None = None, client_id: int | None = None) -> bool:
+        """Check if an action exists in the list by name and/or client_id."""
+        for action in self.frame.panel.action_list.actions:
+            name_match = name is None or action.name == name
+            client_id_match = client_id is None or action.client_id == client_id
+            if name_match and client_id_match:
+                return True
+        return False
+
+    def get_actions(self, name: str | None = None, client_id: int | None = None) -> list[NeuroAction]:
+        """Get the list of actions."""
+        return [
+            action
+            for action in self.frame.panel.action_list.actions
+            if (name is None or action.name == name) and (client_id is None or action.client_id == client_id)
+        ]
 
     def enable_actions(self) -> None:
         """Enable executing actions."""
@@ -373,11 +449,10 @@ class TonyView:
         state: str,
         query: str,
         ephemeral_context: bool,
-        action_names: list[str],
+        actions: list[NeuroAction],
         retry: bool = False,
     ) -> None:
         """Show a dialog for forcing actions."""
-        actions = [action for action in self.model.actions if action.name in action_names]
         actions_force_dialog = ActionsForceDialog(
             self.frame,
             self,
@@ -404,6 +479,11 @@ class TonyView:
         Enables the execute button.
         """
         self.enable_actions()
+
+    def _get_client_game(self, client_id: int) -> str:
+        """Get the game name for a client ID."""
+        game = next((g for cid, g in self.get_clients() if cid == client_id), None)
+        return game or f"<Unregistered> (ID: {client_id})"
 
 
 class MainFrame(wx.Frame):  # type: ignore[misc]
@@ -517,7 +597,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_item_deselected, self.list)
 
         self.list.InsertColumn(0, "Name", width=150)
-        self.list.InsertColumn(1, "Description", width=200)
+        self.list.InsertColumn(1, "Game", width=150)
         self.list.InsertColumn(2, "Schema", width=60)
 
         self.execute_button.SetToolTip(
@@ -549,20 +629,25 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         self.list.Append(
             [
                 action.name,
-                action.description,
+                action.game,
                 "Yes" if action.schema is not None and action.schema != {} else "No",
             ],
         )
 
-    def remove_action_by_name(self, name: str) -> None:
-        """Remove an action panel from the list."""
-        self.actions = [action for action in self.actions if action.name != name]
+    def remove_actions(self, name: str | None = None, client_id: int | None = None) -> None:
+        """Remove an action panel from the list by name and/or client_id."""
+        # Collect indices to remove in reverse order to avoid index shifting issues
+        indices_to_remove = []
+        for i, action in enumerate(self.actions):
+            name_match = name is None or action.name == name
+            client_id_match = client_id is None or action.client_id == client_id
+            if name_match and client_id_match:
+                indices_to_remove.append(i)
 
-        index = self.list.FindItem(-1, name)
-        if index != -1:
-            self.list.DeleteItem(index)
-        # else:
-        #     self.GetTopLevelParent().view.log_error(f'Action "{name}" not found in list.')
+        # Remove in reverse order to maintain correct indices
+        for i in reversed(indices_to_remove):
+            self.actions.pop(i)
+            self.list.DeleteItem(i)
 
     def clear(self) -> None:
         """Clear the list of actions."""
@@ -588,9 +673,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        sent = top.view.on_execute(client_id, action)
+        sent = top.view.on_execute(action)
 
         if sent:
             self.GetEventHandler().ProcessEvent(ExecuteEvent(self.GetId(), action))
@@ -609,9 +692,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_delete_action(client_id, action.name)
+        top.view.on_delete_action(action.client_id, action.name)
 
     def on_delete_all(self, event: wx.CommandEvent) -> None:
         """Handle delete all command event."""
@@ -619,9 +700,9 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_delete_all_actions(client_id)
+        menu = ClientMenu(top.view, top.view.on_delete_all_actions)
+        self.delete_all_button.PopupMenu(menu)
+        menu.Destroy()
 
     def on_unlock(self, event: wx.CommandEvent) -> None:
         """Handle unlock command event."""
@@ -629,9 +710,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame | ActionsForceDialog)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_unlock(client_id)
+        top.view.on_unlock()
 
     def on_key_down(self, event: wx.ListEvent) -> None:
         """Handle key down event."""
@@ -776,9 +855,7 @@ class LogNotebook(wx.Panel):  # type: ignore[misc]
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame)
-        # TODO: Get client id from somewhere
-        client_id = 0
-        top.view.on_clear_logs(client_id)
+        top.view.on_clear_logs()
 
     def on_export(self, event: wx.CommandEvent) -> None:
         """Handle export command event."""
@@ -846,13 +923,13 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         tag_colors = tag_colors or []
 
         # Add default color for tags without color
-        tag_colors += [LOG_COLOR_DEFAULT] * (len(tags) - len(tag_colors))
+        tag_colors += [get_log_theme_color(LogThemeColor.DEFAULT)] * (len(tags) - len(tag_colors))
 
         # Log timestamp
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame)
         fmt = "%H:%M:%S.%f" if top.view.controls.microsecond_precision else "%H:%M:%S"
-        self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_TIMESTAMP))
+        self.text.SetDefaultStyle(wx.TextAttr(get_log_theme_color(LogThemeColor.TIMESTAMP)))
         self.text.AppendText(f"[{dt.now().strftime(fmt)}] ")
 
         # Log tags
@@ -862,7 +939,7 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
 
         # Log message
         if isinstance(message, str):
-            self.text.SetDefaultStyle(wx.TextAttr(LOG_COLOR_DEFAULT))
+            self.text.SetDefaultStyle(wx.TextAttr(get_log_theme_color(LogThemeColor.DEFAULT)))
             self.text.AppendText(f"{message}\n")
         else:
             for msg, color in message:
@@ -884,6 +961,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Create controls
 
+        self.config_button = wx.Button(self, label="Configure Tony")
         self.ignore_actions_force_checkbox = wx.CheckBox(self, label="Ignore forced actions")
         self.auto_send_checkbox = wx.CheckBox(self, label="Auto-answer")
         self.microsecond_precision_checkbox = wx.CheckBox(self, label="Log microseconds")
@@ -924,6 +1002,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         button_panel.SetSizer(button_panel_sizer)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.config_button, 0, wx.ALL, 2)
         self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.microsecond_precision_checkbox, 0, wx.EXPAND | wx.ALL, 2)
@@ -936,6 +1015,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Bind events
 
+        self.Bind(wx.EVT_BUTTON, self.on_config, self.config_button)
         self.Bind(wx.EVT_CHECKBOX, self.on_ignore_actions_force, self.ignore_actions_force_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_auto_send, self.auto_send_checkbox)
         self.Bind(wx.EVT_CHECKBOX, self.on_microsecond_precision, self.microsecond_precision_checkbox)
@@ -958,6 +1038,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         # Add tooltips
 
+        self.config_button.SetToolTip("Open the configuration.")
         self.ignore_actions_force_checkbox.SetToolTip("Ignore forced actions.")
         self.auto_send_checkbox.SetToolTip(
             "Automatically answer forced actions with randomly generated data (like Randy).",
@@ -988,6 +1069,14 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             "Request an immediate shutdown from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
         )
+
+    def on_config(self, event: wx.CommandEvent) -> None:
+        """Handle config command event."""
+        event.Skip()
+
+        with ConfigDialog(self, self.view) as dialog:
+            assert isinstance(dialog, ConfigDialog)
+            dialog.ShowModal()
 
     def on_ignore_actions_force(self, event: wx.CommandEvent) -> None:
         """Handle ignore_actions_force command event."""
@@ -1037,33 +1126,44 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         """Handle send_actions_reregister_all command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_actions_reregister_all(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_actions_reregister_all)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_graceful(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_graceful(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_graceful)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_graceful_cancel(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_graceful_cancel command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_graceful_cancel(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_graceful_cancel)
+        self.PopupMenu(menu)
+        menu.Destroy()
 
     def on_send_shutdown_immediate(self, event: wx.CommandEvent) -> None:
         """Handle send_shutdown_immediate command event."""
         event.Skip()
 
-        # TODO: Get client id from somewhere
-        client_id = 0
-        self.view.on_send_shutdown_immediate(client_id)
+        menu = ClientMenu(self.view, self.view.on_send_shutdown_immediate)
+        self.PopupMenu(menu)
+        menu.Destroy()
+
+
+class SchemaDict(TypedDict):
+    """Schema dictionary."""
+
+    type: NotRequired[
+        Literal["array", "boolean", "integer", "null", "number", "object", "string"]
+        | list[Literal["array", "boolean", "integer", "null", "number", "object", "string"]]
+    ]
+    properties: NotRequired[dict[str, CoreSchemaMetaSchema]]
+    required: NotRequired[list[str]]
 
 
 class ActionDialog(wx.Dialog):  # type: ignore[misc]
@@ -1086,8 +1186,9 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.is_error = False
 
         self.content_splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
-        self.text = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL)
-        self.info = wx.TextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL | wx.TE_READONLY)
+        self.text = wx.stc.StyledTextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL)
+        self.info = wx.stc.StyledTextCtrl(self.content_splitter, style=wx.TE_MULTILINE | wx.HSCROLL | wx.TE_READONLY)
+        self.error_text = wx.StaticText(self, label="Invalid JSON data")
         self.allow_invalid_checkbox = wx.CheckBox(self, label="Don't validate")
         button_panel = wx.Panel(self)
         self.send_button = wx.Button(button_panel, label="Send")
@@ -1104,12 +1205,13 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.content_splitter, 1, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.error_text, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.allow_invalid_checkbox, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(button_panel, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
         # Bind events
-        self.Bind(wx.EVT_TEXT, self.on_value_change, self.text)
+        self.Bind(wx.stc.EVT_STC_MODIFIED, self.on_value_change, self.text)
         self.Bind(wx.EVT_CHECKBOX, self.on_allow_invalid, self.allow_invalid_checkbox)
         self.Bind(wx.EVT_BUTTON, self.on_send, self.send_button)
         self.Bind(wx.EVT_BUTTON, self.on_show_schema, self.show_schema_button)
@@ -1131,11 +1233,19 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
         self.info.SetValue(json.dumps(self.action.schema, indent=2))
         self.allow_invalid_checkbox.SetValue(self.allow_invalid)
 
-        self.faker = JSF(action.schema or {})
+        self.faker = JSF(action.schema or {})  # pyright: ignore[reportArgumentType]
         if action.name in view.model.last_action_data:
             self.text.SetValue(view.model.last_action_data[action.name])
         else:
             self.regenerate()
+
+        # TODO: Dark mode
+        setup_json_editor(self.text)
+        setup_json_editor(self.info)
+
+        self.info.SetReadOnly(True)
+
+        self.error_text.SetForegroundColour(wx.Colour(255, 0, 0))
 
         self.SetSize(600, 400)
 
@@ -1146,22 +1256,41 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             self.text.SetValue(json.dumps(sample, indent=2))
         except (TypeError, Exception) as e:
             if "cannot pickle" in str(e):
-                self.view.log_warning(f"JSF failed for {self.action.name}, using custom generator: {e}")
-                sample = self._generate_from_schema(self.action.schema or {})
+                self.view.log_warning(
+                    WarningID.JSF_FAILED,
+                    f"JSF failed for {self.action.name}, using fallback generator: {e}",
+                )
+                schema = self.action.schema or {}
+                type_ = schema.get("type")
+                sample = {}
+                if type_ is not None:
+                    sample = self._generate_from_schema(
+                        SchemaDict(
+                            {
+                                "type": type_,
+                                "properties": schema.get("properties", {}),
+                                "required": schema.get("required", []),
+                            },
+                        ),
+                    )
                 self.text.SetValue(json.dumps(sample, indent=2))
             else:
                 raise e
 
-    def _generate_from_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
+    def _generate_from_schema(self, schema: SchemaDict) -> dict[str, object]:
         """Generate a sample JSON object based on the schema without JSF."""
         if not schema or schema.get("type") != "object":
             return {}
 
         properties = schema.get("properties", {})
         required = schema.get("required", [])
-        result = {}
+        result: dict[str, object] = {}
 
         for prop_name, prop_schema in properties.items():
+            # Skip if prop_schema is False
+            if prop_schema is False:
+                continue
+
             if "enum" in prop_schema:
                 result[prop_name] = prop_schema["enum"][0] if prop_schema["enum"] else ""
             elif prop_schema.get("type") == "string":
@@ -1174,7 +1303,15 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
             elif prop_schema.get("type") == "boolean":
                 result[prop_name] = False
             elif prop_schema.get("type") == "object":
-                result[prop_name] = self._generate_from_schema(prop_schema)
+                result[prop_name] = self._generate_from_schema(
+                    SchemaDict(
+                        {
+                            "type": prop_schema.get("type", "object"),
+                            "properties": schema.get("properties", {}),
+                            "required": schema.get("required", []),
+                        },
+                    ),
+                )
             elif prop_schema.get("type") == "array":
                 result[prop_name] = []
             else:
@@ -1188,24 +1325,78 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         return result
 
-    def on_value_change(self, event: wx.CommandEvent) -> None:
+    def on_value_change(self, event: wx.stc.StyledTextEvent) -> None:
         """Handle text change."""
         event.Skip()
+        mod = event.GetModificationType()
+        if not mod & (wx.stc.STC_MOD_INSERTTEXT | wx.stc.STC_MOD_DELETETEXT):
+            return
+
+        # TODO: Configurable
+        if event.GetText() == "\n" and mod & wx.stc.STC_MOD_INSERTTEXT and not (mod & wx.stc.STC_PERFORMED_REDO):
+            position = event.GetPosition()
+            line = self.text.LineFromPosition(position)
+            # line_content = self.text.GetLine(line)
+            indent = self.text.GetLineIndentation(line)
+            wx.CallAfter(self.text.SetLineIndentation, line + 1, indent)
+            wx.CallAfter(self.text.GotoPos, position + 1 + indent)
+            # event.SetText("\n" + " " * indent)
+            return
+
+        self.text.SetIndicatorCurrent(0)
+        self.text.IndicatorClearRange(0, self.text.GetLength())
+
+        json_str = self.text.GetValue()
 
         try:
-            json_str = self.text.GetValue()
             json_cmd = json.loads(json_str)
             jsonschema.validate(json_cmd, self.action.schema or {})
 
             self.is_error = False
-            self.text.SetToolTip("")
-            self.text.SetBackgroundColour(wx.NullColour)
-            self.Refresh()
+            self.error_text.Hide()
+            self.error_text.SetLabel("")
+            self.error_text.SetToolTip("")
         except Exception as exc:
             self.is_error = True
-            self.text.SetToolTip(str(exc))
-            self.text.SetBackgroundColour(UI_COLOR_ERROR)
-            self.Refresh()
+            self.error_text.Show()
+            split = list(map(str.strip, (str(exc) or "Unknown error").split("\n", maxsplit=1)))
+            self.error_text.SetLabel(split[0])
+            self.error_text.SetToolTip(split[1] if len(split) > 1 and split[1] else "No further information.")
+
+            if isinstance(exc, json.JSONDecodeError):
+                line, col = exc.lineno, exc.colno
+                length = 1
+                start = self.text.PositionFromLine(line - 1) + col - 1
+                length = self.text.WordEndPosition(start, False) - start
+                while start + length < len(json_str) and json_str[start + length - 1] == "\n":
+                    length += 1
+                self.text.IndicatorFillRange(start, length)
+            elif isinstance(exc, jsonschema.ValidationError):
+                source_map = jsm.calculate(json_str)
+                path = "/" + "/".join(map(str, exc.path)) if exc.path else ""
+                if path in source_map:
+                    entry = source_map.get(path, None)
+                    if entry is not None:
+                        start = entry.value_start.position
+                        end = entry.value_end.position
+                        self.text.IndicatorFillRange(start, end - start)
+
+        self.text.SetScrollWidth(self.GetClientSize().width)
+
+        self.Refresh()
+        self.error_text.Wrap(self.GetClientSize().width - 10)
+        self.Layout()
+
+        # TODO: Auto-completion?
+
+        # TODO: Folding (if I figure it out)
+        # # Folding
+        # for i, line in enumerate(json_str.splitlines()):
+        #     level = (len(line) - len(line.lstrip())) // 2  # TODO: Configurable?
+        #     if line.rstrip().endswith(('{', '[')):
+        #         self.text.SetFoldLevel(i, level | wx.stc.STC_FOLDLEVELHEADERFLAG)
+        #     else:
+        #         self.text.SetFoldLevel(i, level)
 
         self.send_button.Enable(self.allow_invalid or not self.is_error)
 
@@ -1382,6 +1573,196 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.EndModal(wx.ID_OK)
 
 
+class ConfigDialog(wx.Dialog):  # type: ignore[misc]
+    """Configuration Dialog."""
+
+    def __init__(self, parent: wx.Window, view: TonyView) -> None:
+        """Initialize Configuration Dialog."""
+        super().__init__(
+            parent,
+            title="Config",
+            style=wx.DEFAULT_DIALOG_STYLE,
+        )
+
+        self.view = view
+
+        config_file = get_config_file_path()
+
+        rtc = wx.StaticText(
+            self,
+            label=(
+                "Configuration UI is not implemented yet."
+                " You can create a config file instead using the button below."
+                " It is recommended to open it in an editor that supports JSON schema validation / autocompletion, such as VS Code."
+                f"\n\nThe following file names are recognized: [{', '.join(CONFIG_FILE_NAMES)}]."
+                " Tony will look for config files in the current working directory first, then in the home directory."
+                + (
+                    f" It appears there is already an active config file at {config_file}."
+                    if config_file is not None
+                    else ""
+                )
+                + "\n\nNote: Some changes to the config file will only take effect after restarting Tony."
+                "\n\nYou can also find the schema here:"
+            ),
+        )
+        link_label = wx.adv.HyperlinkCtrl(
+            self,
+            label=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
+            url=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
+        )
+
+        button_panel = wx.Panel(self)
+        create_button = wx.Button(button_panel, label="New config file...")
+        reload_button = wx.Button(button_panel, label="Reload current file")
+        load_button = wx.Button(button_panel, label="Load from file...")
+
+        button_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_panel_sizer.Add(create_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(reload_button, 0, wx.ALL, 2)
+        button_panel_sizer.Add(load_button, 0, wx.ALL, 2)
+        button_panel.SetSizer(button_panel_sizer)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(rtc, 0, wx.ALL, 10)
+        sizer.Add(link_label, 0, wx.ALL, 10)
+        sizer.Add(button_panel, 0, wx.EXPAND | wx.ALL, 10)
+        self.SetSizer(sizer)
+
+        self.SetSize(600, 400)
+
+        rtc.Wrap(rtc.GetSize()[0])
+        self.Layout()
+        sizer.Fit(self)
+
+        # Bind events
+        self.Bind(wx.EVT_BUTTON, self.on_create, create_button)
+        self.Bind(wx.EVT_BUTTON, self.on_reload, reload_button)
+        self.Bind(wx.EVT_BUTTON, self.on_load, load_button)
+
+        # Set tooltips
+        create_button.SetToolTip("Create a new config file.")
+        reload_button.SetToolTip("Reload the current config file.")
+        load_button.SetToolTip("Load an existing config file.")
+
+        # Setup
+        if config_file is None:
+            reload_button.Disable()
+            create_button.SetFocus()
+        else:
+            reload_button.SetFocus()
+
+    def on_create(self, event: wx.CommandEvent) -> None:
+        """Handle create command event."""
+        event.Skip()
+
+        with wx.FileDialog(
+            self,
+            "Create Config File",
+            wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            defaultDir=os.getcwd(),
+            defaultFile="tony-config.json",
+        ) as file_dialog:
+            assert isinstance(file_dialog, wx.FileDialog)
+            if file_dialog.ShowModal() == wx.ID_OK:
+                path = file_dialog.GetPath()
+                with open(path, "w") as file:
+                    file.write(
+                        json.dumps(
+                            {
+                                "$schema": f"https://raw.githubusercontent.com/Pasu4/neuro-api-tony/refs/tags/v{VERSION}/tony-config.schema.json",
+                            },
+                            indent=2,
+                        ),
+                    )
+        self.EndModal(wx.ID_OK)
+
+    def on_reload(self, event: wx.CommandEvent) -> None:
+        """Handle reload command event."""
+        event.Skip()
+
+        self.view.on_load_config(None)
+        self.EndModal(wx.ID_OK)
+
+    def on_load(self, event: wx.CommandEvent) -> None:
+        """Handle load command event."""
+        event.Skip()
+
+        with wx.FileDialog(
+            self,
+            "Load Config File",
+            wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+            defaultDir=os.getcwd(),
+        ) as file_dialog:
+            assert isinstance(file_dialog, wx.FileDialog)
+            if file_dialog.ShowModal() == wx.ID_OK:
+                path = file_dialog.GetPath()
+                try:
+                    self.view.on_load_config(path)
+                except Exception as e:
+                    self.view.log_error(f"Failed to load config file from {path}: {e}")
+                    wx.MessageBox(f"Failed to load config file: {e}", "Error", wx.ICON_ERROR, self)
+        self.EndModal(wx.ID_OK)
+
+
+class ClientMenu(wx.Menu):  # type: ignore[misc]
+    """The context menu for selecting clients."""
+
+    def __init__(self, view: TonyView, callback: Callable[[int | None], None]) -> None:
+        """Initialize Client Menu."""
+        super().__init__()
+
+        self.view = view
+        self.callback = callback
+
+        self.client_menu_items: list[tuple[int, wx.MenuItem]] = []
+
+        clients = self.view.get_clients()
+        connected_client_ids = {client_id for client_id, _ in clients}
+        for action in self.view.get_actions():
+            if action.client_id not in connected_client_ids:
+                clients.append((action.client_id, "<Disconnected>"))
+                connected_client_ids.add(action.client_id)
+
+        all_clients_item = wx.MenuItem(self, wx.ID_ANY, "All Clients")
+        all_clients_item.Enable(clients != [])
+        self.Append(all_clients_item)
+        if clients:
+            self.AppendSeparator()
+
+        self.Bind(wx.EVT_MENU, self.on_select_client, all_clients_item)
+
+        for client_id, game in clients:
+            item = wx.MenuItem(self, wx.ID_ANY, f"{game} (ID: {client_id})")
+            self.Append(item)
+            self.client_menu_items.append((client_id, item))
+            self.Bind(wx.EVT_MENU, self.on_select_client, item)
+
+        # self.update()
+
+    # def update(self) -> None:
+    #     """Update the client menu."""
+    #     for _, item in self.client_menu_items:
+    #         self.Unbind(wx.EVT_MENU, item)
+    #         self.Remove(item)
+    #         item.Destroy()
+    #     self.client_menu_items.clear()
+
+    #     for client_id, game in self.view.get_clients():
+    #         item = wx.MenuItem(self, wx.ID_ANY, f"{game} (ID: {client_id})")
+    #         self.Append(item)
+    #         self.client_menu_items.append((client_id, item))
+    #         self.Bind(wx.EVT_MENU, self.on_select_client, item)
+
+    def on_select_client(self, event: wx.CommandEvent) -> None:
+        """Handle select client command event."""
+        event.Skip()
+
+        client_id = next((cid for cid, item in self.client_menu_items if item.GetId() == event.GetId()), None)
+        self.callback(client_id)
+
+
 class Controls:
     """The content of the control panel."""
 
@@ -1407,3 +1788,79 @@ class Controls:
     def get_log_level_str(self) -> str:
         """Get the log level as a string."""
         return self.__log_level_str
+
+
+# region Helper functions
+
+
+def setup_json_editor(editor: wx.stc.StyledTextCtrl) -> None:
+    """Set up a JSON editor with syntax highlighting.
+
+    Parameters
+    ----------
+    editor : wx.stc.StyledTextCtrl
+        The editor to set up.
+    dark : bool
+        Whether to use a dark theme.
+
+    """
+    editor.SetLexer(wx.stc.STC_LEX_JSON)
+    editor.SetKeyWords(0, "true false null")
+
+    editor.SetPasteConvertEndings(True)
+    editor.SetEOLMode(wx.stc.STC_EOL_LF)
+
+    editor.SetMultipleSelection(True)
+    editor.SetAdditionalSelectionTyping(True)
+    editor.SetMultiPaste(wx.stc.STC_MULTIPASTE_EACH)
+
+    # editor.SetViewWhiteSpace(wx.stc.STC_WS_VISIBLEALWAYS)
+
+    editor.SetBackSpaceUnIndents(True)
+    # editor.SetHighlightGuide(1)  # Idk what this does
+    editor.SetIndent(2)
+    editor.SetIndentationGuides(wx.stc.STC_IV_LOOKBOTH)
+    editor.SetTabWidth(2)
+    editor.SetUseTabs(False)
+
+    editor.IndicatorSetStyle(0, wx.stc.STC_INDIC_SQUIGGLE)
+    editor.IndicatorSetForeground(0, wx.RED)
+
+    # editor.SetAutomaticFold(wx.stc.STC_AUTOMATICFOLD_SHOW | wx.stc.STC_AUTOMATICFOLD_CLICK | wx.stc.STC_AUTOMATICFOLD_CHANGE)
+    # editor.SetFoldFlags(wx.stc.STC_FOLDFLAG_LEVELNUMBERS)
+
+    editor.SetWrapMode(wx.stc.STC_WRAP_WORD)
+    editor.SetWrapIndentMode(wx.stc.STC_WRAPINDENT_INDENT)
+    editor.SetWrapVisualFlags(wx.stc.STC_WRAPVISUALFLAG_END)
+
+    editor.SetCaretForeground(get_editor_theme_color(EditorThemeColor.CARET))
+
+    editor.StyleSetSpec(
+        wx.stc.STC_STYLE_DEFAULT,
+        f"fore:{get_editor_theme_color(EditorThemeColor.DEFAULT)},back:{get_editor_theme_color(EditorThemeColor.BACKGROUND)},face:Courier New",
+    )
+    editor.StyleClearAll()
+
+    # editor.StyleSetHotSpot(wx.stc.STC_JSON_URI, True)  # Makes links seem clickable, but doesn't actually do anything
+
+    # editor.StyleSetSpec(wx.stc.STC_JSON_ERROR, "fore:white,back:red")  # We have squiggles for this
+    # editor.StyleSetSpec(wx.stc.STC_JSON_ESCAPESEQUENCE, "fore:orange")  # Doesn't seem to work
+    # editor.StyleSetSpec(wx.stc.STC_JSON_STRINGEOL, "fore:black,back:red,eol")
+    editor.StyleSetSpec(wx.stc.STC_JSON_KEYWORD, f"fore:{get_editor_theme_color(EditorThemeColor.KEYWORD)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_PROPERTYNAME, f"fore:{get_editor_theme_color(EditorThemeColor.PROPERTYNAME)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_COMPACTIRI, f"fore:{get_editor_theme_color(EditorThemeColor.COMPACTIRI)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_STRING, f"fore:{get_editor_theme_color(EditorThemeColor.STRING)}")
+    editor.StyleSetSpec(wx.stc.STC_JSON_URI, f"fore:{get_editor_theme_color(EditorThemeColor.URI)},underline")
+    editor.StyleSetSpec(wx.stc.STC_JSON_NUMBER, f"fore:{get_editor_theme_color(EditorThemeColor.NUMBER)}")
+
+    # Other styles to consider (background colors for visibility testing)
+    # editor.StyleSetSpec(wx.stc.STC_JSON_DEFAULT,            "back:wheat")  # Spaces
+    # editor.StyleSetSpec(wx.stc.STC_JSON_OPERATOR,           "back:magenta")  # Punctuation
+
+    # Idk what these do
+    # editor.StyleSetSpec(wx.stc.STC_JSON_BLOCKCOMMENT, "back:green")
+    # editor.StyleSetSpec(wx.stc.STC_JSON_LDKEYWORD, "back:cyan")
+    # editor.StyleSetSpec(wx.stc.STC_JSON_LINECOMMENT, "back:dim grey")
+
+
+# endregion

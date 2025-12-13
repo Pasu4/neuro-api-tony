@@ -2,6 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 h1 {
@@ -19,10 +20,11 @@ body {
     border-radius: 5px;
     background-color: #f0f0f0;
     margin-bottom: 10px;
+    padding: 10px;
 }
 
 .panel > h2 {
-    margin: 5px;
+    margin-bottom: 5px;
 }
 
 .chat-messages-container {
@@ -82,11 +84,28 @@ body {
     margin-right: 5px;
 }
 
-#action-form > p {
-    margin: 10px 5px;
+.panel p {
+    margin-bottom: 10px;
 }
 
 #action-schema {
     width: 100%;
     height: 300px;
+}
+
+#connection-status {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#connection-status.disconnected {
+    color: red;
+}
+
+#connection-status.connecting {
+    color: orange;
+}
+
+#connection-status.connected {
+    color: green;
 }

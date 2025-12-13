@@ -1,0 +1,490 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "editorColor": {
+            "pattern": "^#[0-9A-F]{6}$",
+            "type": "string"
+        },
+        "logColor": {
+            "pattern": "^#[0-9A-F]{6}$",
+            "type": "string"
+        }
+    },
+    "properties": {
+        "actionScope": {
+            "default": "global",
+            "description": "In what scope to check for matching action names when registering or unregistering actions, or when selecting actions for an 'actions/force'. If set to 'global', the 'startup' command will unregister all actions with a matching game name. According to the specification, 'global' is the correct behavior.",
+            "enum": [
+                "global",
+                "client"
+            ],
+            "enumDescriptions": [
+                "Check for matching action names across all clients.",
+                "Check for matching action names registered by the same client."
+            ],
+            "markdownDescription": "In what scope to check for matching action names when registering or unregistering actions, or when selecting actions for an `actions/force`. If set to `global`, the `startup` command will unregister all actions with a matching game name. According to the specification, `global` is the correct behavior."
+        },
+        "address": {
+            "default": "localhost",
+            "description": "The address (or hostname) to connect to. If the address is specified as a command line argument this setting is ignored.",
+            "type": "string"
+        },
+        "allowedSchemaKeys": {
+            "default": [],
+            "description": "Schema keys marked as unsupported which Tony should not log warnings for.",
+            "items": {
+                "enum": [
+                    "$anchor",
+                    "$comment",
+                    "$defs",
+                    "$dynamicAnchor",
+                    "$dynamicRef",
+                    "$id",
+                    "$ref",
+                    "$schema",
+                    "$vocabulary",
+                    "additionalProperties",
+                    "allOf",
+                    "anyOf",
+                    "contentEncoding",
+                    "contentMediaType",
+                    "contentSchema",
+                    "dependentRequired",
+                    "dependentSchemas",
+                    "deprecated",
+                    "description",
+                    "else",
+                    "if",
+                    "maxProperties",
+                    "minProperties",
+                    "multipleOf",
+                    "not",
+                    "oneOf",
+                    "patternProperties",
+                    "readOnly",
+                    "then",
+                    "title",
+                    "unevaluatedItems",
+                    "unevaluatedProperties",
+                    "uniqueItems",
+                    "writeOnly"
+                ]
+            },
+            "type": "array",
+            "uniqueItems": true
+        },
+        "conflictPolicy": {
+            "default": "ignore",
+            "description": "What to do when trying to register an action with the same name as an already registered action. According to the specification, 'ignore' is the correct behavior, but changing to 'overwrite' has been proposed.",
+            "enum": [
+                "ignore",
+                "overwrite",
+                "allowDuplicates"
+            ],
+            "markdownDescription": "What to do when trying to register an action with the same name as an already registered action. According to the specification, `ignore` is the correct behavior, but changing to `overwrite` has been proposed.",
+            "markdownEnumDescriptions": [
+                "Ignore the new action and keep the old action.",
+                "Overwrite the old action with the new action.",
+                "Do not check for duplicate action names. `actions/unregister` commands will unregister all actions with a matching name, and `actions/force` commands will allow all actions with a matching name (within the `actionScope`)."
+            ]
+        },
+        "deleteActionsOnDisconnect": {
+            "default": false,
+            "description": "If 'true', deletes all actions associated with a client when it disconnects. According to a comment by Alex, this is assumed to be 'false' for Neuro.",
+            "markdownDescription": "If `true`, deletes all actions associated with a client when it disconnects. According to [a comment by Alex](https://github.com/VedalAI/neuro-sdk/discussions/58), this is assumed to be `false` for Neuro."
+        },
+        "editorColorTheme": {
+            "anyOf": [
+                {
+                    "enum": [
+                        "auto",
+                        "darkPlus",
+                        "lightPlus"
+                    ],
+                    "enumDescriptions": [
+                        "Decide based on the system theme (uses 'darkPlus' for dark system theme and 'lightPlus' for light system theme).",
+                        "Similar to VS Code's Dark+ theme.",
+                        "Similar to VS Code's Light+ theme."
+                    ]
+                },
+                {
+                    "examples": [
+                        {
+                            "background": "#1E1E1E",
+                            "caret": "#FFFFFF",
+                            "compactIRI": "#9CDCFE",
+                            "default": "#D4D4D4",
+                            "keyword": "#4FC1FF",
+                            "number": "#B5CEA8",
+                            "propertyName": "#9CDCFE",
+                            "string": "#CE9178",
+                            "uri": "#CE9178"
+                        },
+                        {
+                            "background": "#FFFFFF",
+                            "caret": "#000000",
+                            "compactIRI": "#9CDCFE",
+                            "default": "#000000",
+                            "keyword": "#0000FF",
+                            "number": "#098658",
+                            "propertyName": "#0451A5",
+                            "string": "#A31515",
+                            "uri": "#A31515"
+                        }
+                    ],
+                    "properties": {
+                        "background": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The background color."
+                        },
+                        "caret": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color of the caret."
+                        },
+                        "compactIRI": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for JSON-LD properties."
+                        },
+                        "default": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The default text color (e.g. punctuation uses this)."
+                        },
+                        "keyword": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for keywords (null, true, false)"
+                        },
+                        "number": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for numbers."
+                        },
+                        "propertyName": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for property names."
+                        },
+                        "string": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for strings."
+                        },
+                        "uri": {
+                            "$ref": "#/definitions/editorColor",
+                            "description": "The color for URIs within strings."
+                        }
+                    },
+                    "required": [
+                        "background",
+                        "caret",
+                        "compactIRI",
+                        "default",
+                        "keyword",
+                        "number",
+                        "propertyName",
+                        "string",
+                        "uri"
+                    ],
+                    "type": "object"
+                }
+            ],
+            "default": "auto",
+            "description": "The color theme used in the text editor. Can be either a pre-defined or a custom theme."
+        },
+        "logActionDescriptions": {
+            "default": true,
+            "description": "Whether to log action descriptions to the context log panel."
+        },
+        "logColorTheme": {
+            "anyOf": [
+                {
+                    "enum": [
+                        "auto",
+                        "dark",
+                        "light"
+                    ],
+                    "markdownEnumDescriptions": [
+                        "Decide based on the system theme. May not work correctly for all people due to [an issue](https://github.com/Pasu4/neuro-api-tony/issues/40) with system theme detection.",
+                        "Log colors for dark system theme (main text is white).",
+                        "Log colors for light system theme (main text is black)."
+                    ]
+                },
+                {
+                    "examples": [
+                        {
+                            "commandAddition": "#808080",
+                            "contextAction": "#0000FF",
+                            "contextActionResultFailure": "#FF0000",
+                            "contextActionResultSuccess": "#008000",
+                            "contextEphemeral": "#80C0FF",
+                            "contextOrigin": "#808080",
+                            "contextQuery": "#FF00FF",
+                            "contextSilent": "#808080",
+                            "contextState": "#80FF80",
+                            "critical": "#C00000",
+                            "debug": "#808080",
+                            "default": "#FFFFFF",
+                            "error": "#FF0000",
+                            "incoming": "#0000FF",
+                            "info": "#80C0FF",
+                            "outgoing": "#FF0080",
+                            "timestamp": "#008000",
+                            "warning": "#FFC000"
+                        },
+                        {
+                            "commandAddition": "#808080",
+                            "contextAction": "#0000FF",
+                            "contextActionResultFailure": "#FF0000",
+                            "contextActionResultSuccess": "#008000",
+                            "contextEphemeral": "#80C0FF",
+                            "contextOrigin": "#808080",
+                            "contextQuery": "#FF00FF",
+                            "contextSilent": "#808080",
+                            "contextState": "#80FF80",
+                            "critical": "#C00000",
+                            "debug": "#808080",
+                            "default": "#000000",
+                            "error": "#FF0000",
+                            "incoming": "#0000FF",
+                            "info": "#80C0FF",
+                            "outgoing": "#FF0080",
+                            "timestamp": "#008000",
+                            "warning": "#FFC000"
+                        }
+                    ],
+                    "properties": {
+                        "commandAddition": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for additional info on commands in the command panel."
+                        },
+                        "contextAction": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Action] tag in the context panel."
+                        },
+                        "contextActionResultFailure": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Result] tag in the context panel if the action/result indicates failure."
+                        },
+                        "contextActionResultSuccess": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Result] tag in the context panel if the action/result indicates success."
+                        },
+                        "contextEphemeral": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Ephemeral] tag in the context panel."
+                        },
+                        "contextOrigin": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the game name / client ID tag in the context panel."
+                        },
+                        "contextQuery": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Query] tag of an actions/force context."
+                        },
+                        "contextSilent": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Silent] tag in the context panel."
+                        },
+                        "contextState": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [State] tag of an actions/force context."
+                        },
+                        "critical": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Critical] tag in the System panel."
+                        },
+                        "debug": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Debug] tag in the System panel."
+                        },
+                        "default": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The default color of text."
+                        },
+                        "error": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Error] tag in the System panel."
+                        },
+                        "incoming": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Game --> Tony] tag in the raw panel for incoming messages."
+                        },
+                        "info": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Info] tag in the System panel."
+                        },
+                        "outgoing": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color for the [Game <-- Tony] tag in the raw panel for outgoing messages."
+                        },
+                        "timestamp": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of timestamps."
+                        },
+                        "warning": {
+                            "$ref": "#/definitions/logColor",
+                            "description": "The color of the [Warning] tag in the System panel."
+                        }
+                    },
+                    "required": [
+                        "commandAddition",
+                        "contextAction",
+                        "contextActionResultFailure",
+                        "contextActionResultSuccess",
+                        "contextEphemeral",
+                        "contextOrigin",
+                        "contextQuery",
+                        "contextSilent",
+                        "contextState",
+                        "critical",
+                        "debug",
+                        "default",
+                        "error",
+                        "incoming",
+                        "info",
+                        "outgoing",
+                        "timestamp",
+                        "warning"
+                    ],
+                    "type": "object"
+                }
+            ],
+            "default": "light",
+            "description": "The color theme used in the log window. Can be either a predefined or a custom theme. Due to issues with theme detection, the default for this is currently 'light'."
+        },
+        "logLevel": {
+            "default": "INFO",
+            "description": "The initial minimum log level to log. The log level can still be changed at runtime. Log levels are 'DEBUG' < 'INFO' < 'WARNING' < 'ERROR' < 'CRITICAL'. If the log level is specified as a command line argument this setting is ignored.",
+            "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+            ],
+            "markdownDescription": "The initial minimum log level to log. The log level can still be changed at runtime. Log levels are `DEBUG` < `INFO` < `WARNING` < `ERROR` < `CRITICAL`. If the log level is specified as a command line argument this setting is ignored.",
+            "markdownEnumDescriptions": [
+                "Things that usually should be handled internally by an SDK (e.g. action IDs), as well as some internals of the application. Debug messages alone are not a cause for concern.",
+                "Things that will likely not cause problems with Neuro, but might point to some other issue (e.g. `action/result` with no message).",
+                "Things that do not comply with the API specification, but which Tony can still tolerate (e.g. trying to register actions before sending `startup`). These will likely cause problems with Neuro.",
+                "Things that make it impossible to process a command (e.g. receiving invalid JSON). These will definitely cause problems with Neuro.",
+                "Something went wrong and Tony will likely have to be restarted."
+            ]
+        },
+        "port": {
+            "default": 8000,
+            "description": "The port to connect to. If the port is specified as a command line argument this setting is ignored.",
+            "maximum": 65535,
+            "minimum": 0,
+            "type": "integer"
+        },
+        "sendActionsTo": {
+            "default": "registrant",
+            "description": "To which client(s) to send actions. According to Outer Wilds integration dev @DialingSpoon527, this is likely 'lastConnected' for Neuro. To avoid confusion, the default setting for Tony is 'registrant'.",
+            "enum": [
+                "all",
+                "registrant",
+                "firstConnected",
+                "lastConnected"
+            ],
+            "markdownDescription": "To which client(s) to send actions. According to Outer Wilds integration dev @DialingSpoon527, this is likely `lastConnected` for Neuro. To avoid confusion, the default setting for Tony is `registrant`.",
+            "markdownEnumDescriptions": [
+                "Send the action to all connected clients. Note that this still expects only one `action/result`. All simultaneous actions have the same action ID.",
+                "Send the action to the client that registered the action. Sending will fail if the client is no longer connected.",
+                "Send the action to the first connected client (i.e. the lowest connected client ID).",
+                "Send the action to the last connected client (i.e. the highest connected client ID)."
+            ]
+        },
+        "showOriginAs": {
+            "description": "How to show which client sent which context in the context panel.",
+            "enum": [
+                "none",
+                "clientId",
+                "gameName"
+            ],
+            "enumDescriptions": [
+                "Do not show the origin of context.",
+                "Show origin as the client ID.",
+                "Show origin as the game name."
+            ]
+        },
+        "warnings": {
+            "additionalProperties": false,
+            "description": "Enable or disable warnings. Setting a warning to 'true' enables it and setting it to 'false' disables it.",
+            "markdownDescription": "Enable or disable warnings. Setting a warning to `true` enables it and setting it to `false` disables it.",
+            "properties": {
+                "actionAdditionalProperties": {
+                    "default": true,
+                    "description": "Warn if the action contains properties other than name, description and schema.",
+                    "type": "boolean"
+                },
+                "actionNameConflict": {
+                    "default": true,
+                    "description": "Warn if an action with the same name is already registered.",
+                    "type": "boolean"
+                },
+                "actionNameInvalid": {
+                    "default": true,
+                    "description": "Warn if the action name is empty or contains characters not allowed in the specification.",
+                    "markdownDescription": "Warn if the action name is empty or contains [characters not allowed in the specification](https://github.com/VedalAI/neuro-sdk/blob/main/API/SPECIFICATION.md#parameters-1).",
+                    "type": "boolean"
+                },
+                "actionSchemaNull": {
+                    "default": true,
+                    "description": "Warn if the action description is null.",
+                    "markdownDescription": "Warn if the action description is `null`.",
+                    "type": "boolean"
+                },
+                "actionSchemaUnsupported": {
+                    "default": true,
+                    "description": "Warn if the action schema contains one or more unsupported schema keys. You can also configure for which schema keys to ignore this rule using 'allowedSchemaKeys'.",
+                    "markdownDescription": "Warn if the action schema contains one or more unsupported schema keys. You can also configure for which schema keys to ignore this rule using `allowedSchemaKeys`.",
+                    "type": "boolean"
+                },
+                "actionsForceInvalid": {
+                    "default": true,
+                    "description": "Warn if an actions/force specifies actions that are not registered, or if any of the specified actions are not registered when an actions/force is retried.",
+                    "markdownDescription": "Warn if an `actions/force` specifies actions that are not registered, or if any of the specified actions are not registered when an `actions/force` is retried.",
+                    "type": "boolean"
+                },
+                "emptyUnregister": {
+                    "default": true,
+                    "description": "Warn if an 'actions/unregister' command without any action names is received.",
+                    "markdownDescription": "Warn if an `actions/unregister` command without any action names is received.",
+                    "type": "boolean"
+                },
+                "gameNameMismatch": {
+                    "default": true,
+                    "description": "Warn if a client specifies a different game name than in its 'startup' command.",
+                    "markdownDescription": "Warn if a client specifies a different game name than in its `startup` command.",
+                    "type": "boolean"
+                },
+                "gameNameNotRegistered": {
+                    "default": true,
+                    "description": "Warn if any other command is received before 'startup'.",
+                    "markdownDescription": "Warn if any other command is received before `startup`.",
+                    "type": "boolean"
+                },
+                "jsfFailed": {
+                    "default": true,
+                    "description": "Warn if JSON Schema Faker fails to generate a sample for an action schema.",
+                    "type": "boolean"
+                },
+                "multipleStartups": {
+                    "default": true,
+                    "description": "Warn if a client sends more than one 'startup' command.",
+                    "markdownDescription": "Warn if a client sends more than one `startup` command.",
+                    "type": "boolean"
+                },
+                "noErrorMessage": {
+                    "default": true,
+                    "description": "Warn if a failed action/result contains no message.",
+                    "markdownDescription": "Warn if a failed `action/result` contains no `message`.",
+                    "type": "boolean"
+                },
+                "unknownCommand": {
+                    "default": true,
+                    "description": "Warn if an unknown command is received.",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        }
+    }
+}
