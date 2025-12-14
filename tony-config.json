@@ -1,0 +1,7 @@
+{
+    "$schema": "tony-config.schema.json",
+    "allowedSchemaKeys": [
+        "additionalProperties"
+    ],
+    "logLevel": "DEBUG"
+}

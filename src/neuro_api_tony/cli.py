@@ -10,6 +10,7 @@ import requests
 import semver
 import wx
 
+from .config import config, detect_config_file, load_config_from_file
 from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
 from .controller import TonyController
 
@@ -27,6 +28,11 @@ Options:
 
     --host <HOST>:
         Alias for --addr.
+
+    -c, --config <CONFIG_FILE>:
+        The path to a configuration file to load. If not provided, Tony will
+        look for a config file in the current directory and in the user's home
+        directory.
 
     -l, --log, --log-level <LOG_LEVEL>:
         The log level to use. Default is INFO. Must be one of: DEBUG, INFO,
@@ -66,10 +72,11 @@ def cli_run() -> None:
         )
         sys.exit(1)
 
-    address = "localhost"
-    port = 8000
-    log_level = "INFO"
+    address: str | None = None
+    port: int | None = None
+    log_level: str | None = None
     init_message = ""
+    config_file: str | None = None
 
     for option, value in options:
         match option:
@@ -83,6 +90,9 @@ def cli_run() -> None:
 
             case "-a" | "--addr" | "--address" | "--host":
                 address = value
+
+            case "-c" | "--config":
+                config_file = value
 
             case "-l" | "--log" | "--log-level":
                 if value.upper() not in [
@@ -125,6 +135,32 @@ def cli_run() -> None:
                     style=wx.OK | wx.ICON_ERROR,
                 )
                 sys.exit(1)
+
+    # Try finding a config file in the current directory
+    if not config_file:
+        config_file = detect_config_file()
+
+    # Load configuration from file if provided
+    if config_file:
+        try:
+            load_config_from_file(config_file)
+        except Exception as exc:
+            message(
+                message=f"Failed to load config file {config_file!r}:\n{exc}",
+                caption="Config File Error",
+                style=wx.OK | wx.ICON_ERROR,
+            )
+            sys.exit(1)
+
+    # Use config values as defaults for missing CLI options
+    if not log_level:
+        log_level = config().log_level
+
+    if not address:
+        address = config().address
+
+    if not port:
+        port = config().port
 
     # Check if there are updates available
     try:
