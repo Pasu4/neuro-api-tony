@@ -1657,27 +1657,29 @@ class ConfigDialog(wx.Dialog):  # type: ignore[misc]
         """Handle create command event."""
         event.Skip()
 
+        application_config_folder = get_tony_application_config_folder()
+        if not application_config_folder.exists():
+            application_config_folder.mkdir(parents=True)
+
         with wx.FileDialog(
             self,
             "Create Config File",
             wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-            defaultDir=get_tony_application_config_folder(),
+            defaultDir=str(application_config_folder),
             defaultFile="tony_config.json",
         ) as file_dialog:
             assert isinstance(file_dialog, wx.FileDialog)
             if file_dialog.ShowModal() == wx.ID_OK:
                 path = Path(file_dialog.GetPath()).absolute()
-                config_folder = path.parent
-                if not config_folder.exists():
-                    config_folder.mkdir(parents=True)
                 path.write_text(
                     json.dumps(
                         {
                             "$schema": f"https://raw.githubusercontent.com/Pasu4/neuro-api-tony/refs/tags/v{VERSION}/tony-config.schema.json",
                         },
                         indent=2,
-                    ),
+                    )
+                    + "\n",
                     encoding="utf-8",
                 )
 
