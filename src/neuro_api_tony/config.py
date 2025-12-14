@@ -340,7 +340,7 @@ def get_user_home_folder() -> Path:
     # Non-windows
     # XDG specification says use $HOME environment variable instead of
     # "~"
-    return Path(os.getenv("HOME", Path.home())).absolute()
+    return Path(os.getenv("HOME", Path.home())).absolute()  # type: ignore[unreachable,unused-ignore]
 
 
 def get_system_application_config_folder() -> Path:
