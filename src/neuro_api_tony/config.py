@@ -359,7 +359,7 @@ def get_system_application_config_folder() -> Path:
     # directory, which is configuration files for applications,
     # including settings and preferences that customize how applications
     # behave
-    home = get_user_home_folder()
+    home = get_user_home_folder()  # type: ignore[unreachable,unused-ignore]
     return Path(os.getenv("XDG_CONFIG_HOME", home / ".config")).absolute()
 
 
