@@ -192,7 +192,7 @@ UI for it is not yet implemented, so you have to edit the file using a text edit
 I recommend using VS Code, as the schema contains some VS Code-specific properties (it will still work with other editors though).
 Things that can be configured include JSON editor and log panel color themes (including support for custom themes), address and port, disabling specific warnings, as well as how to handle multiple connections.
 
-Tony will first look for configuration files in the current working directory, then in the home directory.
+Tony will first look for configuration files in the current working directory, then `~/.config/neuro_api_tony` (non-windows) or `%LOCALAPPDATA%\neuro_api_tony` (windows), then in the home directory.
 The following file names are recognized:
 
 ```
