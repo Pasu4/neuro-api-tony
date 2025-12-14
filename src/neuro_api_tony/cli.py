@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import sys
 from getopt import GetoptError, getopt
+from pathlib import Path
 from typing import Any, Final
 
 import requests
 import semver
 import wx
 
-from .config import config, detect_config_file, load_config_from_file
-from .constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
-from .controller import TonyController
+from neuro_api_tony.config import config, detect_config_file, load_config_from_file
+from neuro_api_tony.constants import APP_NAME, PACKAGE_NAME, PYPI_API_URL, VERSION
+from neuro_api_tony.controller import TonyController
 
 HELP_MESSAGE: Final = """
 Before you ask, no, I can't print this to the console.
@@ -76,7 +77,7 @@ def cli_run() -> None:
     port: int | None = None
     log_level: str | None = None
     init_message = ""
-    config_file: str | None = None
+    config_file: Path | None = None
 
     for option, value in options:
         match option:
@@ -92,7 +93,7 @@ def cli_run() -> None:
                 address = value
 
             case "-c" | "--config":
-                config_file = value
+                config_file = Path(value).absolute()
 
             case "-l" | "--log" | "--log-level":
                 if value.upper() not in [
