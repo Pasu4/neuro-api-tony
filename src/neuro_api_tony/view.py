@@ -27,7 +27,7 @@ from neuro_api_tony.config import (
     get_editor_theme_color,
     get_log_theme_color,
 )
-from neuro_api_tony.constants import VERSION
+from neuro_api_tony.constants import GIT_REPO_URL, GITHUB_RAW_URL, VERSION
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from neuro_api.json_schema_types import CoreSchemaMetaSchema
     from typing_extensions import NotRequired
 
-    from .model import NeuroAction, TonyModel
+    from neuro_api_tony.model import NeuroAction, TonyModel
 
 
 # region Events
@@ -1608,8 +1608,8 @@ class ConfigDialog(wx.Dialog):  # type: ignore[misc]
         )
         link_label = wx.adv.HyperlinkCtrl(
             self,
-            label=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
-            url=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
+            label=f"{GIT_REPO_URL}/blob/v{VERSION}/tony-config.schema.json",
+            url=f"{GIT_REPO_URL}/blob/v{VERSION}/tony-config.schema.json",
         )
 
         button_panel = wx.Panel(self)
@@ -1674,7 +1674,7 @@ class ConfigDialog(wx.Dialog):  # type: ignore[misc]
                 path.write_text(
                     json.dumps(
                         {
-                            "$schema": f"https://raw.githubusercontent.com/Pasu4/neuro-api-tony/refs/tags/v{VERSION}/tony-config.schema.json",
+                            "$schema": f"{GITHUB_RAW_URL}/refs/tags/v{VERSION}/tony-config.schema.json",
                         },
                         indent=2,
                     )
