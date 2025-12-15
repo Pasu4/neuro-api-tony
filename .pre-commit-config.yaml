@@ -18,10 +18,12 @@ repos:
       - id: sort-simple-yaml
         files: .pre-commit-config.yaml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.3
+    rev: v0.14.9
     hooks:
       - id: ruff-format
       - id: ruff-check
+        types: [file]
+        types_or: [python, pyi, toml]
         args: ["--show-fixes"]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
@@ -30,10 +32,11 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.37.2
+    rev: v1.40.0
     hooks:
       - id: typos
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.14.2
+    rev: v1.18.0
     hooks:
       - id: zizmor
+        args: ["--fix", "--no-progress"]

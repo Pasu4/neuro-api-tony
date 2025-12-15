@@ -23,7 +23,7 @@ python -m pip install -U pip tomli
 python -m pip --version
 UV_VERSION=$(python -c 'import tomli; from pathlib import Path; print({p["name"]:p for p in tomli.loads(Path("uv.lock").read_text())["package"]}["uv"]["version"])')
 WXPYTHON_VERSION=$(python -c 'import tomli; from pathlib import Path; print({p["name"]:p for p in tomli.loads(Path("uv.lock").read_text())["package"]}["wxpython"]["version"])')
-python -m pip install uv==$UV_VERSION
+python -m pip install uv=="$UV_VERSION"
 python -m uv --version
 
 UV_VENV_SEED="pip"
@@ -44,7 +44,7 @@ case "$OSTYPE" in
 esac
 
 # Install uv in virtual environment
-python -m pip install uv==$UV_VERSION
+python -m pip install uv=="$UV_VERSION"
 
 # Check if running on Linux and install wxPython from binaries
 if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
@@ -54,8 +54,12 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
     # Get the Ubuntu version
     UBUNTU_VERSION=$(lsb_release -rs)
     PYTHON_VERSION=$(python -c 'import sys; print("".join(map(str, sys.version_info[:2])))')
+    uv pip install tomli tomli_w
+    # For some reason wxpython 4.2.4 wheels need mark as requires >=3.11 to get uv to work properly?
+    python -c 'import tomli, tomli_w; from pathlib import Path; path=Path("pyproject.toml"); file=tomli.loads(path.read_text()); file["project"]["requires-python"]=">=3.11"; path.write_text(tomli_w.dumps(file))'
     # Install wxPython from binaries
-    uv add "wxPython @ https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
+    WX_WHEEL_URL="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-${UBUNTU_VERSION}/wxpython-${WXPYTHON_VERSION}-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-linux_x86_64.whl"
+    uv add "wxPython @ ${WX_WHEEL_URL}"
     # Make sure installation was successful
     WX_RUN_VERSION=$(python -c "import wx; print(wx.__version__)")
     if [[ "${WX_RUN_VERSION}" != "${WXPYTHON_VERSION}" ]]; then
@@ -66,7 +70,7 @@ if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
 fi
 
 if [ "$CHECK_FORMATTING" = "1" ]; then
-    python -m uv sync --extra tests --extra tools
+    uv sync --extra tests --extra tools
     echo "::endgroup::"
     # Restore files to original state on Linux
     if [[ "${RUNNER_OS:-}" == "Linux" ]]; then
@@ -78,12 +82,9 @@ else
     # expands to 0 != 1 if NO_TEST_REQUIREMENTS is not set, if set the `-0` has no effect
     # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
     if [ "${NO_TEST_REQUIREMENTS-0}" == 1 ]; then
-        python -m uv sync --extra tests
-        flags=""
-        #"--skip-optional-imports"
+        uv sync --extra tests
     else
-        python -m uv sync --extra tests --extra tools
-        flags=""
+        uv sync --extra tests --extra tools
     fi
 
     echo "::endgroup::"
@@ -101,7 +102,7 @@ else
 
     echo "::endgroup::"
     echo "::group:: Run Tests"
-    if coverage run --rcfile=../pyproject.toml -m pytest -ra --junitxml=../test-results.xml ../tests --verbose --durations=10 $flags; then
+    if coverage run --rcfile=../pyproject.toml -m pytest -ra --junitxml=../test-results.xml ../tests --verbose --durations=10; then
         PASSED=true
     else
         PASSED=false

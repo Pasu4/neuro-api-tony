@@ -894,12 +894,12 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
         This signals to the game to unregister all actions and reregister them.
 
-        Returns:
+        Returns
         -------
         bool
             `True` if the command was sent successfully, `False` otherwise.
 
-        Warnings:
+        Warnings
         --------
         This command is part of the proposed API and is not officially supported yet.
         Some SDKs may not support it.
@@ -982,12 +982,12 @@ class NeuroAPI(AbstractTrioNeuroServer):
 
         This signals to the game that it will be shut down within a few seconds.
 
-        Returns:
+        Returns
         -------
         bool
             `True` if the command was sent successfully, `False` otherwise.
 
-        Warnings:
+        Warnings
         --------
         This command is part of the proposed API and is not officially supported yet.
         Some SDKs may not support it.
