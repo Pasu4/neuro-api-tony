@@ -26,7 +26,6 @@ from neuro_api_tony.config import (
     get_config_file_path,
     get_editor_theme_color,
     get_log_theme_color,
-    get_tony_application_config_folder,
 )
 from neuro_api_tony.constants import VERSION
 
@@ -1657,16 +1656,16 @@ class ConfigDialog(wx.Dialog):  # type: ignore[misc]
         """Handle create command event."""
         event.Skip()
 
-        application_config_folder = get_tony_application_config_folder()
-        if not application_config_folder.exists():
-            application_config_folder.mkdir(parents=True)
+        ##application_config_folder = get_tony_application_config_folder()
+        ##if not application_config_folder.exists():
+        ##    application_config_folder.mkdir(parents=True)
 
         with wx.FileDialog(
             self,
             "Create Config File",
             wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-            defaultDir=str(application_config_folder),
+            defaultDir=str(Path.cwd()),  # TODO: Use application_config_folder
             defaultFile="tony_config.json",
         ) as file_dialog:
             assert isinstance(file_dialog, wx.FileDialog)
