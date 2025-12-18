@@ -1666,7 +1666,7 @@ class ConfigDialog(wx.Dialog):  # type: ignore[misc]
             wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
             defaultDir=str(Path.cwd()),  # TODO: Use application_config_folder
-            defaultFile="tony_config.json",
+            defaultFile="tony-config.json",
         ) as file_dialog:
             assert isinstance(file_dialog, wx.FileDialog)
             if file_dialog.ShowModal() == wx.ID_OK:
