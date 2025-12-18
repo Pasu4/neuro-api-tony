@@ -1726,8 +1726,8 @@ class ClientMenu(wx.Menu):  # type: ignore[misc]
                 connected_client_ids.add(action.client_id)
 
         all_clients_item = wx.MenuItem(self, wx.ID_ANY, "All Clients")
-        all_clients_item.Enable(clients != [])
         self.Append(all_clients_item)
+        all_clients_item.Enable(bool(clients))
         if clients:
             self.AppendSeparator()
 
