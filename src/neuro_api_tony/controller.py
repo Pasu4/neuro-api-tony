@@ -389,6 +389,7 @@ class TonyController:
                 cmd.query,
                 cmd.ephemeral_context,
                 list(actions),
+                cmd.priority,
                 retry,
             )
 

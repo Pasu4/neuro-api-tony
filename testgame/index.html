@@ -6,7 +6,7 @@
     <title>Neuro Game Test</title>
     <script src="https://cdn.jsdelivr.net/npm/neuro-game-sdk/dist/browser/neuro-game-sdk.min.js"></script>
     <script src="index.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
     <h1>Tony Debug Panel</h1>
@@ -118,6 +118,15 @@
                 <p>
                     <input type="checkbox" name="ephemeral_context" id="force-ephemeral">
                     <label for="force-ephemeral">Ephemeral</label>
+                </p>
+                <p>
+                    <label for="force-priority">Priority</label>
+                    <select name="priority" id="force-priority" form="force-form">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
                 </p>
                 <p>
                     <input class="fancy-button" type="submit" value="Send">

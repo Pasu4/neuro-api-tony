@@ -32,6 +32,7 @@ from neuro_api_tony.constants import GIT_REPO_URL, GITHUB_RAW_URL, VERSION
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from neuro_api.command import ForcePriority
     from neuro_api.json_schema_types import CoreSchemaMetaSchema
     from typing_extensions import NotRequired
 
@@ -451,6 +452,7 @@ class TonyView:
         query: str,
         ephemeral_context: bool,
         actions: list[NeuroAction],
+        priority: ForcePriority,
         retry: bool = False,
     ) -> None:
         """Show a dialog for forcing actions."""
@@ -461,6 +463,7 @@ class TonyView:
             query,
             ephemeral_context,
             actions,
+            priority,
             retry,
         )
         result = actions_force_dialog.ShowModal()
@@ -1480,6 +1483,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         query: str,
         ephemeral_context: bool,
         actions: list[NeuroAction],
+        priority: ForcePriority,
         retry: bool = False,
     ) -> None:
         """Initialize Forced Action Dialog."""
@@ -1495,6 +1499,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.query = query
         self.ephemeral_context = ephemeral_context
         self.actions = actions
+        self.priority = priority
         self.formatted_state: str
         try:
             self.formatted_state = json.dumps(json.loads(state), indent=2)
@@ -1512,6 +1517,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.query_text = wx.StaticText(query_panel, label="")
 
         self.ephemeral_label = wx.StaticText(self, label=f"Ephemeral context: {ephemeral_context}")
+        self.priority_label = wx.StaticText(self, label=f"Priority: {priority.capitalize()}")
         self.action_list = ActionList(self, False)
 
         state_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1529,6 +1535,7 @@ class ActionsForceDialog(wx.Dialog):  # type: ignore[misc]
         self.sizer.Add(state_panel, 0, wx.EXPAND | wx.ALL, 0)
         self.sizer.Add(query_panel, 0, wx.EXPAND | wx.ALL, 0)
         self.sizer.Add(self.ephemeral_label, 0, wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.priority_label, 0, wx.EXPAND | wx.ALL, 2)
         self.sizer.Add(self.action_list, 1, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(self.sizer)
 
@@ -1733,8 +1740,8 @@ class ClientMenu(wx.Menu):  # type: ignore[misc]
                 connected_client_ids.add(action.client_id)
 
         all_clients_item = wx.MenuItem(self, wx.ID_ANY, "All Clients")
-        all_clients_item.Enable(clients != [])
         self.Append(all_clients_item)
+        all_clients_item.Enable(bool(clients))
         if clients:
             self.AppendSeparator()
 
