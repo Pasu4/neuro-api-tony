@@ -2,6 +2,12 @@
 
 This changelog lists mainly functional changes, most refactoring PRs after v2.0.0 will only be listed in the [Releases](https://github.com/Pasu4/neuro-api-tony/releases) section of the repository.
 
+## 2.1.0
+
+- Added support for `actions/force` priority.
+- Added XDG directory (i.e. AppData or .config) to configuration folders.
+- Fixed surplus tag on `action/result` context log messages.
+
 ## 2.0.0
 
 Exactly one year after v1.0.0 btw
