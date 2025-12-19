@@ -688,7 +688,7 @@ wheels = [
 
 [[package]]
 name = "neuro-api"
-version = "3.1.0"
+version = "3.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "exceptiongroup" },
@@ -698,9 +698,9 @@ dependencies = [
     { name = "trio-websocket" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/83/8f308b00fe80f7044ab5eb275397852c110efe7652258baf8f333875ddb3/neuro_api-3.1.0.tar.gz", hash = "sha256:351c89195e5cddd589c2ab4af586db67cdcfc32801ce0ab0917d3d73b48f2324", size = 68332, upload-time = "2025-12-19T12:53:38.857Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0a/c3/23a924ca0eb6601d605064fe7e31001078c6501b6db16dcb3c32016d8ad3/neuro_api-3.1.1.tar.gz", hash = "sha256:7550f15d681bb87bab17c6a78250ea5c30dfe87d1931be54f29882a3e3a37851", size = 68121, upload-time = "2025-12-19T19:47:56.627Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/fd/d01fddccdf5d5bfcd53dfdfe1e9b43270167b0d493faf77ae899cb1d1d86/neuro_api-3.1.0-py3-none-any.whl", hash = "sha256:e33aaeb25bf3ce4143f1b3fdf311429f79cfca38080c8d8b6d66ddbd93256a89", size = 57648, upload-time = "2025-12-19T12:53:37.879Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/8d/c98e8d4f0858649ebd7efdf9ab726b5a1817006dba0b6a189d0c442f66ec/neuro_api-3.1.1-py3-none-any.whl", hash = "sha256:0e823a28c4d8b212860f81ff5ec62062a6b3f6376fd2247f3e3faaccf23cbb92", size = 57726, upload-time = "2025-12-19T19:47:55.146Z" },
 ]
 
 [[package]]
@@ -751,7 +751,7 @@ requires-dist = [
     { name = "json-source-map", specifier = "~=1.0.5" },
     { name = "jsonschema", specifier = "~=4.25.0" },
     { name = "mypy", marker = "extra == 'tools'", specifier = ">=1.19.0" },
-    { name = "neuro-api", specifier = "~=3.1.0" },
+    { name = "neuro-api", specifier = "~=3.1.1" },
     { name = "outcome", specifier = "~=1.3.0.post0" },
     { name = "pre-commit", marker = "extra == 'tools'", specifier = ">=4.2.0" },
     { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.3.4" },
