@@ -80,7 +80,7 @@ function sendUnregister(data) {
 
 function sendForce(data) {
     names = data.action_names.split(',').map(name => name.trim());
-    neuroClient?.forceActions(data.query, names, data.state, data.ephemeral_context);
+    neuroClient?.forceActions(data.query, names, data.state, data.ephemeral_context, data.priority);
 }
 
 function sendResult(data) {
