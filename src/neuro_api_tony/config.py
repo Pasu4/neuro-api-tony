@@ -330,7 +330,7 @@ FILE_NAMES: Final = (
 )
 """Possible configuration file names."""
 
-XDG_APPLICATION_FOLDER_NAME: Final = "neuro_api_tony"
+XDG_APPLICATION_FOLDER_NAME: Final = "neuro-api-tony"
 
 
 def get_user_home_folder() -> Path:

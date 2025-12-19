@@ -192,7 +192,7 @@ UI for it is not yet implemented, so you have to edit the file using a text edit
 I recommend using VS Code, as the schema contains some VS Code-specific properties (it will still work with other editors though).
 Things that can be configured include JSON editor and log panel color themes (including support for custom themes), address and port, disabling specific warnings, as well as how to handle multiple connections.
 
-Tony will first look for configuration files in the current working directory, then `~/.config/neuro_api_tony` (non-windows) or `%LOCALAPPDATA%\neuro_api_tony` (windows), then in the home directory.
+Tony will first look for configuration files in the current working directory, then `~/.config/neuro-api-tony` (non-windows) or `%LOCALAPPDATA%\neuro-api-tony` (windows), then in the home directory.
 The following file names are recognized:
 
 ```
@@ -351,3 +351,10 @@ The editor has the following controls at the bottom:
 - Tony may not generate valid strings if `minLength` or `maxLength` is specified together with `pattern`. This is a bug in the JSF library, which calls the rstr library to generate text from a regex, which doesn't have a way of setting a global min/max length.
 - `oneOf`, `allOf` and `not` don't appear to be supported by JSF. `anyOf` may or may not work.
 - System theme detection does not work correctly. This is tracked by issue [#40](https://github.com/Pasu4/neuro-api-tony/issues/40).
+
+## Contributing
+
+If you're contributing to Tony, please keep in mind:
+
+- Don't use relative imports, it breaks some editors, and inconsistent usage breaks global variables. Use `from neuro_api_tony import config` instead of `from . import config`.
+- Prefer using `neuro-api-tony` (kebab-case) over `neuro_api_tony` (snake_case) if syntax allows it. For example, the console
