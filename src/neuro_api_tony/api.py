@@ -15,7 +15,7 @@ import jsonschema
 import jsonschema.exceptions
 import orjson
 import trio
-from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, ForcePriority, check_invalid_keys_recursive
+from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, Action, ForcePriority, check_invalid_keys_recursive
 from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer, ActionSchema
 from trio_websocket import (
     ConnectionClosed,
@@ -24,17 +24,13 @@ from trio_websocket import (
     serve_websocket,
 )
 
-from .config import SendActionsTo, WarningID, config
-from .model import NeuroAction
+from neuro_api_tony.config import SendActionsTo, WarningID, config
+from neuro_api_tony.model import NeuroAction
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable, Coroutine
 
     from outcome import Outcome
-
-from collections.abc import Coroutine
-
-from neuro_api.command import Action
 
 
 class LogCommandProtocol(Protocol):
@@ -534,7 +530,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         self._next_client_id = 0
         self._clients: dict[
             int,
-            tuple[NeuroAPIClient, trio.MemorySendChannel[partial[Coroutine[Any, Any, Any]]]],
+            tuple[NeuroAPIClient, trio.MemorySendChannel[partial[Awaitable[Any]] | partial[Coroutine[Any, Any, Any]]]],
         ] = {}
 
     def get_next_id(self) -> str:
@@ -747,7 +743,9 @@ class NeuroAPI(AbstractTrioNeuroServer):
         # Channel buffer of zero means no buffer, receive_channel has to
         # be actively waiting for something to be sent for async partial
         # functions to go through
-        send_channel, receive_channel = trio.open_memory_channel[partial[Coroutine[Any, Any, Any]]](0)
+        send_channel, receive_channel = trio.open_memory_channel[
+            "partial[Awaitable[Any]] | partial[Coroutine[Any, Any, Any]]"
+        ](0)
 
         self._clients[client_id] = (client, send_channel)
 
@@ -804,7 +802,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
     async def _handle_producer(
         self,
         client: NeuroAPIClient,
-        receive_channel: trio.MemoryReceiveChannel[partial[Coroutine[Any, Any, Any]]],
+        receive_channel: trio.MemoryReceiveChannel[partial[Awaitable[Any]] | partial[Coroutine[Any, Any, Any]]],
     ) -> None:
         """Handle websocket writing head."""
         while True:
@@ -830,7 +828,11 @@ class NeuroAPI(AbstractTrioNeuroServer):
         client, _send_channel = result
         return client
 
-    def _submit_async_action(self, client_id: int, async_partial: partial[Coroutine[Any, Any, Any]]) -> bool:
+    def _submit_async_action(
+        self,
+        client_id: int,
+        async_partial: partial[Awaitable[Any]] | partial[Coroutine[Any, Any, Any]],
+    ) -> bool:
         """Submit a message to the send queue. Return True if able to submit action successfully."""
         if not self.clients_connected:
             self.log_error("No clients connected!")

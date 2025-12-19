@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime as dt
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypedDict
 
 import json_source_map as jsm
@@ -14,7 +15,7 @@ import wx.adv
 import wx.stc
 from jsf import JSF
 
-from .config import (
+from neuro_api_tony.config import (
     FILE_NAMES as CONFIG_FILE_NAMES,
     EditorThemeColor,
     LogThemeColor,
@@ -26,7 +27,7 @@ from .config import (
     get_editor_theme_color,
     get_log_theme_color,
 )
-from .constants import VERSION
+from neuro_api_tony.constants import GIT_REPO_URL, GITHUB_RAW_URL, VERSION
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
     from neuro_api.json_schema_types import CoreSchemaMetaSchema
     from typing_extensions import NotRequired
 
-    from .model import NeuroAction, TonyModel
+    from neuro_api_tony.model import NeuroAction, TonyModel
 
 
 # region Events
@@ -1614,8 +1615,8 @@ class ConfigDialog(wx.Dialog):  # type: ignore[misc]
         )
         link_label = wx.adv.HyperlinkCtrl(
             self,
-            label=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
-            url=f"https://github.com/Pasu4/neuro-api-tony/blob/v{VERSION}/tony-config.schema.json",
+            label=f"{GIT_REPO_URL}/blob/v{VERSION}/tony-config.schema.json",
+            url=f"{GIT_REPO_URL}/blob/v{VERSION}/tony-config.schema.json",
         )
 
         button_panel = wx.Panel(self)
@@ -1662,26 +1663,32 @@ class ConfigDialog(wx.Dialog):  # type: ignore[misc]
         """Handle create command event."""
         event.Skip()
 
+        ##application_config_folder = get_tony_application_config_folder()
+        ##if not application_config_folder.exists():
+        ##    application_config_folder.mkdir(parents=True)
+
         with wx.FileDialog(
             self,
             "Create Config File",
             wildcard="JSON files (*.json)|*.json|All files (*.*)|*.*",
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-            defaultDir=os.getcwd(),
+            defaultDir=str(Path.cwd()),  # TODO: Use application_config_folder
             defaultFile="tony-config.json",
         ) as file_dialog:
             assert isinstance(file_dialog, wx.FileDialog)
             if file_dialog.ShowModal() == wx.ID_OK:
-                path = file_dialog.GetPath()
-                with open(path, "w") as file:
-                    file.write(
-                        json.dumps(
-                            {
-                                "$schema": f"https://raw.githubusercontent.com/Pasu4/neuro-api-tony/refs/tags/v{VERSION}/tony-config.schema.json",
-                            },
-                            indent=2,
-                        ),
+                path = Path(file_dialog.GetPath()).absolute()
+                path.write_text(
+                    json.dumps(
+                        {
+                            "$schema": f"{GITHUB_RAW_URL}/refs/tags/v{VERSION}/tony-config.schema.json",
+                        },
+                        indent=2,
                     )
+                    + "\n",
+                    encoding="utf-8",
+                )
+
         self.EndModal(wx.ID_OK)
 
     def on_reload(self, event: wx.CommandEvent) -> None:

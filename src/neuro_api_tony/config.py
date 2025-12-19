@@ -2,8 +2,10 @@
 
 import json
 import os
+import sys
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Final
 
 import wx
@@ -240,7 +242,7 @@ class Config(JSONWizard, key_case="AUTO"):
 
 _config = Config()
 _DEFAULT_CONFIG: Final = Config()
-_current_config_file: str | None = None
+_current_config_file: Path | None = None
 
 
 def config() -> Config:
@@ -253,7 +255,7 @@ def default_config() -> Config:
     return _DEFAULT_CONFIG
 
 
-def load_config_from_file(file_path: str | None = None) -> None:
+def load_config_from_file(file_path: str | os.PathLike[str] | None = None) -> None:
     """Load configuration from a JSON file."""
     global _config, _current_config_file
     new_config = Config()
@@ -261,8 +263,8 @@ def load_config_from_file(file_path: str | None = None) -> None:
         file_path = _current_config_file
     if file_path is None:
         return
-    with open(file_path, encoding="utf-8") as f:
-        data = json.load(f)
+    file_path = Path(file_path).absolute()
+    data = json.loads(file_path.read_text(encoding="utf-8"))
     new_config = Config.from_dict(data)
     _config = new_config
     _current_config_file = file_path
@@ -311,26 +313,12 @@ def get_log_theme_color(key: LogThemeColor) -> wx.Colour:
     return _log_theme_colors[key]
 
 
-def get_config_file_path() -> str | None:
+def get_config_file_path() -> Path | None:
     """Get the absolute path to the configuration file if it exists."""
     return _current_config_file
 
 
-def detect_config_file() -> str | None:
-    """Detect if a configuration file exists and return its path."""
-    # Check in the current directory
-    for name in FILE_NAMES:
-        if os.path.isfile(name):
-            return os.path.abspath(name)
-    # Check in home directory
-    for name in FILE_NAMES:
-        file = os.path.join(os.path.expanduser("~"), name)
-        if os.path.isfile(file):
-            return os.path.abspath(file)
-    return None
-
-
-FILE_NAMES: Final = [
+FILE_NAMES: Final = (
     "tony-config.json",
     ".tony-config.json",
     "tony_config.json",
@@ -339,5 +327,61 @@ FILE_NAMES: Final = [
     ".tony.config.json",
     ".tonyrc",
     ".tonyrc.json",
-]
+)
 """Possible configuration file names."""
+
+XDG_APPLICATION_FOLDER_NAME: Final = "neuro_api_tony"
+
+
+def get_user_home_folder() -> Path:
+    """Return os-specific home folder path."""
+    if sys.platform == "win32" or sys.platform == "cygwin":
+        return Path(os.getenv("USERPROFILE", Path.home())).absolute()
+    # Non-windows
+    # XDG specification says use $HOME environment variable instead of
+    # "~"
+    return Path(os.getenv("HOME", Path.home())).absolute()  # type: ignore[unreachable,unused-ignore]
+
+
+def get_system_application_config_folder() -> Path:
+    """Return os-specific application configuration folder root path."""
+    if sys.platform == "win32" or sys.platform == "cygwin":
+        # Windows application configuration folder
+        # Get local app data folder
+        local_app_data = os.getenv("LOCALAPPDATA")
+        if local_app_data is not None:
+            return Path(local_app_data).absolute()
+
+        # If not set somehow (shouldn't happen usually), get manually
+        return get_user_home_folder() / "AppData" / "Local"
+
+    # Non-windows, get XDG Specification application configuration
+    # directory, which is configuration files for applications,
+    # including settings and preferences that customize how applications
+    # behave
+    home = get_user_home_folder()  # type: ignore[unreachable,unused-ignore]
+    return Path(os.getenv("XDG_CONFIG_HOME", home / ".config")).absolute()
+
+
+def get_tony_application_config_folder() -> Path:
+    """Return XDG-specification application configuration folder for tony."""
+    return get_system_application_config_folder() / XDG_APPLICATION_FOLDER_NAME
+
+
+def detect_config_file() -> Path | None:
+    """Detect if a configuration file exists and return its path."""
+    # Current working directory
+    cwd = Path.cwd()
+
+    # XDG-specification application configuration folder
+    tony_xdg_config = get_tony_application_config_folder()
+
+    # User's home directory
+    home = get_user_home_folder()
+
+    for root in (cwd, tony_xdg_config, home):
+        for name in FILE_NAMES:
+            full_path = root / name
+            if full_path.is_file():
+                return full_path.absolute()
+    return None
