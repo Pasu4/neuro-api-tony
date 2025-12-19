@@ -15,7 +15,7 @@ import jsonschema
 import jsonschema.exceptions
 import orjson
 import trio
-from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, check_invalid_keys_recursive
+from neuro_api.command import ACTION_NAME_ALLOWED_CHARS, ForcePriority, check_invalid_keys_recursive
 from neuro_api.server import AbstractNeuroServerClient, AbstractTrioNeuroServer, ActionSchema
 from trio_websocket import (
     ConnectionClosed,
@@ -173,11 +173,17 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         query: str,
         ephemeral_context: bool,
         action_names: list[str],
+        priority: ForcePriority,
     ) -> None:
-        self.server.log_command(self._client_id, "actions/force", True, ", ".join(action_names))
+        self.server.log_command(
+            self._client_id,
+            "actions/force",
+            True,
+            f"[{priority.capitalize()}] {', '.join(action_names)}",
+        )
         self.server.on_actions_force(
             self._client_id,
-            ActionsForceCommand(state, query, ephemeral_context, action_names),
+            ActionsForceCommand(state, query, ephemeral_context, action_names, priority),
         )
 
     async def handle_actions_register(  # noqa: D102
@@ -562,6 +568,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
         query: str,
         ephemeral_context: bool,
         actions: tuple[Action, ...],
+        priority: ForcePriority = ForcePriority.LOW,
     ) -> tuple[str, str | None]:
         # I don't think this should be called, but have to implement
         # because required abstract method
@@ -1060,6 +1067,7 @@ class ActionsForceCommand(NamedTuple):
     """The query string."""
     ephemeral_context: bool
     action_names: list[str]
+    priority: ForcePriority
 
 
 class ActionResultCommand(NamedTuple):
