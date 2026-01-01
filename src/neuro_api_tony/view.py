@@ -456,22 +456,31 @@ class TonyView:
         retry: bool = False,
     ) -> None:
         """Show a dialog for forcing actions."""
-        actions_force_dialog = ActionsForceDialog(
-            self.frame,
-            self,
-            state,
-            query,
-            ephemeral_context,
-            actions,
-            priority,
-            retry,
-        )
-        result = actions_force_dialog.ShowModal()
-        actions_force_dialog.Destroy()
 
-        # Executing the action has already been handled by the dialog
-        if result != wx.ID_OK:
-            self.log_info("Manually ignored forced action.")
+        # Use CallLater with a small delay to ensure any active popup menus
+        # are fully dismissed before showing the modal dialog. This prevents
+        # deadlocks when actions/force events arrive while the user has
+        # the "Delete all" button dropdown open.
+        def show_dialog() -> None:
+            actions_force_dialog = ActionsForceDialog(
+                self.frame,
+                self,
+                state,
+                query,
+                ephemeral_context,
+                actions,
+                priority,
+                retry,
+            )
+            result = actions_force_dialog.ShowModal()
+            actions_force_dialog.Destroy()
+
+            # Executing the action has already been handled by the dialog
+            if result != wx.ID_OK:
+                self.log_info("Manually ignored forced action.")
+
+        # Delay by 50ms to allow popup menus to close
+        wx.CallLater(50, show_dialog)
 
     def clear_actions(self) -> None:
         """Clear the list of actions."""
