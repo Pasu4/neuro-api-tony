@@ -295,10 +295,7 @@ def get_editor_theme_color(key: EditorThemeColor) -> str:
     # Cache the theme colors
     cfg = config().editor_color_theme
     if cfg == EditorTheme.AUTO:
-        if is_dark_mode():
-            cfg = EDITOR_THEMES[EditorTheme.DARK_PLUS]
-        else:
-            cfg = EDITOR_THEMES[EditorTheme.LIGHT_PLUS]
+        cfg = EDITOR_THEMES[EditorTheme.DARK_PLUS] if is_dark_mode() else EDITOR_THEMES[EditorTheme.LIGHT_PLUS]
     elif isinstance(cfg, EditorTheme):
         cfg = EDITOR_THEMES[cfg]
     _editor_theme_colors = cfg
