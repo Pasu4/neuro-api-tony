@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import datetime as dt
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypedDict
@@ -26,6 +27,7 @@ from neuro_api_tony.config import (
     get_config_file_path,
     get_editor_theme_color,
     get_log_theme_color,
+    is_dark_mode,
 )
 from neuro_api_tony.constants import GIT_REPO_URL, GITHUB_RAW_URL, VERSION
 
@@ -503,6 +505,13 @@ class MainFrame(wx.Frame):  # type: ignore[misc]
         self.SetSize(850, 600)
 
 
+def _border_style() -> wx.Border:
+    """Return wx.BORDER_SUNKEN, except on macOS dark mode where it renders too bright."""
+    if sys.platform == "darwin" and is_dark_mode():
+        return wx.BORDER_SIMPLE
+    return wx.BORDER_SUNKEN
+
+
 class MainPanel(wx.Panel):  # type: ignore[misc]
     """The main window for Tony."""
 
@@ -562,7 +571,7 @@ class ActionList(wx.Panel):  # type: ignore[misc]
         can_delete: bool,
     ) -> None:
         """Initialize ActionList panel."""
-        super().__init__(parent, style=wx.BORDER_SUNKEN)
+        super().__init__(parent, style=_border_style())
 
         self.can_delete = can_delete
         self.actions_enabled = True
@@ -902,9 +911,9 @@ class LogPanel(wx.Panel):  # type: ignore[misc]
         text_ctrl_style: int = wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH,
     ) -> None:
         """Initialize Log Panel."""
-        super().__init__(parent, style=wx.BORDER_SUNKEN)
+        super().__init__(parent, style=_border_style())
 
-        self.text = wx.TextCtrl(self, style=text_ctrl_style)
+        self.text = wx.TextCtrl(self, style=text_ctrl_style | (wx.BORDER_NONE if is_dark_mode() else 0))
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.text, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
@@ -957,7 +966,7 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
     def __init__(self, parent: wx.Panel) -> None:
         """Initialize Control Panel."""
-        super().__init__(parent, style=wx.BORDER_SUNKEN)
+        super().__init__(parent, style=_border_style())
 
         top = self.GetTopLevelParent()
         assert isinstance(top, MainFrame)

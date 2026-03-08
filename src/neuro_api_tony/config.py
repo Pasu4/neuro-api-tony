@@ -152,23 +152,23 @@ EDITOR_THEMES: Final = {
 LOG_THEMES: Final = {
     LogTheme.DARK: {
         LogThemeColor.DEFAULT: "#FFFFFF",
-        LogThemeColor.TIMESTAMP: "#008000",
+        LogThemeColor.TIMESTAMP: "#4EC94E",
         LogThemeColor.DEBUG: "#808080",
         LogThemeColor.INFO: "#80C0FF",
         LogThemeColor.WARNING: "#FFC000",
-        LogThemeColor.ERROR: "#FF0000",
-        LogThemeColor.CRITICAL: "#C00000",
-        LogThemeColor.CONTEXT_QUERY: "#FF00FF",
-        LogThemeColor.CONTEXT_STATE: "#80FF80",
+        LogThemeColor.ERROR: "#FF6060",
+        LogThemeColor.CRITICAL: "#FF3030",
+        LogThemeColor.CONTEXT_QUERY: "#D966FF",
+        LogThemeColor.CONTEXT_STATE: "#66CC66",
         LogThemeColor.CONTEXT_SILENT: "#808080",
         LogThemeColor.CONTEXT_EPHEMERAL: "#80C0FF",
-        LogThemeColor.CONTEXT_ACTION: "#0000FF",
-        LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS: "#008000",
-        LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE: "#FF0000",
-        LogThemeColor.CONTEXT_ORIGIN: "#808080",
-        LogThemeColor.INCOMING: "#0000FF",
-        LogThemeColor.OUTGOING: "#FF0080",
-        LogThemeColor.COMMAND_ADDITION: "#808080",
+        LogThemeColor.CONTEXT_ACTION: "#6699FF",
+        LogThemeColor.CONTEXT_ACTION_RESULT_SUCCESS: "#4EC94E",
+        LogThemeColor.CONTEXT_ACTION_RESULT_FAILURE: "#FF6060",
+        LogThemeColor.CONTEXT_ORIGIN: "#909090",
+        LogThemeColor.INCOMING: "#6699FF",
+        LogThemeColor.OUTGOING: "#FF6EB4",
+        LogThemeColor.COMMAND_ADDITION: "#A0A0A0",
     },
     LogTheme.LIGHT: {
         LogThemeColor.DEFAULT: "#000000",
@@ -217,7 +217,7 @@ class Config(JSONWizard, key_case="AUTO"):
     delete_actions_on_disconnect: bool = False
     editor_color_theme: dict[EditorThemeColor, str] | EditorTheme = EditorTheme.AUTO
     log_action_descriptions: bool = True
-    log_color_theme: dict[LogThemeColor, str] | LogTheme = LogTheme.LIGHT
+    log_color_theme: dict[LogThemeColor, str] | LogTheme = LogTheme.AUTO
     log_level: str = "INFO"
     port: int = 8000
     send_actions_to: SendActionsTo = SendActionsTo.REGISTRANT
@@ -276,6 +276,16 @@ def load_config_from_file(file_path: str | os.PathLike[str] | None = None) -> No
     _log_theme_colors = None
 
 
+def is_dark_mode() -> bool:
+    """Detect dark mode by checking system window background luminance.
+
+    More reliable than wx.SystemSettings.GetAppearance().IsDark() on macOS.
+    See https://github.com/Pasu4/neuro-api-tony/issues/40.
+    """
+    bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
+    return 0.2126 * bg.Red() + 0.7152 * bg.Green() + 0.0722 * bg.Blue() < 128  # type: ignore[no-any-return]
+
+
 def get_editor_theme_color(key: EditorThemeColor) -> str:
     """Get the editor theme colors based on the current configuration."""
     global _editor_theme_colors
@@ -285,10 +295,7 @@ def get_editor_theme_color(key: EditorThemeColor) -> str:
     # Cache the theme colors
     cfg = config().editor_color_theme
     if cfg == EditorTheme.AUTO:
-        if wx.SystemSettings.GetAppearance().IsDark():
-            cfg = EDITOR_THEMES[EditorTheme.DARK_PLUS]
-        else:
-            cfg = EDITOR_THEMES[EditorTheme.LIGHT_PLUS]
+        cfg = EDITOR_THEMES[EditorTheme.DARK_PLUS] if is_dark_mode() else EDITOR_THEMES[EditorTheme.LIGHT_PLUS]
     elif isinstance(cfg, EditorTheme):
         cfg = EDITOR_THEMES[cfg]
     _editor_theme_colors = cfg
@@ -304,7 +311,7 @@ def get_log_theme_color(key: LogThemeColor) -> wx.Colour:
     # Cache the theme colors
     cfg = config().log_color_theme
     if cfg == LogTheme.AUTO:
-        cfg = LOG_THEMES[LogTheme.DARK] if wx.SystemSettings.GetAppearance().IsDark() else LOG_THEMES[LogTheme.LIGHT]
+        cfg = LOG_THEMES[LogTheme.DARK] if is_dark_mode() else LOG_THEMES[LogTheme.LIGHT]
     elif isinstance(cfg, LogTheme):
         cfg = LOG_THEMES[cfg]
     _log_theme_colors = {k: wx.Colour() for k in cfg}
