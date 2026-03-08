@@ -505,7 +505,7 @@ class MainFrame(wx.Frame):  # type: ignore[misc]
         self.SetSize(850, 600)
 
 
-def _border_style() -> int:
+def _border_style() -> wx.Border:
     """Return wx.BORDER_SUNKEN, except on macOS dark mode where it renders too bright."""
     if sys.platform == "darwin" and is_dark_mode():
         return wx.BORDER_SIMPLE
