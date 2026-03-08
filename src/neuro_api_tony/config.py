@@ -283,7 +283,7 @@ def is_dark_mode() -> bool:
     See https://github.com/Pasu4/neuro-api-tony/issues/40.
     """
     bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
-    return (bg.Red() + bg.Green() + bg.Blue()) / 3 < 128
+    return 0.2126 * bg.Red() + 0.7152 * bg.Green() + 0.0722 * bg.Blue() < 128
 
 
 def get_editor_theme_color(key: EditorThemeColor) -> str:
