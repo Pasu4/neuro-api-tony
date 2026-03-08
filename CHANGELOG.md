@@ -2,6 +2,10 @@
 
 This changelog lists mainly functional changes, most refactoring PRs after v2.0.0 will only be listed in the [Releases](https://github.com/Pasu4/neuro-api-tony/releases) section of the repository.
 
+## 2.1.1
+
+- Fix dark mode rendering on macOS by [@VanillaSixtySix](https://github.com/VanillaSixtySix) in [#51](https://github.com/Pasu4/neuro-api-tony/pull/51)
+
 ## 2.1.0
 
 - Added support for `actions/force` priority.
@@ -15,10 +19,10 @@ Exactly one year after v1.0.0 btw
 - Replaced the old JSON editor with [a new one](https://github.com/Pasu4/neuro-api-tony/tree/master?tab=readme-ov-file#json-editor) that is more suitable for editing code.
 - Finished support for multiple client connections.
 - Added the possibility to use a [configuration file](https://github.com/Pasu4/neuro-api-tony/tree/master?tab=readme-ov-file#configuration). For a full list of what can be configured, look at [the schema](https://github.com/Pasu4/neuro-api-tony/blob/0007488b256f0c4e1f69cb7d9321296ef90a1487/tony-config.schema.json) or use VS Code's IntelliSense.
-- fix a bug that mismatched actions by @KTrain5169 in https://github.com/Pasu4/neuro-api-tony/pull/32
-- Fall back basic generator when JSF fails by @Mixone-FinallyHere in https://github.com/Pasu4/neuro-api-tony/pull/35
-- make a start on removing Any types from the codebase by @KTrain5169 in https://github.com/Pasu4/neuro-api-tony/pull/36
-- Replace type `dict[str, Any]` for an action's schema with Neuro-API's SchemaObject type by @KTrain5169 in https://github.com/Pasu4/neuro-api-tony/pull/39
+- fix a bug that mismatched actions by [@KTrain5169](https://github.com/KTrain5169) in [#32](https://github.com/Pasu4/neuro-api-tony/pull/32)
+- Fall back basic generator when JSF fails by [@Mixone-FinallyHere](https://github.com/Mixone-FinallyHere) in [#35](https://github.com/Pasu4/neuro-api-tony/pull/35)
+- make a start on removing Any types from the codebase by [@KTrain5169](https://github.com/KTrain5169) in [#36](https://github.com/Pasu4/neuro-api-tony/pull/36)
+- Replace type `dict[str, Any]` for an action's schema with Neuro-API's SchemaObject type by [@KTrain5169](https://github.com/KTrain5169) in [#39](https://github.com/Pasu4/neuro-api-tony/pull/39)
 
 ## 1.6.4
 
@@ -26,19 +30,19 @@ Exactly one year after v1.0.0 btw
 
 ## 1.6.3
 
-- Switch to Neuro-API and start on multi-client support by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/28
-- Make game client id monotonic and start on passing client id everywhere by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/29
-- [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/Pasu4/neuro-api-tony/pull/31
+- Switch to Neuro-API and start on multi-client support by [@CoolCat467](https://github.com/CoolCat467) in [#28](https://github.com/Pasu4/neuro-api-tony/pull/28)
+- Make game client id monotonic and start on passing client id everywhere by [@CoolCat467](https://github.com/CoolCat467) in [#29](https://github.com/Pasu4/neuro-api-tony/pull/29)
+- [pre-commit.ci] pre-commit autoupdate by [@pre-commit-ci](https://github.com/pre-commit-ci)[bot] in [#31](https://github.com/Pasu4/neuro-api-tony/pull/31)
 - Fixed https://github.com/Pasu4/neuro-api-tony/issues/33
 
 ## 1.6.2
 
-- Ignore zizmor hash pinnning by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/23
-- [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/Pasu4/neuro-api-tony/pull/22
-- 2025-07-29 Neuro API updates by @KTrain5169 in https://github.com/Pasu4/neuro-api-tony/pull/24
+- Ignore zizmor hash pinnning by [@CoolCat467](https://github.com/CoolCat467) in [#23](https://github.com/Pasu4/neuro-api-tony/pull/23)
+- [pre-commit.ci] pre-commit autoupdate by [@pre-commit-ci](https://github.com/pre-commit-ci)[bot] in [#22](https://github.com/Pasu4/neuro-api-tony/pull/22)
+- 2025-07-29 Neuro API updates by [@KTrain5169](https://github.com/KTrain5169) in [#24](https://github.com/Pasu4/neuro-api-tony/pull/24)
     - Added `multipleOf` and `uniqueItems` to the list of unsupported schema keys
     - Changed warning message for unsupported schema keys
-- Update dependencies by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/25
+- Update dependencies by [@CoolCat467](https://github.com/CoolCat467) in [#25](https://github.com/Pasu4/neuro-api-tony/pull/25)
 
 ## 1.6.1
 
@@ -57,7 +61,7 @@ Exactly one year after v1.0.0 btw
 - Non-specification-compliant user action log messages changed from warnings to infos
 - Added an info message when a client sends the startup message
 - Made additional context in the command log gray to highlight the actual command
-- Switch to `crateci/typos` mirror and update test dependencies by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/20
+- Switch to `crateci/typos` mirror and update test dependencies by [@CoolCat467](https://github.com/CoolCat467) in [#20](https://github.com/Pasu4/neuro-api-tony/pull/20)
 
 ## 1.5.5
 
@@ -76,7 +80,7 @@ Exactly one year after v1.0.0 btw
 
 - Added line-wrapped action description below action list
 - Forced action window text now wraps properly
-- PR: Upgrade Dependencies by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/18
+- PR: Upgrade Dependencies by [@CoolCat467](https://github.com/CoolCat467) in [#18](https://github.com/Pasu4/neuro-api-tony/pull/18)
 
 ## 1.5.1
 
@@ -123,7 +127,7 @@ Exactly one year after v1.0.0 btw
 
 ## 1.2.0
 
-- PR: Format code with `ruff format` by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/16
+- PR: Format code with `ruff format` by [@CoolCat467](https://github.com/CoolCat467) in [#16](https://github.com/Pasu4/neuro-api-tony/pull/16)
 - Added separate log panels for system and command
 - Added tooltips to controls, and made labels shorter
 - Added log file export
@@ -134,17 +138,17 @@ Exactly one year after v1.0.0 btw
 
 ## 1.1.4
 
-- Ruff linting by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/15
-- Add tests for api and model by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/14
-- Fix sending action without data by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/17
+- Ruff linting by [@CoolCat467](https://github.com/CoolCat467) in [#15](https://github.com/Pasu4/neuro-api-tony/pull/15)
+- Add tests for api and model by [@CoolCat467](https://github.com/CoolCat467) in [#14](https://github.com/Pasu4/neuro-api-tony/pull/14)
+- Fix sending action without data by [@CoolCat467](https://github.com/CoolCat467) in [#17](https://github.com/Pasu4/neuro-api-tony/pull/17)
 
 ## 1.1.3
 
-- Remove unneeded threading lock by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/11
-- Fix project requirements by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/10
-- Continuous integration by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/9
-- Make sure async run is shut down cleanly before closing application by @CoolCat467 in https://github.com/Pasu4/neuro-api-tony/pull/13
-- Fix https://github.com/Pasu4/neuro-api-tony/pull/12 (Errors on empty data schema)
+- Remove unneeded threading lock by [@CoolCat467](https://github.com/CoolCat467) in [#11](https://github.com/Pasu4/neuro-api-tony/pull/11)
+- Fix project requirements by [@CoolCat467](https://github.com/CoolCat467) in [#10](https://github.com/Pasu4/neuro-api-tony/pull/10)
+- Continuous integration by [@CoolCat467](https://github.com/CoolCat467) in [#9](https://github.com/Pasu4/neuro-api-tony/pull/9)
+- Make sure async run is shut down cleanly before closing application by [@CoolCat467](https://github.com/CoolCat467) in [#13](https://github.com/Pasu4/neuro-api-tony/pull/13)
+- Fix [#12](https://github.com/Pasu4/neuro-api-tony/pull/12) (Errors on empty data schema)
 
 ## 1.1.2
 

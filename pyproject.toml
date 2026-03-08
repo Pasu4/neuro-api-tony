@@ -55,6 +55,7 @@ version = {attr = "neuro_api_tony.constants.VERSION"}
 [project.urls]
 "Source" = "https://github.com/Pasu4/neuro-api-tony"
 "Bug Tracker" = "https://github.com/Pasu4/neuro-api-tony/issues"
+Changelog = "https://github.com/Pasu4/neuro-api-tony/blob/master/CHANGELOG.md"
 
 [project.gui-scripts]
 neuro-api-tony = "neuro_api_tony.cli:cli_run"
