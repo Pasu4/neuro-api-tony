@@ -4,6 +4,7 @@ This changelog lists mainly functional changes, most refactoring PRs after v2.0.
 
 ## 2.1.1
 
+- Fix the "Don't validate" option refusing to send unparsable JSON.
 - Fix dark mode rendering on macOS by [@VanillaSixtySix](https://github.com/VanillaSixtySix) in [#51](https://github.com/Pasu4/neuro-api-tony/pull/51)
 
 ## 2.1.0

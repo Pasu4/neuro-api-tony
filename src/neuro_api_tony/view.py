@@ -1426,8 +1426,8 @@ class ActionDialog(wx.Dialog):  # type: ignore[misc]
 
         try:
             json_str = self.text.GetValue()
-            json_cmd = json.loads(json_str)
             if not self.allow_invalid:
+                json_cmd = json.loads(json_str)
                 jsonschema.validate(json_cmd, self.action.schema or {})
 
             self.EndModal(wx.ID_OK)
