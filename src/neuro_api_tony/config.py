@@ -213,14 +213,17 @@ class Config(JSONWizard, key_case="AUTO"):
     action_scope: ActionScope = ActionScope.GLOBAL
     address: str = "localhost"
     allowed_schema_keys: list[str] = field(default_factory=list)
+    character_id: str = "tony"
     conflict_policy: ConflictPolicy = ConflictPolicy.IGNORE
     delete_actions_on_disconnect: bool = False
+    display_name: str = "Tony"
     editor_color_theme: dict[EditorThemeColor, str] | EditorTheme = EditorTheme.AUTO
     log_action_descriptions: bool = True
     log_color_theme: dict[LogThemeColor, str] | LogTheme = LogTheme.AUTO
     log_level: str = "INFO"
     port: int = 8000
     send_actions_to: SendActionsTo = SendActionsTo.REGISTRANT
+    session_id: str | None = None
     show_origin_as: ShowOriginAs = ShowOriginAs.NONE
     warnings: dict[WarningID, bool] = field(
         default_factory=lambda: {
