@@ -92,6 +92,8 @@ class TonyController:
         self.api.log_critical = self.view.log_critical
         self.api.log_raw = self.view.log_raw
         self.api.get_delay = lambda: float(self.view.controls.latency / 1000)
+        self.api.get_character_id = lambda: self.view.controls.character_id
+        self.api.get_display_name = lambda: self.view.controls.display_name
         self.api.on_client_connect = self.on_client_connect
         self.api.on_client_disconnect = self.on_client_disconnect
 

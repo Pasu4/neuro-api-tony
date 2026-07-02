@@ -9,6 +9,7 @@ This changelog lists mainly functional changes, most refactoring PRs after v2.0.
     - `characterId`: The stable character identifier.
     - `displayName`: The human-readable character name.
     - `fixedSessionId`: A fixed websocket session identifier. By default a unique identifier is generated for each session.
+- Added character ID and display name controls to the control panel.
 - Update neuro-api dependency to v3.2.0 by [@CoolCat467](https://github.com/CoolCat467) in [#54](https://github.com/Pasu4/neuro-api-tony/pull/54)
     - Fixes [#53](https://github.com/Pasu4/neuro-api-tony/issues/53)
 

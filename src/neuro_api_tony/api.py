@@ -516,6 +516,10 @@ class NeuroAPI(AbstractTrioNeuroServer):
         float
             The delay in seconds to wait before sending a message.
         """
+        self.get_character_id: Callable[[], str] = lambda: ""
+        """A function that should return the character ID set in the UI."""
+        self.get_display_name: Callable[[], str] = lambda: ""
+        """A function that should return the display name set in the UI."""
         self.on_client_connect: Callable[[int], None] = lambda client_id: None
         """Callback that is called when a client connects."""
         self.on_client_disconnect: Callable[[int, str | None], None] = lambda client_id, game: None

@@ -988,6 +988,14 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         log_level_text = wx.StaticText(log_level_panel, label="Log level:")
         self.log_level_choice = wx.Choice(log_level_panel, choices=[s.capitalize() for s in LOG_LEVELS])
 
+        character_id_panel = wx.Panel(self)
+        character_id_text = wx.StaticText(character_id_panel, label="Character ID:")
+        self.character_id_input = wx.TextCtrl(character_id_panel, size=wx.Size(120, -1))
+
+        display_name_panel = wx.Panel(self)
+        display_name_text = wx.StaticText(display_name_panel, label="Display name:")
+        self.display_name_input = wx.TextCtrl(display_name_panel, size=wx.Size(120, -1))
+
         button_panel = wx.Panel(self)
         self.send_actions_reregister_all_button = wx.Button(button_panel, label="Clear and reregister")
         self.send_shutdown_graceful_button = wx.Button(button_panel, label="Graceful shutdown")
@@ -1007,21 +1015,33 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         log_lever_panel_sizer.Add(self.log_level_choice, 0, wx.ALL | wx.ALIGN_CENTER, 2)
         log_level_panel.SetSizer(log_lever_panel_sizer)
 
-        button_panel_sizer = wx.WrapSizer(wx.HORIZONTAL, wx.WRAPSIZER_DEFAULT_FLAGS)
-        button_panel_sizer.Add(self.send_actions_reregister_all_button, 0, wx.ALL, 2)
-        button_panel_sizer.Add(self.send_shutdown_graceful_button, 0, wx.ALL, 2)
-        button_panel_sizer.Add(self.send_shutdown_graceful_cancel_button, 0, wx.ALL, 2)
-        button_panel_sizer.Add(self.send_shutdown_immediate_button, 0, wx.ALL, 2)
+        button_panel_sizer = wx.GridBagSizer(0, 0)
+        button_panel_sizer.Add(self.send_actions_reregister_all_button, (0, 0), (1, 1), wx.EXPAND | wx.ALL, 2)
+        button_panel_sizer.Add(self.send_shutdown_graceful_button, (1, 0), (1, 1), wx.EXPAND | wx.ALL, 2)
+        button_panel_sizer.Add(self.send_shutdown_graceful_cancel_button, (0, 1), (1, 1), wx.EXPAND | wx.ALL, 2)
+        button_panel_sizer.Add(self.send_shutdown_immediate_button, (1, 1), (1, 1), wx.EXPAND | wx.ALL, 2)
         button_panel.SetSizer(button_panel_sizer)
 
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.config_button, 0, wx.ALL, 2)
-        self.sizer.Add(self.ignore_actions_force_checkbox, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.auto_send_checkbox, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(self.microsecond_precision_checkbox, 0, wx.EXPAND | wx.ALL, 2)
-        self.sizer.Add(latency_panel, 0, wx.EXPAND, 0)
-        self.sizer.Add(log_level_panel, 0, wx.EXPAND, 0)
-        self.sizer.Add(button_panel, 0, wx.EXPAND, 0)
+        character_id_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        character_id_panel_sizer.Add(character_id_text, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        character_id_panel_sizer.Add(self.character_id_input, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        character_id_panel.SetSizer(character_id_panel_sizer)
+
+        display_name_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        display_name_panel_sizer.Add(display_name_text, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        display_name_panel_sizer.Add(self.display_name_input, 0, wx.ALL | wx.ALIGN_CENTER, 2)
+        display_name_panel.SetSizer(display_name_panel_sizer)
+
+        self.sizer = wx.GridBagSizer(0, 20)
+        self.sizer.Add(self.config_button, (0, 0), (1, 1), wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.ignore_actions_force_checkbox, (1, 0), (1, 1), wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.auto_send_checkbox, (2, 0), (1, 1), wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(self.microsecond_precision_checkbox, (3, 0), (1, 1), wx.EXPAND | wx.ALL, 2)
+        self.sizer.Add(latency_panel, (4, 0), (1, 1), wx.EXPAND, 0)
+        self.sizer.Add(log_level_panel, (5, 0), (1, 1), wx.EXPAND, 0)
+        self.sizer.Add(character_id_panel, (4, 1), (1, 1), wx.EXPAND, 0)
+        self.sizer.Add(display_name_panel, (5, 1), (1, 1), wx.EXPAND, 0)
+        self.sizer.Add(button_panel, (6, 0), (1, 2), wx.EXPAND, 0)
         self.SetSizer(self.sizer)
 
         wx.CallAfter(self.SendSizeEventToParent)  # For some reason the WrapSizer isn't updated unless this is called
@@ -1037,6 +1057,9 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
 
         self.Bind(wx.EVT_CHOICE, self.on_log_level, self.log_level_choice)
 
+        self.Bind(wx.EVT_TEXT, self.on_character_id, self.character_id_input)
+        self.Bind(wx.EVT_TEXT, self.on_display_name, self.display_name_input)
+
         self.Bind(wx.EVT_BUTTON, self.on_send_actions_reregister_all, self.send_actions_reregister_all_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful, self.send_shutdown_graceful_button)
         self.Bind(wx.EVT_BUTTON, self.on_send_shutdown_graceful_cancel, self.send_shutdown_graceful_cancel_button)
@@ -1048,6 +1071,8 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         self.auto_send_checkbox.SetValue(False)
         self.microsecond_precision_checkbox.SetValue(False)
         self.log_level_choice.SetStringSelection(self.view.controls.get_log_level_str())
+        self.character_id_input.SetValue(self.view.controls.character_id)
+        self.display_name_input.SetValue(self.view.controls.display_name)
 
         # Add tooltips
 
@@ -1066,6 +1091,11 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
             "\nError: A command sent or received is invalid and cannot be processed."
             "\nCritical: Tony will likely not be able to recover from this error.",
         )
+        self.character_id_input.SetToolTip(
+            'The stable character identifier, e.g. "neuro".'
+            " Evil's official character identifier has as of yet not been specified.",
+        )
+        self.display_name_input.SetToolTip("The human-readable character name.")
         self.send_actions_reregister_all_button.SetToolTip(
             "Clear all actions and request reregistration from the game."
             " This is not officially part of the API specification and may not be supported by all SDKs.",
@@ -1134,6 +1164,16 @@ class ControlPanel(wx.Panel):  # type: ignore[misc]
         sel = self.log_level_choice.GetSelection()
         log_level: str = self.log_level_choice.GetString(sel)
         self.view.controls.set_log_level(log_level.upper())
+
+    def on_character_id(self, event: wx.CommandEvent) -> None:
+        """Handle character_id command event."""
+        event.Skip()
+        self.view.controls.character_id = self.character_id_input.GetValue()
+
+    def on_display_name(self, event: wx.CommandEvent) -> None:
+        """Handle display_name command event."""
+        event.Skip()
+        self.view.controls.display_name = self.display_name_input.GetValue()
 
     def on_send_actions_reregister_all(self, event: wx.CommandEvent) -> None:
         """Handle send_actions_reregister_all command event."""
@@ -1795,6 +1835,8 @@ class Controls:
         self.auto_send: bool = False
         self.latency: int = 0
         self.microsecond_precision: bool = False
+        self.character_id: str = config().character_id
+        self.display_name: str = config().display_name
 
         self.__log_level_str: str = "INFO"
         self.__log_level: int = LOG_LEVELS["INFO"]
