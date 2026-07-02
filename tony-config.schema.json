@@ -108,7 +108,7 @@
         },
         "displayName": {
             "default": "Tony",
-            "description": "The human-readable character name. This value can also be changed via the API.",
+            "description": "The human-readable character name. This value can also be changed via the UI.",
             "examples": [
                 "Neuro",
                 "Evil",
@@ -211,6 +211,15 @@
             ],
             "default": "auto",
             "description": "The color theme used in the text editor. Can be either a pre-defined or a custom theme."
+        },
+        "fixedSessionId": {
+            "default": null,
+            "description": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to null to generate a random one for each connection.",
+            "markdownDescription": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to `null` to generate a random one for each connection.",
+            "type": [
+                "string",
+                "null"
+            ]
         },
         "logActionDescriptions": {
             "default": true,
@@ -414,15 +423,6 @@
                 "Send the action to the client that registered the action. Sending will fail if the client is no longer connected.",
                 "Send the action to the first connected client (i.e. the lowest connected client ID).",
                 "Send the action to the last connected client (i.e. the highest connected client ID)."
-            ]
-        },
-        "sessionId": {
-            "default": null,
-            "description": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to null to generate a random one for each connection.",
-            "markdownDescription": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to `null` to generate a random one for each connection.",
-            "type": [
-                "string",
-                "null"
             ]
         },
         "showOriginAs": {
