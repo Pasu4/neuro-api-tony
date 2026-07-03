@@ -151,10 +151,19 @@ class NeuroAPIClient(AbstractNeuroServerClient):
             config_obj.fixed_session_id or f"{remote} WS_ID:{self.websocket.CONNECTION_ID} CLIENT_ID:{self._client_id}"
         )
 
+        character_id = self.server.get_character_id()
+        display_name = self.server.get_display_name()
+
         await self.send_setup_acknowledgement_command(
             websocket_session_id,
-            config_obj.character_id,
-            config_obj.display_name,
+            character_id,
+            display_name,
+        )
+        self.server.log_command(
+            self._client_id,
+            "startup",
+            False,
+            f"{display_name} [{character_id}]; {websocket_session_id}",
         )
 
     async def handle_context(  # noqa: D102
