@@ -78,7 +78,7 @@ tools = [
 ]
 
 [tool.setuptools.package-data]
-neuro_api_tony = ["py.typed"]
+neuro_api_tony = ["py.typed", "assets/*"]
 
 [tool.uv]
 package = true

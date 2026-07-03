@@ -132,6 +132,13 @@ class TonyView:
         self.frame = MainFrame(self)
         app.SetTopWindow(self.frame)
 
+        this_file = Path(__file__).absolute()
+        this_folder = this_file.parent
+        icon_path = this_folder / "assets" / "favicon.ico"
+
+        if icon_path.exists():
+            self.frame.SetIcon(wx.Icon(str(icon_path)))
+
         self.api_close = api_close
         self.frame.Bind(wx.EVT_CLOSE, self.on_close)
 
