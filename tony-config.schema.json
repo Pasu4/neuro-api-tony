@@ -75,7 +75,7 @@
         },
         "characterId": {
             "default": "tony",
-            "description": "The stable character identifier, e.g. \"neuro\". Evil's character identifier is as of yet unspecified. This value can also be changed via the UI.",
+            "description": "The stable character identifier. This is `neuro` for Neuro-sama or `evil` for Evil Neuro. This value can also be changed via the UI.",
             "examples": [
                 "neuro",
                 "evil",
@@ -108,10 +108,10 @@
         },
         "displayName": {
             "default": "Tony",
-            "description": "The human-readable character name. This value can also be changed via the UI.",
+            "description": "The human-readable character name. They are set to `Neuro-sama` and `Evil Neuro`, for the respective twin. This value can also be changed via the UI.",
             "examples": [
-                "Neuro",
-                "Evil",
+                "Neuro-sama",
+                "Evil Neuro",
                 "Tony",
                 "Jippity",
                 "Gary"
@@ -214,8 +214,8 @@
         },
         "fixedSessionId": {
             "default": null,
-            "description": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to null to generate a random one for each connection.",
-            "markdownDescription": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to `null` to generate a random one for each connection.",
+            "description": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to null to generate one for each connection.",
+            "markdownDescription": "The server's websocket session identifier. Treat this as an opaque routing/debug value. Set to `null` to generate one for each connection.",
             "type": [
                 "string",
                 "null"
