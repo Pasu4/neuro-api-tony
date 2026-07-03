@@ -2,6 +2,10 @@
 
 This changelog lists mainly functional changes, most refactoring PRs after v2.0.0 will only be listed in the [Releases](https://github.com/Pasu4/neuro-api-tony/releases) section of the repository.
 
+## 2.2.1
+
+- Added Randy to the `characterId` and `displayName` examples.
+
 ## 2.2.0
 
 - Added support for startup acknowledgement ([see the API specification](https://github.com/VedalAI/neuro-sdk/blob/main/API/SPECIFICATION.md#startup-acknowledgement)).
