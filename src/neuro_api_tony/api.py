@@ -141,6 +141,22 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         self.server.log_command(self._client_id, "startup", True, game_title)
         self.server.on_startup(self._client_id, StartupCommand(game_title))
 
+        remote = self.websocket.remote
+        if not isinstance(remote, str):
+            remote = f"{remote.address}:{remote.port}"
+
+        config_obj = config()
+
+        websocket_session_id = (
+            config_obj.fixed_session_id or f"{remote} WS_ID:{self.websocket.CONNECTION_ID} CLIENT_ID:{self._client_id}"
+        )
+
+        await self.send_setup_acknowledgement_command(
+            websocket_session_id,
+            config_obj.character_id,
+            config_obj.display_name,
+        )
+
     async def handle_context(  # noqa: D102
         self,
         game_title: str,
@@ -866,21 +882,22 @@ class NeuroAPI(AbstractTrioNeuroServer):
         """
         # Determine which clients to send to based on configuration
         clients: list[tuple[int, NeuroAPIClient]]
-        if config().send_actions_to == SendActionsTo.ALL:
+        config_obj = config()
+        if config_obj.send_actions_to == SendActionsTo.ALL:
             clients = [(cid, client) for cid, (client, _) in self._clients.items()]
-        elif config().send_actions_to == SendActionsTo.REGISTRANT:
+        elif config_obj.send_actions_to == SendActionsTo.REGISTRANT:
             client = self._get_client(client_id)
             clients = [(client_id, client)] if client else []
-        elif config().send_actions_to == SendActionsTo.FIRST_CONNECTED:
+        elif config_obj.send_actions_to == SendActionsTo.FIRST_CONNECTED:
             first_client_id = min(self._clients.keys())
             client = self._get_client(first_client_id)
             clients = [(first_client_id, client)] if client else []
-        elif config().send_actions_to == SendActionsTo.LAST_CONNECTED:
+        elif config_obj.send_actions_to == SendActionsTo.LAST_CONNECTED:
             last_client_id = max(self._clients.keys())
             client = self._get_client(last_client_id)
             clients = [(last_client_id, client)] if client else []
         else:
-            self.log_error("Invalid send_actions_to configuration.")
+            self.log_error("Invalid send_actions_to configuration.")  # type: ignore[unreachable]
             return False
 
         sent = False
