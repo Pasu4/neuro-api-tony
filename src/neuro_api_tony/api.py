@@ -141,13 +141,15 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         self.server.log_command(self._client_id, "startup", True, game_title)
         self.server.on_startup(self._client_id, StartupCommand(game_title))
 
-        config_obj = config()
-
         remote = self.websocket.remote
         if not isinstance(remote, str):
             remote = f"{remote.address}:{remote.port}"
 
-        websocket_session_id = f"{remote} WS_ID:{self.websocket.CONNECTION_ID} CLIENT_ID:{self._client_id}"
+        config_obj = config()
+
+        websocket_session_id = (
+            config.fixed_session_id or f"{remote} WS_ID:{self.websocket.CONNECTION_ID} CLIENT_ID:{self._client_id}"
+        )
 
         await self.send_setup_acknowledgement_command(
             websocket_session_id,
