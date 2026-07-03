@@ -148,7 +148,7 @@ class NeuroAPIClient(AbstractNeuroServerClient):
         config_obj = config()
 
         websocket_session_id = (
-            config.fixed_session_id or f"{remote} WS_ID:{self.websocket.CONNECTION_ID} CLIENT_ID:{self._client_id}"
+            config_obj.fixed_session_id or f"{remote} WS_ID:{self.websocket.CONNECTION_ID} CLIENT_ID:{self._client_id}"
         )
 
         await self.send_setup_acknowledgement_command(
@@ -897,7 +897,7 @@ class NeuroAPI(AbstractTrioNeuroServer):
             client = self._get_client(last_client_id)
             clients = [(last_client_id, client)] if client else []
         else:
-            self.log_error("Invalid send_actions_to configuration.")
+            self.log_error("Invalid send_actions_to configuration.")  # type: ignore[unreachable]
             return False
 
         sent = False
