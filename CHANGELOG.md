@@ -12,6 +12,7 @@ This changelog lists mainly functional changes, most refactoring PRs after v2.0.
 - Added character ID and display name controls to the control panel.
 - Update neuro-api dependency to v3.2.0 by [@CoolCat467](https://github.com/CoolCat467) in [#54](https://github.com/Pasu4/neuro-api-tony/pull/54)
     - Fixes [#53](https://github.com/Pasu4/neuro-api-tony/issues/53)
+- Update to Neuro-API v4.0.0 by [@CoolCat467](https://github.com/CoolCat467) in [#55](https://github.com/Pasu4/neuro-api-tony/pull/55)
 
 ## 2.1.1
 
